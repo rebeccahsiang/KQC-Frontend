@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Vue + PrimeVue + Tailwind v4 專案建置指南
 
 這份文件記錄了從零開始（僅有 PrimeVue 依賴）到建立完整 Vite + Vue 開發環境的建置流程與說明。
@@ -116,3 +117,7 @@ app.mount('#app')
 ```bash
 npm run dev
 ```
+=======
+# KQC-Frontend
+三爵資訊 (KQC) 全端智慧改版專題之前端 - 整合 Vue 3 響應式控制台、Mongoose 資料庫個資物理隔離與 AI 語意媒合路由。
+>>>>>>> 3163aaf8ae7cfd4346c04edbde0e76b407ed3d78
