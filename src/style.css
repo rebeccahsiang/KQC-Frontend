@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: #0B0F19;
+  --color-brand-card: #111827;
+  --color-brand-gold: #EAB308;
+  --color-brand-gold-dark: #CA8A04;
+  --color-brand-text: #F8FAFC;
+  
+  --font-sans: "Inter", "Microsoft JhengHei", sans-serif;
+}
+
+/* You can add custom styles here */
+/* 💡 1. 標題顏色改用全域金變數 */
+.title { text-align: center; margin-bottom: 2rem; color: var(--color-brand-gold); font-weight: bold; letter-spacing: 1px; }
+
+/* 💡 2. 區塊背景色改用全域卡片深灰 */
+.form-section { border: 1px solid #27272a; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; background: var(--color-brand-card); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+/* 💡 3. 輸入框背景改用滿版大背景曜石黑，並利用 color-mix 完美繼承金光暈 */
+.form-group {
+  display: flex; flex-direction: column;
+  label { font-size: 0.85rem; margin-bottom: 0.5rem; color: #94a3b8; }
+  input, select, textarea {
+    background: var(--color-brand-bg); border: 1px solid #334155; border-radius: 8px; padding: 0.75rem; color: #fff; font-size: 0.9rem; transition: all 0.2s;
+    &:focus { border-color: var(--color-brand-gold); outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-gold) 20%, transparent); }
+  }
+}
+
+/* 💡 4. 送出按鈕完美引用璀璨金與暗流金的漸層，文字改用黑色底，提升商業對比度 */
+.btn-submit {
+  width: 100%; padding: 1.1rem; background: linear-gradient(to right, var(--color-brand-gold), var(--color-brand-gold-dark)); color: var(--color-brand-bg); border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.2s;
+  &:hover { opacity: 0.9; transform: translateY(-1px); }
+  &:disabled { background: #3f3f46; color: #a1a1aa; cursor: not-allowed; transform: none; }
+}
