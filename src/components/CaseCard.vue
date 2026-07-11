@@ -55,14 +55,26 @@ defineProps<{ data: CaseProps }>()
           <span class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs px-2.5 py-1 rounded-md font-bold">{{ data.targetArea }}</span>
         </div>
         
-        <div class="border-t border-surface-100 dark:border-surface-800 pt-4 mt-4 flex items-center justify-between">
-          <span class="text-sm font-medium text-surface-500">
-            {{ data.caseType === 'seller' ? '銷售金額' : '收購預算' }}
-          </span>
-          <span :class="data.caseType === 'seller' ? 'text-red-500' : 'text-blue-500'" class="text-xl font-black">
-            NT ${{ data.price }}萬{{ data.caseType === 'seller' ? '' : '左右' }}
-          </span>
-        </div>
+        <!--  2.0 覆蓋版：完美對齊三爵資訊 (KQC) 的高階商務防呆格式化 -->
+<div class="border-t border-surface-100 dark:border-surface-800 pt-4 mt-4 flex items-center justify-between">
+  <span class="text-sm font-medium text-surface-500">
+    {{ data.caseType === 'seller' ? '銷售金額' : '收購預算' }}
+  </span>
+  <!-- 💡 解決痛點：利用條件判斷，當金額為 0 時，優雅呈現「金額電議」，完美隱藏 0萬 的突兀感 -->
+  <span 
+    :class="[
+      data.price === 0 ? 'text-amber-500 font-bold' : (data.caseType === 'seller' ? 'text-red-500' : 'text-blue-500'),
+      'text-xl font-black'
+    ]"
+  >
+    <template v-if="data.price === 0">
+      金額電議
+    </template>
+    <template v-else>
+      新台幣 {{ data.price }} 萬{{ data.caseType === 'seller' ? '' : '左右' }}
+    </template>
+  </span>
+</div>
         
         <Button 
           :label="data.caseType === 'seller' ? '點選洽詢' : '我是符合的賣家'" 
