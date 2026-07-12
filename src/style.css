@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-bg: #0B0F19;
-  --color-brand-card: #111827;
-  --color-brand-gold: #EAB308;
-  --color-brand-gold-dark: #CA8A04;
-  --color-brand-text: #F8FAFC;
+  --color-brand-bg: var(--bg-main);
+  --color-brand-card: var(--bg-card);
+  --color-brand-gold: var(--brand-primary);
+  --color-brand-gold-dark: var(--brand-gradient);
+  --color-brand-text: var(--text-main);
   
   --font-sans: "Inter", "Microsoft JhengHei", sans-serif;
 }

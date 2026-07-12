@@ -5,6 +5,8 @@ import Aura from '@primeuix/themes/aura'
 import App from './App.vue'
 import router from './router'
 import './style.css'
+// 🎯 關鍵：在這裡引入全域樣式變數，才能真正通電到全站！
+import './styles/_theme.scss'
 
 const app = createApp(App)
 

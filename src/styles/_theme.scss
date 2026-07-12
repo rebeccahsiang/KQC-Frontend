@@ -1,0 +1,43 @@
+// =========================================================================
+// 🎨 三瑝資訊 (KQC) 全端改版：明 / 暗雙主題全域變數宣告
+// =========================================================================
+
+:root {
+  // ☀️ LIGHT THEME (專案核心保底色調)
+  &, &[data-theme="light"] {
+    --brand-primary: #EAB308;    // 琥珀璀璨金：向三瑝 Logo 精神致敬
+    --brand-gradient: #CA8A04;   // 主色漸層
+    --status-alert: #EF4444;     // 警示狀態[cite: 2]
+    
+    --bg-main: #F8FAFC;          // 明亮背景大背景
+    --bg-card: #FFFFFF;          // 卡片卡牌容器
+    --text-main: #0F172A;        // 俐落深色文字
+    --text-muted: #64748B;       // 次要說明文字
+    --border-color: #E2E8F0;     // 俐落科技線條
+  }
+
+  // 🌙 DARK THEME (黑曜石深邃高階 SaaS 戰情室風)
+  &[data-theme="dark"] {
+    --brand-primary: #EAB308;    // 金色主品牌色保持高對比[cite: 2]
+    --brand-gradient: #CA8A04;   // 漸層[cite: 2]
+    --status-alert: #EF4444;     // 警示[cite: 2]
+    
+    --bg-main: #0B0F19;          // 黑曜石深邃灰黑：建立極高的安全隱密感[cite: 2]
+    --bg-card: #111827;          // 背景次色：物理隔離感卡牌[cite: 2]
+    --text-main: #F8FAFC;        // 鉑金流光白：拉出極高對比度[cite: 2]
+    --text-muted: #94A3B8;       // 次要灰色文字
+    --border-color: #1E293B;     // 暗色科技線條
+  }
+}
+
+// =========================================================================
+// 封裝成 SCSS 全域映射變數 (方便未來切版時一秒 scannable 呼叫)
+// =========================================================================
+$brand-primary: var(--brand-primary);
+$brand-gradient: var(--brand-gradient);
+$status-alert: var(--status-alert);
+$bg-main: var(--bg-main);
+$bg-card: var(--bg-card);
+$text-main: var(--text-main);
+$text-muted: var(--text-muted);
+$border-color: var(--border-color);

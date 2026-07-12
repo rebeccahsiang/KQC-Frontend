@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "noEmit": true, // 💡 白話文：只准做 TypeScript 型別檢查，嚴禁擅自釋出任何 JS 實體檔案！
     "target": "esnext",
     "useDefineForClassFields": true,
     "module": "esnext",
