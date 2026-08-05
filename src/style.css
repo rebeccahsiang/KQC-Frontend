@@ -33,3 +33,11 @@
   &:hover { opacity: 0.9; transform: translateY(-1px); }
   &:disabled { background: #3f3f46; color: #a1a1aa; cursor: not-allowed; transform: none; }
 }
+
+/* --------------------------------------------------
+ * 業界標準寫法：針對 PrimeVue Toast 錯誤訊息直接隱藏
+ * -------------------------------------------------- */
+.p-toast-message-error,
+.p-toast-message[severity="error"] {
+  display: none !important;
+}

@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Card from 'primevue/card'
-import CaseCard from '@/components/CaseCard.vue'
+import CaseCard from '@/components/showcase/CaseShowcase.vue'
 
 // 💡 運用 TypeScript 定義嚴謹的 Props 接收外層的案源資料陣列
 defineProps<{
@@ -13,7 +13,7 @@ defineProps<{
 <template>
   <div class="space-y-6">
     <h2 class="text-2xl font-black text-surface-900 dark:text-surface-0 border-l-4 border-amber-500 pl-3 tracking-wide">
-      三瑝精選：業務櫥窗
+      三爵精選：業務櫥窗
     </h2>
     
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">

@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import CaseShowcase from '@/components/CaseShowcase.vue'
+import CaseShowcase from '@/components/showcase/CaseShowcase.vue'
 
 // 💡 引入 Swiper Vue 元件
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -12,7 +12,7 @@ import 'swiper/css/pagination'
 import { EffectCoverflow, Pagination } from 'swiper/modules'
 
 // 💡 核心通電：引入 TypeScript 規格的 Pinia 全域主題控制大腦
-import { useThemeStore } from '../stores/theme'
+import { useThemeStore } from '../stores/themeStore'
 
 const themeStore = useThemeStore()
 const backendMessage = ref<string>('正在連線到後端...')
@@ -32,7 +32,7 @@ const handleAiMatch = async () => {
   
   try {
     isLoading.value = true
-    backendMessage.value = '🤖 三瑝 AI 大腦正透過 Circuit Breaker 機制拆解意圖...'
+    backendMessage.value = '🤖 三爵 AI 大腦正透過 Circuit Breaker 機制拆解意圖...'
     
     // 📡 前後端正式對線：POST 送給後端 AI 智慧撮合入口門牌
     const response = await axios.post('http://localhost:3000/api/ai/match', {
@@ -117,7 +117,7 @@ onMounted(async () => {
     <!-- 3D 輪播演練展示區 -->
     <div class="w-full bg-surface-900 p-8 rounded-2xl shadow-2xl border border-surface-800">[cite: 2]
       <h2 class="text-xl font-bold text-amber-500 mb-6 flex items-center gap-2 tracking-wide">[cite: 2]
-        <span>✨</span> 三瑝服務體系：Coverflow 輪播演練
+        <span>✨</span> 三爵服務體系：Coverflow 輪播演練
       </h2>
       
       <swiper

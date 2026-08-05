@@ -1,205 +1,358 @@
-<script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+<template>
+  <div class="kqc-checkbox-group" :class="{ 'has-error': Boolean(errorMessage) }">
+    <!-- 群組標題與必填標示（當有群組標題且有 options 時呈現） -->
+    <div v-if="label && options && options.length > 0" class="kqc-checkbox-group__header">
+      <label class="kqc-checkbox-group__label">
+        {{ label }}
+        <span v-if="required" class="kqc-checkbox-group__required">*</span>
+      </label>
+      <span v-if="hint" class="kqc-checkbox-group__hint">{{ hint }}</span>
+    </div>
 
-// 1. Props 規格定義：對齊 KQC 設計系統與 TypeScript 強型別
+    <!-- 情況 A：傳入 options 陣列（多選群組模式） -->
+    <div 
+      v-if="options && options.length > 0"
+      class="kqc-checkbox-group__options"
+      :class="[`layout-${layout}`, `variant-${variant}`]"
+    >
+      <label
+        v-for="option in options"
+        :key="String(option.value)"
+        class="kqc-checkbox-item"
+        :class="{
+          'is-checked': isChecked(option.value),
+          'is-disabled': option.disabled || disabled
+        }"
+      >
+        <input
+          type="checkbox"
+          class="kqc-checkbox-item__input"
+          :value="option.value"
+          :checked="isChecked(option.value)"
+          :disabled="option.disabled || disabled"
+          @change="handleChange(option.value)"
+        />
+        
+        <!-- 自訂 Checkbox 視覺圖示 -->
+        <span class="kqc-checkbox-item__box">
+          <svg class="kqc-checkbox-item__icon" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2.5-2.5a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
+
+        <!-- 內容文字與副標 -->
+        <div class="kqc-checkbox-item__content">
+          <span class="kqc-checkbox-item__label">{{ option.label }}</span>
+          <span v-if="option.description" class="kqc-checkbox-item__desc">
+            {{ option.description }}
+          </span>
+        </div>
+      </label>
+    </div>
+
+    <!-- 情況 B：未傳入 options（單一核取 Toggle 模式，如「同意服務條款」） -->
+    <div v-else class="kqc-checkbox-group__options layout-column">
+      <label
+        class="kqc-checkbox-item"
+        :class="{
+          'is-checked': isChecked(),
+          'is-disabled': disabled
+        }"
+      >
+        <input
+          type="checkbox"
+          class="kqc-checkbox-item__input"
+          :checked="isChecked()"
+          :disabled="disabled"
+          @change="handleChange()"
+        />
+        
+        <span class="kqc-checkbox-item__box">
+          <svg class="kqc-checkbox-item__icon" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2.5-2.5a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
+
+        <div class="kqc-checkbox-item__content">
+          <span class="kqc-checkbox-item__label">
+            {{ label }}
+            <span v-if="required" class="kqc-checkbox-group__required">*</span>
+          </span>
+          <span v-if="hint" class="kqc-checkbox-item__desc">{{ hint }}</span>
+        </div>
+      </label>
+    </div>
+
+    <!-- 驗證錯誤訊息 -->
+    <Transition name="fade">
+      <span v-if="errorMessage" class="kqc-checkbox-group__error">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ errorMessage }}
+      </span>
+    </Transition>
+  </div>
+</template>
+
+<script setup lang="ts">
+/**
+ * B2B 企業級 Checkbox 選項介面
+ */
+export interface CheckboxOption {
+  label: string;
+  value: string | number;
+  description?: string;
+  disabled?: boolean;
+}
+
 interface Props {
-  /** v-model 雙向綁定值 */
-  modelValue?: boolean | (string | number)[]
-  /** Checkbox 傳遞的原生 value (當 modelValue 為陣列時使用) */
-  value?: string | number
-  /** 顯示標籤文字 */
-  label?: string
-  /** 尺寸規格：sm (16px), md (20px), lg (24px) */
-  size?: 'sm' | 'md' | 'lg'
-  /** 手動指定狀態 (支援 Figma 矩陣驗收) */
-  state?: 'default' | 'hover' | 'disabled' | 'error'
-  /** 是否停用 */
-  disabled?: boolean
-  /** 半選/不確定狀態 (專用於 B2B 批次選擇表格情境) */
-  indeterminate?: boolean
+  /** 群組或單一核取方塊標題 */
+  label?: string;
+  /** 提示小字 */
+  hint?: string;
+  /** 選項清單（未傳入時自動切換為單一布林核取模式） */
+  options?: CheckboxOption[];
+  /** 佈局方式：grid (網格) / flex (自適應) / column (單列) */
+  layout?: 'grid' | 'flex' | 'column';
+  /** 視覺風格：default (傳統框) / card (商務卡片模式) / button (按鈕標籤) */
+  variant?: 'default' | 'card' | 'button';
+  /** 必填標示 */
+  required?: boolean;
+  /** 停用狀態 */
+  disabled?: boolean;
+  /** 錯誤訊息 */
+  errorMessage?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  modelValue: false,
-  value: undefined,
   label: '',
-  size: 'md',
-  state: 'default',
+  hint: '',
+  options: () => [],
+  layout: 'grid',
+  variant: 'card',
+  required: false,
   disabled: false,
-  indeterminate: false,
-})
+  errorMessage: ''
+});
 
+// Vue 3.4+ defineModel：同時支援單選 Toggle (boolean) 與多選 Group ((string | number)[])
+const modelValue = defineModel<boolean | (string | number)[]>({
+  default: false
+});
+
+// 僅手動宣告自訂 change 事件，不重複宣告 update:modelValue 以免型別衝突
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean | (string | number)[]): void
-  (e: 'change', event: Event): void
-}>()
+  (e: 'change', value: boolean | (string | number)[]): void;
+}>();
 
-const inputRef = ref<HTMLInputElement | null>(null)
+// 判斷是否勾選
+const isChecked = (val?: string | number): boolean => {
+  if (Array.isArray(modelValue.value)) {
+    return val !== undefined ? modelValue.value.includes(val) : false;
+  }
+  return Boolean(modelValue.value);
+};
 
-// 同步原生的 indeterminate 屬性 (DOM 層級設定)
-watch(
-  () => props.indeterminate,
-  (val) => {
-    if (inputRef.value) {
-      inputRef.value.indeterminate = val
+// 處理點擊與狀態更新
+const handleChange = (val?: string | number): void => {
+  if (props.disabled) return;
+
+  if (Array.isArray(modelValue.value)) {
+    if (val === undefined) return;
+    const currentValues = [...modelValue.value];
+    const index = currentValues.indexOf(val);
+
+    if (index === -1) {
+      currentValues.push(val);
+    } else {
+      currentValues.splice(index, 1);
     }
-  },
-  { immediate: true }
-)
 
-// 2. 計算當前是否處於勾選狀態 (支援 Boolean 與 Array 兩種 v-model 模式)
-const isChecked = computed(() => {
-  if (Array.isArray(props.modelValue)) {
-    return props.value !== undefined && props.modelValue.includes(props.value)
-  }
-  return Boolean(props.modelValue)
-})
-
-const isDisabled = computed(() => props.disabled || props.state === 'disabled')
-
-// 3. 1:1 光學配重尺寸字典 Mapping (8pt Grid)
-const sizeConfig = computed(() => {
-  switch (props.size) {
-    case 'lg':
-      return {
-        box: 'w-6 h-6 rounded-[6px]', // 24x24px, 圓角 6px
-        icon: 'w-4 h-4', // 16x16px
-        text: 'text-[18px] leading-[24px]', // 18px 字號
-        gap: 'gap-[10px]', // 間距 10px
-      }
-    case 'sm':
-      return {
-        box: 'w-4 h-4 rounded-[3px]', // 16x16px, 圓角 3px
-        icon: 'w-3 h-3', // 12x12px
-        text: 'text-[12px] leading-[16px]', // 12px 字號
-        gap: 'gap-[6px]', // 間距 6px
-      }
-    case 'md':
-    default:
-      return {
-        box: 'w-5 h-5 rounded-[4px]', // 20x20px, 圓角 4px
-        icon: 'w-[14px] h-[14px]', // 14x14px
-        text: 'text-[14px] leading-[20px]', // 14px 字號
-        gap: 'gap-[8px]', // 間距 8px
-      }
-  }
-})
-
-// 4. KQC Design Tokens 顏色狀態 Mapping (精準還原 Figma 18 宮格)
-const boxClasses = computed(() => {
-  // Disabled 狀態
-  if (isDisabled.value) {
-    return isChecked.value || props.indeterminate
-      ? 'bg-[#CBD5E1] border-[#CBD5E1] text-white cursor-not-allowed'
-      : 'bg-[#F1F5F9] border-[#E2E8F0] text-transparent cursor-not-allowed'
-  }
-
-  // Error 狀態
-  if (props.state === 'error') {
-    return 'bg-white border-2 border-[#EF4444] hover:border-[#DC2626]'
-  }
-
-  // Checked 或 Indeterminate 狀態
-  if (isChecked.value || props.indeterminate) {
-    if (props.state === 'hover') {
-      return 'bg-[#334155] border-[#334155] text-white' // Hover 深鋼鐵藍
-    }
-    return 'bg-[#1E293B] border-[#1E293B] text-white hover:bg-[#334155] hover:border-[#334155]'
-  }
-
-  // Unchecked 狀態
-  if (props.state === 'hover') {
-    return 'bg-white border-[#64748B]' // Hover 深灰邊框
-  }
-  return 'bg-white border-[#CBD5E1] hover:border-[#64748B]'
-})
-
-// 5. 事件處理器
-const handleChange = (event: Event) => {
-  if (isDisabled.value) return
-
-  const target = event.target as HTMLInputElement
-  const checked = target.checked
-
-  if (Array.isArray(props.modelValue)) {
-    const newValue = [...props.modelValue]
-    if (props.value !== undefined) {
-      if (checked) {
-        newValue.push(props.value)
-      } else {
-        const index = newValue.indexOf(props.value)
-        if (index !== -1) newValue.splice(index, 1)
-      }
-      emit('update:modelValue', newValue)
-    }
+    modelValue.value = currentValues;
+    emit('change', currentValues);
   } else {
-    emit('update:modelValue', checked)
+    const nextVal = !modelValue.value;
+    modelValue.value = nextVal;
+    emit('change', nextVal);
   }
-
-  emit('change', event)
-}
+};
 </script>
 
-<template>
-  <label
-    :class="[
-      'inline-flex items-center select-none group transition-all duration-150',
-      sizeConfig.gap,
-      isDisabled ? 'cursor-not-allowed' : 'cursor-pointer',
-    ]"
-  >
-    <!-- 原生 Accessibility 隱藏 Input -->
-    <input
-      ref="inputRef"
-      type="checkbox"
-      :checked="isChecked"
-      :disabled="isDisabled"
-      :value="value"
-      :aria-checked="indeterminate ? 'mixed' : isChecked"
-      class="sr-only peer"
-      @change="handleChange"
-    />
+<style lang="scss" scoped>
+/* ==========================================================================
+   Design Tokens (三爵鋼鐵藍 × 琥珀璀璨金 - 100% 全域語意 Token 驅動)
+   ========================================================================== */
+.kqc-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 
-    <!-- 自訂 Checkbox 方塊容器 (具備 Focus-visible 璀璨金無障礙外框) -->
-    <div
-      :class="[
-        'border flex items-center justify-center transition-all duration-150 shrink-0 box-border',
-        'peer-focus-visible:ring-2 peer-focus-visible:ring-[#EAB308] peer-focus-visible:ring-offset-2',
-        sizeConfig.box,
-        boxClasses,
-      ]"
-    >
-      <!-- 半選狀態 Icon (-) -->
-      <svg
-        v-if="indeterminate"
-        class="fill-current stroke-current"
-        :class="sizeConfig.icon"
-        viewBox="0 0 20 20"
-      >
-        <rect x="3" y="8.75" width="14" height="2.5" rx="1" />
-      </svg>
+  &__header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
 
-      <!-- 全選勾勾 Icon (✓) -->
-      <svg
-        v-else-if="isChecked"
-        class="fill-current"
-        :class="sizeConfig.icon"
-        viewBox="0 0 20 20"
-      >
-        <path d="M0 11l2-2 5 5 L18 3l2 2L7 18z" />
-      </svg>
-    </div>
+  &__label {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--kqc-text-main);
+  }
 
-    <!-- 標籤文字區塊：精準對齊 Semi-bold 600 字重與色階 -->
-    <span
-      v-if="label || $slots.default"
-      :class="[
-        'font-semibold transition-colors duration-150',
-        sizeConfig.text,
-        isDisabled ? 'text-[#CBD5E1]' : 'text-[#0F172A] group-hover:text-[#1E293B]',
-      ]"
-    >
-      <slot>{{ label }}</slot>
-    </span>
-  </label>
-</template>
+  &__required {
+    color: var(--kqc-danger);
+    margin-left: 2px;
+  }
+
+  &__hint {
+    font-size: 13px;
+    color: var(--kqc-text-muted);
+  }
+
+  /* 佈局模式 */
+  &__options {
+    display: grid;
+    gap: 12px;
+
+    &.layout-grid {
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    &.layout-flex {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    &.layout-column {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__error {
+    font-size: 13px;
+    color: var(--kqc-danger);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+/* ==========================================================================
+   Checkbox 單一項目樣式重構 (Card 視覺風格)
+   ========================================================================== */
+.kqc-checkbox-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background-color: var(--kqc-bg-card);
+  border: 1.5px solid var(--kqc-border);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &__input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  /* 自訂勾選方框 */
+  &__box {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--kqc-text-muted);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--kqc-bg-card);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  &__icon {
+    width: 14px;
+    height: 14px;
+    color: var(--kqc-color-white);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.15s ease-in-out;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--kqc-text-main);
+  }
+
+  &__desc {
+    font-size: 12px;
+    color: var(--kqc-text-muted);
+    margin-top: 2px;
+  }
+
+  /* Hover 狀態 */
+  &:hover:not(.is-disabled) {
+    border-color: var(--kqc-primary);
+    background-color: var(--kqc-bg-hover);
+
+    .kqc-checkbox-item__box {
+      border-color: var(--kqc-primary-hover);
+    }
+  }
+
+  /* Checked 選取狀態 */
+  &.is-checked {
+    border-color: var(--kqc-primary);
+    background-color: var(--kqc-bg-selected);
+    box-shadow: var(--kqc-shadow-sm);
+
+    .kqc-checkbox-item__box {
+      background-color: var(--kqc-primary);
+      border-color: var(--kqc-primary);
+    }
+
+    .kqc-checkbox-item__icon {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .kqc-checkbox-item__label {
+      color: var(--kqc-primary);
+      font-weight: 700;
+    }
+  }
+
+  /* Disabled 停用狀態 */
+  &.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background-color: var(--kqc-bg-hover);
+    border-color: var(--kqc-border);
+  }
+}
+
+/* 漸變動畫 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

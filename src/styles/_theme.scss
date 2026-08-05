@@ -41,3 +41,11 @@ $bg-card: var(--bg-card);
 $text-main: var(--text-main);
 $text-muted: var(--text-muted);
 $border-color: var(--border-color);
+
+/* --------------------------------------------------
+ * 徹底隱藏 PrimeUI / PrimeVue 授權與錯誤警告 Toast
+ * -------------------------------------------------- */
+.p-toast-message-error,
+.p-toast-message[severity="error"] {
+  display: none !important;
+}

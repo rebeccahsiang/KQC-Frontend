@@ -1,23 +1,30 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-// 💡 步驟 1：引入我們剛剛寫好的 AdminView 元件
 import AdminView from '../views/AdminView.vue'
+import DesignSystemView from '../views/DesignSystemView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      // 1. 前台首頁 (Home)
       path: '/',
       name: 'home',
-      component: HomeView
+      component: HomeView,
     },
-    // 💡 步驟 2：在 routes 陣列內，新增後臺管理頁面的路徑規則
     {
+      // 2. 後台管理戰情室 (Admin)
       path: '/admin',
       name: 'admin',
-      component: AdminView
-    }
-  ]
+      component: AdminView,
+    },
+    {
+      // 3. KQC UI 設計系統 15 宮格測試戰情頁 (Design System Sandbox)
+      path: '/design-system',
+      name: 'design-system',
+      component: DesignSystemView,
+    },
+  ],
 })
 
 export default router

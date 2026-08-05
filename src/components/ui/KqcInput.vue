@@ -1,199 +1,164 @@
-<script setup lang="ts">
-import { computed, ref, useSlots } from 'vue'
+<template>
+  <div 
+    class="kqc-input-wrapper" 
+    :class="[
+      `kqc-input-wrapper--${size}`,
+      { 'kqc-input-wrapper--block': block },
+      { 'kqc-input-wrapper--error': error },
+      { 'kqc-input-wrapper--disabled': disabled }
+    ]"
+  >
+    <!-- 前置圖標/標籤插槽 -->
+    <span v-if="$slots.prefix" class="kqc-input__prefix">
+      <slot name="prefix" />
+    </span>
 
-// 1. Props 規格定義：嚴格對齊 Figma 3 Sizes x 5 States 矩陣
+    <input
+      :id="id"
+      :type="type"
+      :value="modelValue"
+      :placeholder="placeholder"
+      :disabled="disabled"
+      :readonly="readonly"
+      class="kqc-input__field"
+      @input="handleInput"
+      @focus="$emit('focus', $event)"
+      @blur="$emit('blur', $event)"
+    />
+
+    <!-- 後置圖標/按鈕插槽 -->
+    <span v-if="$slots.suffix" class="kqc-input__suffix">
+      <slot name="suffix" />
+    </span>
+  </div>
+</template>
+
+<script setup lang="ts">
 interface Props {
-  /** 綁定數值 (支援 Vue 3 v-model) */
   modelValue?: string | number
-  /** 尺寸規格：sm (32px), md (40px), lg (48px) */
-  size?: 'sm' | 'md' | 'lg'
-  /** 手動/測試指定狀態 (若不設定則依據使用者互動動態切換) */
-  state?: 'default' | 'hover' | 'focus' | 'disabled' | 'error'
-  /** 原生 input type */
   type?: string
-  /** 占位預設文字 */
+  size?: 'sm' | 'md' | 'lg'
   placeholder?: string
-  /** 是否停用 */
   disabled?: boolean
-  /** 是否顯示錯誤狀態 */
+  readonly?: boolean
   error?: boolean
-  /** 錯誤提示訊息 (有值時自動觸發 Error 狀態) */
-  errorMessage?: string
-  /** 欄位 Label 標籤 */
-  label?: string
-  /** 欄位下方輔助說明文字 */
-  helperText?: string
+  block?: boolean
+  id?: string
 }
 
-// 2. 預設值宣告 (withDefaults)
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   modelValue: '',
-  size: 'md',
-  state: undefined,
   type: 'text',
-  placeholder: '請輸入內容...',
+  size: 'md',
+  placeholder: '',
   disabled: false,
+  readonly: false,
   error: false,
-  errorMessage: '',
-  label: '',
-  helperText: '',
+  block: false,
+  id: undefined,
 })
 
-// 3. Emits 約束
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'focus', event: FocusEvent): void
   (e: 'blur', event: FocusEvent): void
-  (e: 'change', event: Event): void
 }>()
 
-const slots = useSlots()
-const isFocused = ref(false)
-
-// 4. v-model 雙向綁定計算屬性
-const inputValue = computed({
-  get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', String(val)),
-})
-
-// 5. 狀態機核心計算 (State Machine)：精準決定當前的 Token 狀態
-const currentState = computed(() => {
-  // 若有外部手動傳入 state (用於 Storybook 或 Figma 驗收展示) 則優先使用
-  if (props.state) return props.state
-
-  if (props.disabled) return 'disabled'
-  if (props.error || props.errorMessage) return 'error'
-  if (isFocused.value) return 'focus'
-  return 'default'
-})
-
-// 6. 尺寸對應表 (Size Token Classes)
-const sizeClasses = computed(() => {
-  switch (props.size) {
-    case 'sm':
-      return 'h-8 px-2.5 text-xs rounded'
-    case 'lg':
-      return 'h-12 px-4 text-base rounded-lg'
-    case 'md':
-    default:
-      return 'h-10 px-3 text-sm rounded-md'
-  }
-})
-
-// 7. 5 大互動狀態 Token Classes 精準對應 (Tailwind CSS v4)
-const stateClasses = computed(() => {
-  switch (currentState.value) {
-    // Disabled: Fill #F1F5F9 / Stroke 1px Inside #E2E8F0 / Text #CBD5E1
-    case 'disabled':
-      return 'bg-[#F1F5F9] border border-[#E2E8F0] text-[#CBD5E1] placeholder-[#CBD5E1] cursor-not-allowed'
-
-    // Error: Fill #FFFFFF / Stroke 2px Inside #EF4444 (警示紅框)
-    case 'error':
-      return 'bg-white border-2 border-[#EF4444] text-[#1E293B] placeholder-[#94A3B8] focus:outline-none ring-0'
-
-    // Focus: Fill #FFFFFF / Stroke 2px Inside #1E293B (三爵鋼鐵藍)
-    case 'focus':
-      return 'bg-white border-2 border-[#1E293B] text-[#1E293B] placeholder-[#94A3B8] focus:outline-none ring-0'
-
-    // Hover: Fill #FFFFFF / Stroke 1px Inside #64748B (深灰懸停)
-    case 'hover':
-      return 'bg-white border border-[#64748B] text-[#1E293B] placeholder-[#94A3B8]'
-
-    // Default: Fill #FFFFFF / Stroke 1px Inside #CBD5E1 / Text #94A3B8
-    case 'default':
-    default:
-      return 'bg-white border border-[#CBD5E1] text-[#1E293B] placeholder-[#94A3B8] hover:border-[#64748B] focus:border-2 focus:border-[#1E293B] focus:outline-none'
-  }
-})
-
-// 8. 事件處理解析
-const handleFocus = (event: FocusEvent) => {
-  if (props.disabled) return
-  isFocused.value = true
-  emit('focus', event)
-}
-
-const handleBlur = (event: FocusEvent) => {
-  isFocused.value = false
-  emit('blur', event)
-}
-
-const handleChange = (event: Event) => {
-  emit('change', event)
+const handleInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  emit('update:modelValue', target.value)
 }
 </script>
 
-<template>
-  <div class="w-full flex flex-col gap-1.5">
-    <!-- 欄位 Label 標籤 -->
-    <label
-      v-if="label"
-      class="text-xs font-semibold text-[#1E293B] flex items-center justify-between"
-    >
-      <span>{{ label }}</span>
-      <span v-if="disabled" class="text-xs font-normal text-[#94A3B8]">(已停用)</span>
-    </label>
+<style lang="scss" scoped>
+@import "@/styles/variables";
 
-    <!-- Input 主體容器 (包含 Icon 插槽) -->
-    <div class="relative w-full flex items-center">
-      <!-- 前置 Icon 插槽 -->
-      <div
-        v-if="slots.prefix"
-        class="absolute left-3 flex items-center justify-center text-[#64748B] pointer-events-none"
-      >
-        <slot name="prefix" />
-      </div>
+.kqc-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  border-radius: $kqc-radius-md;
+  border: 1px solid var(--color-border);
+  background-color: var(--bg-card);
+  transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
 
-      <!-- 原生 Input 標籤 -->
-      <input
-        v-model="inputValue"
-        :type="type"
-        :placeholder="placeholder"
-        :disabled="disabled || currentState === 'disabled'"
-        :aria-invalid="currentState === 'error'"
-        :aria-disabled="disabled"
-        :class="[
-          'w-full font-medium transition-all duration-150 ease-in-out',
-          sizeClasses,
-          stateClasses,
-          slots.prefix ? 'pl-9' : '',
-          slots.suffix ? 'pr-9' : '',
-        ]"
-        @focus="handleFocus"
-        @blur="handleBlur"
-        @change="handleChange"
-      />
+  /* 尺寸與 KqcButton 絕對同步 */
+  &--sm {
+    height: $kqc-control-height-sm; // 32px (2.0rem)
+    font-size: $kqc-font-size-sm;   // 14px
+    padding: 0 0.75rem;
+  }
 
-      <!-- 後置 Icon 插槽 -->
-      <div
-        v-if="slots.suffix"
-        class="absolute right-3 flex items-center justify-center text-[#64748B]"
-      >
-        <slot name="suffix" />
-      </div>
-    </div>
+  &--md {
+    height: $kqc-control-height-md; // 40px (2.5rem) - 預設標準高度
+    font-size: $kqc-font-size-md;   // 16px
+    padding: 0 1.0rem;
+  }
 
-    <!-- 錯誤訊息提示區塊 (Error State) -->
-    <p
-      v-if="errorMessage"
-      class="text-xs font-medium text-[#EF4444] flex items-center gap-1 mt-0.5"
-    >
-      <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 20 20">
-        <path
-          fill-rule="evenodd"
-          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-          clip-rule="evenodd"
-        />
-      </svg>
-      <span>{{ errorMessage }}</span>
-    </p>
+  &--lg {
+    height: $kqc-control-height-lg; // 48px (3.0rem)
+    font-size: $kqc-font-size-lg;   // 18px
+    padding: 0 1.25rem;
+  }
 
-    <!-- 一般輔助說明文字 (Helper Text) -->
-    <p
-      v-else-if="helperText"
-      class="text-xs text-[#64748B]"
-    >
-      {{ helperText }}
-    </p>
-  </div>
-</template>
+  &--block {
+    width: 100%;
+  }
+
+  /* Focus 狀態與 CSS Custom Properties 響應式切換 */
+  &:focus-within {
+    border-color: $color-primary;
+    box-shadow: 0 0 0 3px var(--kqc-focus-ring-primary);
+  }
+
+  /* 錯誤警示狀態 */
+  &--error {
+    border-color: $color-danger !important;
+    &:focus-within {
+      box-shadow: 0 0 0 var(--kqc-focus-ring-danger);
+    }
+  }
+
+  /* Disabled 停用狀態 */
+  &--disabled {
+    background-color: $color-disabled;
+    opacity: 0.6;
+    cursor: not-allowed;
+    .kqc-input__field {
+      cursor: not-allowed;
+    }
+  }
+}
+
+.kqc-input__field {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text-main);
+  font-family: inherit;
+  font-size: inherit;
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+}
+
+.kqc-input__prefix,
+.kqc-input__suffix {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
+.kqc-input__prefix {
+  margin-right: 0.5rem;
+}
+
+.kqc-input__suffix {
+  margin-left: 0.5rem;
+}
+</style>

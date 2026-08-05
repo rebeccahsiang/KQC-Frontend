@@ -1,7 +1,15 @@
 /// <reference types="vite/client" />
 
-// 告訴 TypeScript：所有以 .css 結尾的檔案，一律視為合法的樣式模組，不需報錯
+// 讓 TypeScript 能夠正確識別並解析所有 .vue 單檔案組件 (SFC)
+declare module '*.vue' {
+  import type { DefineComponent } from 'vue'
+  // eslint-disable-next-scope-line @typescript-eslint/no-explicit-generic-type-arguments-and-explicit-return-type
+  const component: DefineComponent<{}, {}, any>
+  export default component
+}
+
+// 保持 CSS Modules 型別宣告支援
 declare module '*.css' {
-  const content: { [className: string]: string };
-  export default content;
+  const content: { [className: string]: string }
+  export default content
 }

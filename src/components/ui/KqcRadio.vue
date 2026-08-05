@@ -1,162 +1,182 @@
-<script setup lang="ts">
-import { computed } from 'vue'
+<template>
+  <div class="kqc-radio-group" :class="{ 'is-vertical': vertical, 'is-disabled': disabled }">
+    <label
+      v-for="(opt, index) in options"
+      :key="String(opt.value)"
+      class="kqc-radio-item"
+      :class="{
+        'is-selected': modelValue === opt.value,
+        'is-item-disabled': disabled || opt.disabled
+      }"
+      tabindex="0"
+      @click="selectOption(opt.value, opt.disabled)"
+      @keydown="handleKeyDown($event, index)"
+    >
+      <input
+        type="radio"
+        :name="name"
+        :value="opt.value"
+        :checked="modelValue === opt.value"
+        :disabled="disabled || opt.disabled"
+        class="kqc-radio-input"
+        tabindex="-1"
+        @change="selectOption(opt.value, opt.disabled)"
+      />
+      <span class="kqc-radio-control">
+        <span class="kqc-radio-inner"></span>
+      </span>
+      <div class="kqc-radio-content">
+        <span class="kqc-radio-label">{{ opt.label }}</span>
+        <span v-if="opt.desc" class="kqc-radio-desc">{{ opt.desc }}</span>
+      </div>
+    </label>
+  </div>
+</template>
 
-// 1. Props 規格定義：完全對齊 KQC 設計系統與 TypeScript 強型別
+<script setup lang="ts" generic="T extends string | number | boolean">
+export interface RadioOption<V = string | number | boolean> {
+  label: string;
+  value: V;
+  desc?: string;
+  disabled?: boolean;
+}
+
 interface Props {
-  /** v-model 繫結的當前選中值 */
-  modelValue?: string | number | boolean
-  /** 此 Radio 代表的單一數值 */
-  value: string | number | boolean
-  /** 顯示標籤文字 */
-  label?: string
-  /** 尺寸規格：sm (16px), md (20px), lg (24px) */
-  size?: 'sm' | 'md' | 'lg'
-  /** 手動指定狀態 (支援 Figma 18 宮格矩陣驗收) */
-  state?: 'default' | 'hover' | 'disabled' | 'error'
-  /** 是否停用 */
-  disabled?: boolean
-  /** 原生 input name 屬性 (用於原生 Form 群組化) */
-  name?: string
+  options: RadioOption<T>[];
+  name?: string;
+  disabled?: boolean;
+  vertical?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  modelValue: '',
-  label: '',
-  size: 'md',
-  state: 'default',
+  name: () => `kqc-radio-${Math.random().toString(36).substring(2, 9)}`,
   disabled: false,
-  name: 'kqc-radio-group',
-})
+  vertical: false
+});
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number | boolean): void
-  (e: 'change', value: string | number | boolean): void
-}>()
+const modelValue = defineModel<T>({ required: true });
 
-// 2. 單選狀態與停用狀態判定
-const isChecked = computed(() => props.modelValue === props.value)
-const isDisabled = computed(() => props.disabled || props.state === 'disabled')
+const selectOption = (val: T, isOptionDisabled?: boolean): void => {
+  if (props.disabled || isOptionDisabled) return;
+  modelValue.value = val;
+};
 
-// 3. 1:1 光學比例尺寸字典 Mapping (40% Optical Ratio)
-const sizeConfig = computed(() => {
-  switch (props.size) {
-    case 'lg':
-      return {
-        outer: 'w-6 h-6', // 24x24px 外圓
-        inner: 'w-[10px] h-[10px]', // 10x10px 內圓實心點
-        text: 'text-[18px] leading-[24px]', // 18px 字號
-        gap: 'gap-[10px]', // 間距 10px
-      }
-    case 'sm':
-      return {
-        outer: 'w-4 h-4', // 16x16px 外圓
-        inner: 'w-[6px] h-[6px]', // 6x6px 內圓實心點
-        text: 'text-[12px] leading-[16px]', // 12px 字號
-        gap: 'gap-[6px]', // 間距 6px
-      }
-    case 'md':
-    default:
-      return {
-        outer: 'w-5 h-5', // 20x20px 外圓
-        inner: 'w-2 h-2', // 8x8px 內圓實心點
-        text: 'text-[14px] leading-[20px]', // 14px 字號
-        gap: 'gap-[8px]', // 間距 8px
-      }
+const handleKeyDown = (event: KeyboardEvent, currentIndex: number): void => {
+  if (props.disabled) return;
+  const enabledOptions = props.options.filter((opt) => !opt.disabled);
+  if (enabledOptions.length === 0) return;
+
+  let nextIndex = currentIndex;
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    event.preventDefault();
+    do { nextIndex = (nextIndex + 1) % props.options.length; } while (props.options[nextIndex].disabled && nextIndex !== currentIndex);
+    selectOption(props.options[nextIndex].value, props.options[nextIndex].disabled);
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    do { nextIndex = (nextIndex - 1 + props.options.length) % props.options.length; } while (props.options[nextIndex].disabled && nextIndex !== currentIndex);
+    selectOption(props.options[nextIndex].value, props.options[nextIndex].disabled);
   }
-})
-
-// 4. KQC Design Tokens 顏色狀態 Mapping (精準對齊 Figma 截圖)
-const outerClasses = computed(() => {
-  // Disabled 狀態
-  if (isDisabled.value) {
-    return isChecked.value
-      ? 'bg-[#CBD5E1] border-[#CBD5E1] cursor-not-allowed'
-      : 'bg-[#F1F5F9] border-[#E2E8F0] cursor-not-allowed'
-  }
-
-  // Error 狀態
-  if (props.state === 'error') {
-    return 'bg-white border-2 border-[#EF4444] hover:border-[#DC2626]'
-  }
-
-  // Checked 狀態
-  if (isChecked.value) {
-    if (props.state === 'hover') {
-      return 'bg-[#334155] border-[#334155]' // Hover 深鋼鐵藍
-    }
-    return 'bg-[#1E293B] border-[#1E293B] hover:bg-[#334155] hover:border-[#334155]'
-  }
-
-  // Unchecked 狀態
-  if (props.state === 'hover') {
-    return 'bg-white border-[#64748B]' // Hover 深灰外框
-  }
-  return 'bg-white border-[#CBD5E1] hover:border-[#64748B]'
-})
-
-// 5. 事件處理
-const handleChange = () => {
-  if (isDisabled.value) return
-  emit('update:modelValue', props.value)
-  emit('change', props.value)
-}
+};
 </script>
 
-<template>
-  <label
-    :class="[
-      'inline-flex items-center select-none group transition-all duration-150',
-      sizeConfig.gap,
-      isDisabled ? 'cursor-not-allowed' : 'cursor-pointer',
-    ]"
-  >
-    <!-- 原生 Accessibility 隱藏 Radio Input -->
-    <input
-      type="radio"
-      :name="name"
-      :value="value"
-      :checked="isChecked"
-      :disabled="isDisabled"
-      class="sr-only peer"
-      @change="handleChange"
-    />
+<style lang="scss" scoped>
+.kqc-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 
-    <!-- 自訂 Radio 外圓 (包含 璀璨金 Focus-visible 無障礙光環) -->
-    <div
-      :class="[
-        'rounded-full border flex items-center justify-center transition-all duration-150 shrink-0 box-border',
-        'peer-focus-visible:ring-2 peer-focus-visible:ring-[#EAB308] peer-focus-visible:ring-offset-2',
-        sizeConfig.outer,
-        outerClasses,
-      ]"
-    >
-      <!-- 內實心點 (選中時縮放顯示白點) -->
-      <transition
-        enter-active-class="transition-transform duration-150 ease-out"
-        enter-from-class="scale-0"
-        enter-to-class="scale-100"
-        leave-active-class="transition-transform duration-100 ease-in"
-        leave-from-class="scale-100"
-        leave-to-class="scale-0"
-      >
-        <div
-          v-if="isChecked"
-          class="rounded-full bg-white shrink-0"
-          :class="sizeConfig.inner"
-        />
-      </transition>
-    </div>
+  &.is-vertical { flex-direction: column; }
+  &.is-disabled { opacity: 0.6; cursor: not-allowed; }
+}
 
-    <!-- 標籤文字 (Semi-bold 600 字重對齊) -->
-    <span
-      v-if="label || $slots.default"
-      :class="[
-        'font-semibold transition-colors duration-150',
-        sizeConfig.text,
-        isDisabled ? 'text-[#CBD5E1]' : 'text-[#0F172A] group-hover:text-[#1E293B]',
-      ]"
-    >
-      <slot>{{ label }}</slot>
-    </span>
-  </label>
-</template>
+.kqc-radio-item {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--kqc-border);
+  border-radius: var(--kqc-radius-md);
+  background-color: var(--kqc-bg-card); /* ✨ 選項背景保持與卡牌背景一致 */
+  cursor: pointer;
+  transition: var(--kqc-transition);
+  outline: none;
+  user-select: none;
+
+  &:hover:not(.is-item-disabled) {
+    border-color: var(--kqc-accent);
+    background-color: var(--kqc-bg-hover);
+  }
+
+  /* 選中狀態 Selected Style */
+  &.is-selected {
+    border-color: var(--kqc-accent);
+    background-color: var(--kqc-bg-selected);
+
+    .kqc-radio-control {
+      border-color: var(--kqc-accent);
+      .kqc-radio-inner {
+        transform: scale(1);
+        background-color: var(--kqc-accent);
+      }
+    }
+
+    .kqc-radio-label {
+      color: var(--kqc-text-main);
+      font-weight: 700;
+    }
+  }
+
+  &.is-item-disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    border-color: var(--kqc-disabled);
+  }
+}
+
+.kqc-radio-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.kqc-radio-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 2px solid var(--kqc-text-muted);
+  border-radius: 50%;
+  transition: border-color 0.2s ease;
+  flex-shrink: 0;
+
+  .kqc-radio-inner {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+.kqc-radio-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kqc-radio-label {
+  font-size: 14px;
+  color: var(--kqc-text-main);
+  line-height: 1.4;
+}
+
+.kqc-radio-desc {
+  font-size: 12px;
+  color: var(--kqc-text-muted);
+  line-height: 1.3;
+}
+</style>
