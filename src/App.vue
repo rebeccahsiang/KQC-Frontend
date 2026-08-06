@@ -12,9 +12,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- 運用 CSS 變數動態對齊全站背景與文字色，transition 帶來毫秒級流暢轉場 -->
   <div class="kqc-global-wrapper">
-    <RouterView />
+    <!-- Vue Router 會將比對到的頁面渲染於此 -->
+    <router-view />
   </div>
 </template>
 
@@ -38,8 +38,8 @@ body {
 /* 💡 乾淨、無雜質、100% 亮綠燈的原生全域通電寫法 */
 .kqc-global-wrapper {
   min-height: 100vh;
-  background-color: var(--bg-main, #f8fafc); /* 實時對齊黑曜石深邃灰黑 / 雲霧極光白 */
-  color: var(--text-main, #1e293b);        /* 實時對齊鉑金流光白 / 石墨深灰 */
+  background-color: var(--bg-main); /* 實時對齊黑曜石深邃灰黑 / 雲霧極光白 */
+  color: var(--text-main);        /* 實時對齊鉑金流光白 / 石墨深灰 */
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 </style>

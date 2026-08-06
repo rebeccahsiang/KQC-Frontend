@@ -1,11 +1,26 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import Icons from 'unplugin-icons/vite'
+import Components from 'unplugin-vue-components/vite'
+import IconsResolver from 'unplugin-icons/resolver'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url' // ✨ 關鍵修正：具名匯出加 {}
 
 export default defineConfig({
   plugins: [
     vue(),
+    Components({
+      resolvers: [
+        IconsResolver({
+          prefix: 'icon', // 自動轉為 <icon-lucide-xxx /> 格式
+          enabledCollections: ['lucide']
+        })
+      ]
+    }),
+
+    Icons({
+      autoInstall: true
+    }),
     tailwindcss()
   ],
   resolve: {
