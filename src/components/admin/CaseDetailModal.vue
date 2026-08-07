@@ -83,11 +83,11 @@ const emit = defineEmits<{
 }
 
 .kqc-modal-content {
-  background-color: var(--bg-surface, #1e293b);
+  background-color: var(--bg-surface, var(--primary));
   width: 90%;
   max-width: 650px;
   border-radius: 16px;
-  border: 1px solid var(--color-accent, #eab308);
+  border: 1px solid var(--color-accent, var(--accent));
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   padding: 1.5rem;
 }
@@ -100,7 +100,7 @@ const emit = defineEmits<{
   padding-bottom: 0.75rem;
   
   h3 {
-    color: var(--color-accent, #eab308);
+    color: var(--color-accent, var(--accent));
     margin: 0;
     font-size: 1.1rem;
     font-weight: bold;
@@ -128,26 +128,26 @@ const emit = defineEmits<{
   
   th {
     width: 30%;
-    background-color: var(--bg-main, #0b0f19);
+    background-color: var(--bg-main, var(--bg-main));
     color: var(--color-text-muted, #94a3b8);
     text-align: left;
     padding: 0.75rem 1rem;
     font-size: 0.85rem;
-    border-bottom: 1px solid var(--bg-surface, #1e293b);
+    border-bottom: 1px solid var(--bg-surface, var(--primary));
   }
   
   td {
     background-color: #131d31;
-    color: var(--color-text-main, #f8fafc);
+    color: var(--color-text-main, var(--bg-main));
     padding: 0.75rem 1rem;
     text-align: left;
     font-size: 0.9rem;
-    border-bottom: 1px solid var(--bg-surface, #1e293b);
+    border-bottom: 1px solid var(--bg-surface, var(--primary));
   }
   
   .crm-section-row th {
     background: rgba(234, 179, 8, 0.1);
-    color: var(--color-accent, #eab308);
+    color: var(--color-accent, var(--accent));
   }
   
   .crm-section-row td {
@@ -155,7 +155,7 @@ const emit = defineEmits<{
   }
   
   .text-white { color: #fff; }
-  .text-gold { color: var(--color-accent, #eab308); }
+  .text-gold { color: var(--color-accent, var(--accent)); }
   .text-gray-desc { color: #cbd5e1; font-size: 0.85rem; line-height: 1.4; }
   .text-green-desc { color: #34d399; font-weight: bold; }
 }
@@ -168,8 +168,8 @@ const emit = defineEmits<{
 
 .btn-modal-done {
   padding: 0.75rem 1.5rem;
-  background-color: var(--color-accent, #eab308);
-  color: #0b0f19;
+  background-color: var(--color-accent, var(--accent));
+  color: var(--bg-main);
   font-weight: bold;
   border-radius: 6px;
   border: none;

@@ -44,7 +44,7 @@ const variantClasses = computed(() => {
       return 'bg-transparent border border-gray-200 dark:border-gray-800 shadow-none'
     case 'default':
     default:
-      return 'bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-sm'
+      return 'bg-white dark:bg-[var(--bg-card)] border border-gray-200 dark:border-gray-800 shadow-sm'
   }
 })
 </script>
@@ -54,7 +54,7 @@ const variantClasses = computed(() => {
     :class="[
       'rounded-xl transition-all duration-200 overflow-hidden flex flex-col',
       variantClasses,
-      hoverable ? 'hover:shadow-lg hover:-translate-y-0.5 hover:border-[#1E293B]/30 dark:hover:border-[#EAB308]/50' : '',
+      hoverable ? 'hover:shadow-lg hover:-translate-y-0.5 hover:border-[var(--primary)]/30 dark:hover:border-[var(--accent)]/50' : '',
     ]"
   >
     <!-- 卡片頂部 Header 插槽 -->

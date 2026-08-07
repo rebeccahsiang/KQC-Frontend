@@ -20,32 +20,33 @@ const routes: Array<RouteRecordRaw> = [
     path: '/admin',
     component: () => import('@/components/layout/AdminLayout.vue'),
     redirect: '/admin/dashboard',
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, title: '後台管理', icon: 'lucide:settings', roles: ['admin', 'editor'] },
     children: [
       // 3.1 總覽戰情室 (僅留存數據圖表、KPI卡片、供需晴雨窗)
       {
         path: 'dashboard',
         name: 'AdminDashboard',
         component: () => import('@/views/admin/DashboardView.vue'),
-        meta: { title: '總覽戰情室 | 三爵後台管理' }
+        meta: { title: '總覽戰情室', icon: 'lucide:layout-dashboard', roles: ['admin', 'editor'] }
       },
       // 3.2 前台管理模組
       {
         path: 'frontend',
         name: 'FrontendManagement',
         redirect: '/admin/frontend/marquee',
+        meta: { title: '前台管理', icon: 'lucide:monitor', roles: ['admin'] },
         children: [
           {
             path: 'marquee',
             name: 'MarqueeManage',
             component: () => import('@/views/admin/frontend/MarqueeView.vue'),
-            meta: { title: '跑馬燈管理 | 三爵後台管理' }
+            meta: { title: '跑馬燈管理', icon: 'lucide:square-dashed-top-solid', roles: ['admin'] }
           },
           {
             path: 'banner',
             name: 'BannerManage',
             component: () => import('@/views/admin/frontend/BannerView.vue'),
-            meta: { title: '首頁輪播圖 | 三爵後台管理' }
+            meta: { title: '首頁輪播圖', icon: 'lucide:gallery-horizontal', roles: ['admin'] }
           }
         ]
       },
@@ -54,24 +55,25 @@ const routes: Array<RouteRecordRaw> = [
         path: 'cases',
         name: 'CaseManagement',
         redirect: '/admin/cases/list',
+        meta: { title: '案件管理', icon: 'lucide:gem', roles: ['admin', 'editor'] },
         children: [
           {
             path: 'list',
             name: 'CaseList',
             component: () => import('@/views/admin/cases/CaseListView.vue'),
-            meta: { title: '案件列表 | 三爵後台管理' }
+            meta: { title: '案件列表', icon: 'lucide:list-check', roles: ['admin', 'editor'] }
           },
           {
             path: 'create',
             name: 'CaseCreate',
             component: () => import('@/views/admin/cases/CaseCreateView.vue'),
-            meta: { title: '新增智慧案例 | 三爵後台管理' } // 原本畫面中的大表單頁
+            meta: { title: '新增智慧案例', icon: 'lucide:layers-plus', roles: ['admin'] }
           },
           {
             path: 'photos',
             name: 'CasePhotos',
             component: () => import('@/views/admin/cases/CasePhotosView.vue'),
-            meta: { title: '案件照片管理 | 三爵後台管理' }
+            meta: { title: '案件照片管理', icon: 'lucide:image', roles: ['admin'] }
           }
         ]
       },
@@ -80,18 +82,19 @@ const routes: Array<RouteRecordRaw> = [
         path: 'messages',
         name: 'MessageManagement',
         redirect: '/admin/messages/emails',
+        meta: { title: '訊息管理', icon: 'lucide:messages-square', roles: ['admin'] },
         children: [
           {
             path: 'emails',
             name: 'EmailLogs',
             component: () => import('@/views/admin/messages/EmailLogsView.vue'),
-            meta: { title: '表格電子郵件紀錄 | 三爵後台管理' }
+            meta: { title: '表格電子郵件紀錄', icon: 'lucide:mail', roles: ['admin'] }
           },
           {
             path: 'ai-faq',
             name: 'AiFaqManage',
             component: () => import('@/views/admin/messages/AiFaqView.vue'),
-            meta: { title: '智能客服答疑 | 三爵後台管理' }
+            meta: { title: '智能客服答疑', icon: 'lucide:bot', roles: ['admin'] }
           }
         ]
       }

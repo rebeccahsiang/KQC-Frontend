@@ -73,7 +73,7 @@ onMounted(() => {
         <div class="color-palette-grid">
           <div class="color-box bg-base-light">
             <span class="color-name">雲霧極光白</span>
-            <span class="color-hex">#F8FAFC (70%)</span>
+            <span class="color-hex">var(--bg-main) (70%)</span>
           </div>
           <div class="color-box bg-base-white">
             <span class="color-name">完整履行白</span>
@@ -81,15 +81,15 @@ onMounted(() => {
           </div>
           <div class="color-box bg-primary">
             <span class="color-name">三爵鋼鐵藍</span>
-            <span class="color-hex">#1E293B (25%)</span>
+            <span class="color-hex">var(--primary) (25%)</span>
           </div>
           <div class="color-box bg-accent">
             <span class="color-name">琥珀璀璨金</span>
-            <span class="color-hex">#EAB308 (5%)</span>
+            <span class="color-hex">var(--accent) (5%)</span>
           </div>
           <div class="color-box bg-danger">
             <span class="color-name">虹霓警告紅</span>
-            <span class="color-hex">#EF4444</span>
+            <span class="color-hex">var(--status-alert)</span>
           </div>
         </div>
       </section>

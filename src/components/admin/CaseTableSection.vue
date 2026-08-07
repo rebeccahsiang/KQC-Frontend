@@ -114,7 +114,7 @@ const emit = defineEmits<{
 @import '@/styles/_variables.scss';
 
 .management-table-section {
-  background-color: var(--bg-surface, #1e293b);
+  background-color: var(--bg-surface, var(--primary));
   border-radius: 16px;
   padding: 2rem;
   border: 1px solid var(--color-border, #334155);
@@ -131,7 +131,7 @@ const emit = defineEmits<{
 
 .section-subtitle {
   font-size: 1.1rem;
-  color: var(--color-accent, #eab308);
+  color: var(--color-accent, var(--accent));
   font-weight: bold;
   margin: 0;
 }
@@ -143,7 +143,7 @@ const emit = defineEmits<{
 }
 
 .search-input, .sort-select, .status-filter-select {
-  background-color: var(--bg-main, #0b0f19);
+  background-color: var(--bg-main, var(--bg-main));
   border: 1px solid var(--color-border, #334155);
   padding: 0.6rem 1rem;
   border-radius: 8px;
@@ -152,8 +152,8 @@ const emit = defineEmits<{
 }
 
 .status-filter-select {
-  border-color: var(--color-accent, #eab308);
-  color: var(--color-accent, #eab308);
+  border-color: var(--color-accent, var(--accent));
+  color: var(--color-accent, var(--accent));
   font-weight: bold;
 }
 
@@ -166,7 +166,7 @@ const emit = defineEmits<{
   border-collapse: collapse;
   
   th {
-    background-color: var(--bg-main, #0b0f19);
+    background-color: var(--bg-main, var(--bg-main));
     padding: 1.25rem 1rem;
     color: var(--color-text-muted, #94a3b8);
     font-size: 0.9rem;
@@ -197,7 +197,7 @@ const emit = defineEmits<{
 .area-badge-text {
   font-size: 0.75rem;
   background: rgba(234, 179, 8, 0.1);
-  color: var(--color-accent, #eab308);
+  color: var(--color-accent, var(--accent));
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   margin-right: 0.5rem;
@@ -230,7 +230,7 @@ const emit = defineEmits<{
 .btn-case-id-link {
   background: none;
   border: none;
-  color: var(--color-accent, #eab308);
+  color: var(--color-accent, var(--accent));
   font-weight: bold;
   font-family: monospace;
   cursor: pointer;
@@ -247,7 +247,7 @@ const emit = defineEmits<{
 
 .badge-seller {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--status-alert);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-weight: bold;
@@ -284,7 +284,7 @@ const emit = defineEmits<{
 .restore-btn { background: #d97706; color: #fff; }
 .delete-btn {
   background: rgba(220, 38, 38, 0.15);
-  color: #ef4444;
+  color: var(--status-alert);
   border: 1px solid rgba(220, 38, 38, 0.25);
   
   &:hover {

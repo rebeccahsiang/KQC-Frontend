@@ -127,7 +127,7 @@ const emit = defineEmits<{
 @import '@/styles/_variables.scss';
 
 .form-section {
-  background-color: var(--bg-surface, #1e293b);
+  background-color: var(--bg-surface, var(--primary));
   padding: 2rem;
   border-radius: 16px;
   border: 1px solid var(--color-border, #334155);
@@ -145,7 +145,7 @@ const emit = defineEmits<{
   color: #fff;
   font-weight: bold;
   margin-bottom: 1.5rem;
-  border-left: 4px solid var(--color-accent, #eab308);
+  border-left: 4px solid var(--color-accent, var(--accent));
   padding-left: 0.5rem;
 }
 
@@ -182,7 +182,7 @@ const emit = defineEmits<{
   }
   
   input, select, textarea {
-    background-color: var(--bg-main, #0b0f19);
+    background-color: var(--bg-main, var(--bg-main));
     border: 1px solid var(--color-border, #334155);
     padding: 0.75rem;
     border-radius: 8px;
@@ -190,7 +190,7 @@ const emit = defineEmits<{
     font-size: 0.9rem;
     
     &:focus {
-      border-color: var(--color-accent, #eab308);
+      border-color: var(--color-accent, var(--accent));
       outline: none;
     }
   }
@@ -198,7 +198,7 @@ const emit = defineEmits<{
   .disabled-input {
     opacity: 0.6;
     cursor: not-allowed;
-    background-color: var(--bg-surface, #1e293b);
+    background-color: var(--bg-surface, var(--primary));
   }
   
   textarea {
@@ -219,8 +219,8 @@ const emit = defineEmits<{
 .btn-submit {
   flex: 1;
   padding: 1rem;
-  background-color: var(--color-accent, #eab308);
-  color: #0b0f19;
+  background-color: var(--color-accent, var(--accent));
+  color: var(--bg-main);
   font-weight: bold;
   border-radius: 8px;
   border: none;
@@ -242,7 +242,7 @@ const emit = defineEmits<{
 .btn-switch-to-add {
   padding: 1rem 1.5rem;
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--status-alert);
   font-weight: bold;
   font-size: 0.95rem;
   border: 1px solid rgba(239, 68, 68, 0.3);
@@ -251,7 +251,7 @@ const emit = defineEmits<{
   transition: all 0.2s ease;
   
   &:hover {
-    background: #ef4444;
+    background: var(--status-alert);
     color: #fff;
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
   }

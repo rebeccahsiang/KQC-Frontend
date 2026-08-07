@@ -11,7 +11,7 @@ const isCollapsed = ref(false)
 <template>
   <aside
     :class="[
-      'h-screen sticky top-0 bg-[#1E293B] text-slate-200 transition-all duration-300 flex flex-col border-r border-slate-700/50 shadow-xl z-20 select-none',
+      'h-screen sticky top-0 bg-[var(--primary)] text-slate-200 transition-all duration-300 flex flex-col border-r border-slate-700/50 shadow-xl z-20 select-none',
       isCollapsed ? 'w-24' : 'w-64'
     ]"
   >
@@ -25,7 +25,7 @@ const isCollapsed = ref(false)
       <!-- 左側品牌標誌區塊 -->
       <div class="flex items-center gap-2.5 min-w-0 flex-shrink-0">
         <!-- KQC 品牌 Icon：固定 32x32px 不可壓縮 -->
-        <div class="w-8 h-8 rounded-lg bg-[#EAB308] flex items-center justify-center font-bold text-slate-900 shadow-md flex-shrink-0 min-w-[32px] min-h-[32px]">
+        <div class="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center font-bold text-slate-900 shadow-md flex-shrink-0 min-w-[32px] min-h-[32px]">
           KQC
         </div>
         
@@ -41,7 +41,7 @@ const isCollapsed = ref(false)
       <!-- 收折控制按鈕：獨立 32x32px 實體按鈕，緊跟在 Logo 右側面，絕不重疊 -->
       <button
         @click="isCollapsed = !isCollapsed"
-        class="w-8 h-8 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-[#EAB308] transition-all flex items-center justify-center flex-shrink-0 min-w-[32px] min-h-[32px] shadow-sm"
+        class="w-8 h-8 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-[var(--accent)] transition-all flex items-center justify-center flex-shrink-0 min-w-[32px] min-h-[32px] shadow-sm"
         :title="isCollapsed ? '展開側邊欄' : '折疊側邊欄'"
       >
         <Icon 
@@ -69,7 +69,7 @@ const isCollapsed = ref(false)
     <!-- 3. 底部管理員資訊區塊 -->
     <div class="p-3 border-t border-slate-700/50 flex-shrink-0">
       <div :class="['flex items-center gap-3 p-2 rounded-lg bg-slate-800/60 transition-all', isCollapsed ? 'justify-center' : '']">
-        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-[#EAB308] font-semibold border border-[#EAB308]/30 flex-shrink-0">
+        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-[var(--accent)] font-semibold border border-[var(--accent)]/30 flex-shrink-0">
           <Icon icon="lucide:user-check" class="w-4 h-4" />
         </div>
         <div v-if="!isCollapsed" class="overflow-hidden">
@@ -93,7 +93,7 @@ const isCollapsed = ref(false)
     background: rgba(255, 255, 255, 0.12);
     border-radius: 4px;
     &:hover {
-      background: #EAB308;
+      background: var(--accent);
     }
   }
   scrollbar-width: thin;

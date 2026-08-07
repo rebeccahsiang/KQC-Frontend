@@ -203,7 +203,7 @@ onMounted(async () => {
   
   &:hover {
     background-color: var(--color-accent);
-    color: #0b0f19;
+    color: var(--bg-main);
   }
 }
 
@@ -258,7 +258,7 @@ onMounted(async () => {
 
 .kqc-gradient-btn {
   background: linear-gradient(135deg, var(--color-accent), #facc15);
-  color: #0b0f19;
+  color: var(--bg-main);
   border: none;
   padding: 0.75rem 2rem;
   border-radius: 8px;

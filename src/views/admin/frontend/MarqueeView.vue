@@ -14,20 +14,20 @@ const marquees = ref([
     <!-- 頁面標頭 -->
     <div class="flex items-center justify-between pb-2 border-b border-slate-800">
       <h2 class="text-xl font-bold tracking-wide text-white flex items-center gap-2.5">
-        <span class="w-1.5 h-6 bg-[#EAB308] rounded-full"></span>
+        <span class="w-1.5 h-6 bg-[var(--accent)] rounded-full"></span>
         前台公告與跑馬燈廣播管理
       </h2>
-      <button class="px-4 py-2 bg-[#EAB308] hover:bg-[#FACC15] text-slate-900 font-semibold rounded-lg text-sm transition-colors flex items-center gap-2 shadow-md">
+      <button class="px-4 py-2 bg-[var(--accent)] hover:bg-[#FACC15] text-slate-900 font-semibold rounded-lg text-sm transition-colors flex items-center gap-2 shadow-md">
         <Icon icon="lucide:plus" class="w-4 h-4" />
         新增廣播公告
       </button>
     </div>
 
     <!-- 跑馬燈清單卡片區域 -->
-    <div class="bg-[#1E293B]/60 border border-slate-700/50 rounded-xl p-6 shadow-xl space-y-4">
+    <div class="bg-[var(--primary)]/60 border border-slate-700/50 rounded-xl p-6 shadow-xl space-y-4">
       <div v-for="item in marquees" :key="item.id" class="flex items-center justify-between p-4 bg-slate-800/80 rounded-lg border border-slate-700/40">
         <div class="flex items-center gap-3">
-          <span class="text-xs px-2 py-0.5 bg-[#EAB308]/10 text-[#EAB308] border border-[#EAB308]/20 rounded font-mono">
+          <span class="text-xs px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 rounded font-mono">
             {{ item.id }}
           </span>
           <span class="text-sm text-slate-200">{{ item.content }}</span>

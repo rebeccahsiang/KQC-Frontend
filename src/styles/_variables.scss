@@ -1,7 +1,9 @@
 /* ==========================================================================
 🎨 三爵資訊 (KQC) 企業級 Design Tokens 與主題系統規格表
 規範標準：70/25/5 黃金配色 x RWD 8pt 網格 x 執行期雙主題切換
-========================================================================== */
+========================================================================= */
+
+@import "@/assets/styles/_tokens.scss";
 
 // 0. 全域 Google Fonts 字型載入 (Noto Sans TC + Inter)
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
@@ -167,11 +169,10 @@ $kqc-radius-full: 9999px;  // 膠囊/圓形按鈕
 }
 
 // SCSS 向下相容別名
-$color-base-light: var(--kqc-bg-main);
-$color-base-white: var(--kqc-bg-card);
-$color-primary:    var(--kqc-primary);
-$color-accent:     var(--kqc-accent);
-$color-danger:     var(--kqc-danger);
+$color-base-light: var(--bg-main);
+$color-base-white: var(--bg-card);
+// $color-primary 與 $color-accent 已在 _tokens.scss 中定義為靜態值
+$color-danger:     var(--status-alert);
 $color-success:    var(--kqc-success);
 $color-warning:    var(--kqc-warning);
 $color-info:       var(--kqc-info);

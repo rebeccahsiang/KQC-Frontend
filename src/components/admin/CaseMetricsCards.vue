@@ -19,19 +19,19 @@ withDefaults(defineProps<{ metrics?: MetricsData }>(), {
 <template>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     <!-- Card 1: 供需晴雨窗 -->
-    <div class="metric-card bg-[#111827] border border-gray-800 rounded-xl p-5 shadow-lg">
+    <div class="metric-card bg-[var(--bg-card)] border border-gray-800 rounded-xl p-5 shadow-lg">
       <div class="flex items-center justify-center gap-2 text-gray-300 font-medium mb-4">
         <span>📊 供需晴雨窗 (買家比例)</span>
       </div>
       <div class="flex justify-center items-center">
-        <div class="relative w-24 h-24 rounded-full border-4 border-[#EAB308] flex items-center justify-center">
-          <span class="text-xl font-bold text-[#EAB308]">{{ metrics.ratio }}%</span>
+        <div class="relative w-24 h-24 rounded-full border-4 border-[var(--accent)] flex items-center justify-center">
+          <span class="text-xl font-bold text-[var(--accent)]">{{ metrics.ratio }}%</span>
         </div>
       </div>
     </div>
 
     <!-- Card 2: 出讓賣方 (供應) -->
-    <div class="metric-card bg-[#111827] border border-gray-800 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+    <div class="metric-card bg-[var(--bg-card)] border border-gray-800 rounded-xl p-5 shadow-lg flex flex-col justify-between">
       <div class="flex items-center justify-center gap-2 text-gray-300 font-medium">
         <span class="w-3 h-3 bg-red-500 inline-block rounded-sm"></span>
         <span>出讓賣方 ( 供應 )</span>
@@ -43,7 +43,7 @@ withDefaults(defineProps<{ metrics?: MetricsData }>(), {
     </div>
 
     <!-- Card 3: 購買接收請求 (需求) -->
-    <div class="metric-card bg-[#111827] border border-gray-800 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+    <div class="metric-card bg-[var(--bg-card)] border border-gray-800 rounded-xl p-5 shadow-lg flex flex-col justify-between">
       <div class="flex items-center justify-center gap-2 text-gray-300 font-medium">
         <span class="w-3 h-3 bg-emerald-500 inline-block rounded-sm"></span>
         <span>購買接收請求 ( 需求 )</span>

@@ -46,8 +46,8 @@ const formattedCapital = computed(() => {
           :class="[
             'text-xs font-bold px-2.5 py-1 rounded-md',
             isBuyer
-              ? 'bg-[#1E293B] text-white'
-              : 'bg-[#EAB308] text-[#1E293B]',
+              ? 'bg-[var(--primary)] text-white'
+              : 'bg-[var(--accent)] text-[var(--primary)]',
           ]"
         >
           {{ isBuyer ? '誠意買家委託' : '精選待售資產' }}
@@ -63,7 +63,7 @@ const formattedCapital = computed(() => {
 
     <!-- Body: 標題與核心需求細節 -->
     <div class="space-y-4">
-      <h3 class="font-bold text-lg text-[#1E293B] dark:text-white line-clamp-2 leading-snug">
+      <h3 class="font-bold text-lg text-[var(--primary)] dark:text-white line-clamp-2 leading-snug">
         {{ caseData.title }}
       </h3>
 
@@ -74,7 +74,7 @@ const formattedCapital = computed(() => {
         </div>
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-xs">{{ isBuyer ? '預算資本額：' : '預定轉讓價：' }}</span>
-          <span class="font-bold text-[#EAB308]">{{ formattedCapital }}</span>
+          <span class="font-bold text-[var(--accent)]">{{ formattedCapital }}</span>
         </div>
       </div>
 

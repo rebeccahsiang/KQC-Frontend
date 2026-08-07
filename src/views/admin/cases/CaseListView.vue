@@ -88,11 +88,11 @@ const handleSaveEdit = () => {
 </script>
 
 <template>
-  <div class="case-list-page p-6 bg-[#0B0F19] min-h-screen text-white">
+  <div class="case-list-page p-6 bg-[var(--bg-main)] min-h-screen text-white">
     <!-- 頂部控制列：標題與狀態篩選條件清單 -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-gray-800 pb-4">
       <div>
-        <h1 class="text-2xl font-bold text-[#EAB308] flex items-center gap-2">
+        <h1 class="text-2xl font-bold text-[var(--accent)] flex items-center gap-2">
           <span>📋</span> 案件列表管理
         </h1>
         <p class="text-xs text-gray-400 mt-1">即時檢視、篩選與修改平台跨區資產仲介案件</p>
@@ -103,7 +103,7 @@ const handleSaveEdit = () => {
         <label class="text-sm text-gray-400">案件狀態篩選：</label>
         <select
           v-model="selectedStatusFilter"
-          class="bg-[#1E293B] border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:border-[#EAB308] focus:outline-none"
+          class="bg-[var(--primary)] border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:border-[var(--accent)] focus:outline-none"
         >
           <option value="all">全部分類 (All)</option>
           <option value="active">🟢 仲介中 (Active)</option>
@@ -114,9 +114,9 @@ const handleSaveEdit = () => {
     </div>
 
     <!-- 案件 Table 資料列表 -->
-    <div class="bg-[#111827] border border-gray-800 rounded-xl overflow-hidden shadow-xl">
+    <div class="bg-[var(--bg-card)] border border-gray-800 rounded-xl overflow-hidden shadow-xl">
       <table class="w-full text-left border-collapse">
-        <thead class="bg-[#1E293B] text-gray-300 text-xs uppercase">
+        <thead class="bg-[var(--primary)] text-gray-300 text-xs uppercase">
           <tr>
             <th class="p-4">案件視覺/預設照片</th>
             <th class="p-4">案件編號</th>
@@ -161,7 +161,7 @@ const handleSaveEdit = () => {
             <td class="p-4 text-center">
               <button
                 @click="openEditModal(item)"
-                class="bg-[#EAB308] hover:bg-[#CA8A04] text-gray-900 font-bold px-3 py-1.5 rounded text-xs transition-colors"
+                class="bg-[var(--accent)] hover:bg-[#CA8A04] text-gray-900 font-bold px-3 py-1.5 rounded text-xs transition-colors"
               >
                 ✏️ 修改內容
               </button>
@@ -173,9 +173,9 @@ const handleSaveEdit = () => {
 
     <!-- 編輯案件對話框 Modal -->
     <div v-if="isEditModalOpen" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div class="bg-[#111827] border border-gray-700 rounded-xl max-w-lg w-full p-6 shadow-2xl">
+      <div class="bg-[var(--bg-card)] border border-gray-700 rounded-xl max-w-lg w-full p-6 shadow-2xl">
         <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
-          <h3 class="text-lg font-bold text-[#EAB308]">修改案件資料：{{ editingForm.caseNumber }}</h3>
+          <h3 class="text-lg font-bold text-[var(--accent)]">修改案件資料：{{ editingForm.caseNumber }}</h3>
           <button @click="isEditModalOpen = false" class="text-gray-400 hover:text-white">✕</button>
         </div>
 
@@ -185,7 +185,7 @@ const handleSaveEdit = () => {
             <input
               v-model="editingForm.title"
               type="text"
-              class="w-full bg-[#1E293B] border border-gray-700 rounded p-2 text-white focus:border-[#EAB308] focus:outline-none"
+              class="w-full bg-[var(--primary)] border border-gray-700 rounded p-2 text-white focus:border-[var(--accent)] focus:outline-none"
             />
           </div>
 
@@ -194,7 +194,7 @@ const handleSaveEdit = () => {
             <input
               v-model.number="editingForm.capitalAmount"
               type="number"
-              class="w-full bg-[#1E293B] border border-gray-700 rounded p-2 text-white focus:border-[#EAB308] focus:outline-none"
+              class="w-full bg-[var(--primary)] border border-gray-700 rounded p-2 text-white focus:border-[var(--accent)] focus:outline-none"
             />
           </div>
 
@@ -202,7 +202,7 @@ const handleSaveEdit = () => {
             <label class="block text-xs font-medium text-gray-400 mb-1">案件生命週期狀態：</label>
             <select
               v-model="editingForm.status"
-              class="w-full bg-[#1E293B] border border-gray-700 rounded p-2 text-white focus:border-[#EAB308] focus:outline-none"
+              class="w-full bg-[var(--primary)] border border-gray-700 rounded p-2 text-white focus:border-[var(--accent)] focus:outline-none"
             >
               <option value="active">🟢 仲介中 (Active)</option>
               <option value="hidden">🟡 暫停/隱藏 (Hidden)</option>
@@ -220,7 +220,7 @@ const handleSaveEdit = () => {
           </button>
           <button
             @click="handleSaveEdit"
-            class="px-4 py-2 bg-[#EAB308] hover:bg-[#CA8A04] text-gray-900 rounded text-xs font-bold"
+            class="px-4 py-2 bg-[var(--accent)] hover:bg-[#CA8A04] text-gray-900 rounded text-xs font-bold"
           >
             儲存變更
           </button>

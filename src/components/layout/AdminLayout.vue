@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import SidebarNav from './sidebar/SidebarNav.vue'
+import Sidebar from './Sidebar.vue'
 import AppHeader from './AppHeader.vue'
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-[#0B0F19] text-slate-100 font-sans">
-    <!-- 1. 左側選單：SidebarNav -->
-    <SidebarNav />
+  <div class="flex min-h-screen bg-[var(--bg-main)] text-slate-100 font-sans">
+    <!-- 1. 左側選單：Sidebar -->
+    <Sidebar />
 
     <!-- 2. 右側主要視區 -->
     <div class="flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden">
@@ -33,7 +33,7 @@ import AppHeader from './AppHeader.vue'
     background: rgba(255, 255, 255, 0.15);
     border-radius: 3px;
     &:hover {
-      background: #EAB308;
+      background: var(--accent);
     }
   }
 }

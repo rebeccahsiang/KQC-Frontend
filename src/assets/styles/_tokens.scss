@@ -1,0 +1,26 @@
+// =========================================================================
+// 🎨 三爵資訊 (KQC) 全域 Design Tokens 與主題變數規格表
+// =========================================================================
+
+// 1. SCSS 靜態編譯期變數 (SCSS Global Variables)
+$color-primary: #1E293B;
+$color-accent: #EAB308;
+
+// 2. 原生 CSS Custom Properties (亮/暗雙主題切換)
+:root {
+  // ☀️ LIGHT THEME (明亮模式)
+  --bg-main: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --primary: #1E293B;
+  --accent: #EAB308;
+  --status-alert: #EF4444;
+}
+
+[data-theme="dark"] {
+  // 🌙 DARK THEME (暗黑模式)
+  --bg-main: #0B0F19;
+  --bg-card: #111827;
+  --primary: #38BDF8; // 暗色高亮主色
+  --accent: #EAB308;  // 琥珀金保持點睛
+  --status-alert: #F87171;
+}

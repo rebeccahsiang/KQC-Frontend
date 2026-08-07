@@ -29,7 +29,7 @@ const handleClick = () => {
       :class="[
         'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 group text-sm font-medium',
         route.path === item.path
-          ? 'bg-[#EAB308] text-slate-950 font-semibold shadow-lg shadow-amber-500/20'
+          ? 'bg-[var(--accent)] text-slate-950 font-semibold shadow-lg shadow-amber-500/20'
           : 'hover:bg-slate-800 text-slate-300 hover:text-white'
       ]"
       v-tooltip.right="isCollapsed ? item.title : ''"

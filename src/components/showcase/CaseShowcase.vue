@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Card from 'primevue/card'
-import CaseCard from '@/components/showcase/CaseShowcase.vue'
+import CaseCard from '@/components/showcase/CaseCard.vue'
 
 // 💡 運用 TypeScript 定義嚴謹的 Props 接收外層的案源資料陣列
 defineProps<{
@@ -18,7 +18,7 @@ defineProps<{
     
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
       <!-- 真實動態卡牌渲染區 -->
-      <CaseCard v-for="item in casesData" :key="item.caseId" :data="item" />
+      <CaseCard v-for="item in casesData" :key="item.caseId" :caseData="item" />
       
       <!-- 立即委託引導卡牌 -->
       <Card class="shadow-xl rounded-2xl border border-dashed border-amber-500/30 bg-surface-50/5 dark:bg-surface-800/10 text-center flex flex-col justify-center items-center p-6 h-full">

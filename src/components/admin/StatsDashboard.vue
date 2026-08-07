@@ -38,7 +38,7 @@ defineProps<{
 }
 
 .stat-card {
-  background-color: var(--bg-surface, #1e293b);
+  background-color: var(--bg-surface, var(--primary));
   border-radius: 12px;
   padding: 1.5rem;
   text-align: center;
@@ -46,7 +46,7 @@ defineProps<{
   
   h3 {
     font-size: 0.95rem;
-    color: var(--color-text-main, #f8fafc);
+    color: var(--color-text-main, var(--bg-main));
     margin-bottom: 1rem;
   }
 }
@@ -54,14 +54,14 @@ defineProps<{
 .circle-progress {
   width: 70px;
   height: 70px;
-  border: 4px solid var(--color-accent, #eab308);
+  border: 4px solid var(--color-accent, var(--accent));
   border-radius: 50%;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  color: var(--color-accent, #eab308);
+  color: var(--color-accent, var(--accent));
 }
 
 .stat-num {
@@ -69,7 +69,7 @@ defineProps<{
   font-weight: bold;
   margin: 0;
   
-  &.text-red { color: #ef4444; }
+  &.text-red { color: var(--status-alert); }
   &.text-green { color: #10b981; }
 }
 </style>
