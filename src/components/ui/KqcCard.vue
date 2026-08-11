@@ -17,7 +17,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   variant: 'default',
   padding: 'md',
-  hoverable: false,
+  hoverable: true,
   headerBorder: false,
   footerBorder: false,
 })
@@ -27,24 +27,24 @@ const paddingClasses = computed(() => {
     case 'none':
       return 'p-0'
     case 'sm':
-      return 'p-4'
+      return 'p-3'
     case 'lg':
-      return 'p-8'
+      return 'p-6'
     case 'md':
     default:
-      return 'p-6'
+      return 'p-4'
   }
 })
 
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'flat':
-      return 'bg-gray-50 dark:bg-gray-800/50 border-none'
+      return 'kqc-card--flat'
     case 'outline':
-      return 'bg-transparent border border-gray-200 dark:border-gray-800 shadow-none'
+      return 'kqc-card--outline'
     case 'default':
     default:
-      return 'bg-white dark:bg-[var(--bg-card)] border border-gray-200 dark:border-gray-800 shadow-sm'
+      return 'kqc-card--default'
   }
 })
 </script>
@@ -52,41 +52,69 @@ const variantClasses = computed(() => {
 <template>
   <div
     :class="[
-      'rounded-xl transition-all duration-200 overflow-hidden flex flex-col',
+      'kqc-card rounded-xl transition-all duration-300 overflow-hidden flex flex-col h-full',
       variantClasses,
-      hoverable ? 'hover:shadow-lg hover:-translate-y-0.5 hover:border-[var(--primary)]/30 dark:hover:border-[var(--accent)]/50' : '',
+      { 'kqc-card--hoverable': hoverable },
     ]"
   >
-    <!-- 卡片頂部 Header 插槽 -->
+    <!-- 1. 頂部視覺展示區 (Media Slot) -->
+    <div v-if="$slots.media" class="relative w-full overflow-hidden shrink-0">
+      <slot name="media" />
+    </div>
+
+    <!-- 2. 卡片標題區 (Header Slot) -->
     <div
       v-if="$slots.header"
       :class="[
-        'px-6 py-4 flex items-center justify-between',
-        headerBorder ? 'border-b border-gray-100 dark:border-gray-800' : '',
+        'px-4 py-3 flex items-center justify-between shrink-0',
+        headerBorder ? 'border-b border-[var(--kqc-border)]' : '',
       ]"
     >
       <slot name="header" />
     </div>
 
-    <!-- 視覺展示區域插槽 -->
-    <div v-if="$slots.media" class="w-full overflow-hidden">
-      <slot name="media" />
-    </div>
-
-    <!-- 卡片主要內容區塊 (Body) -->
-    <div :class="['flex-1', paddingClasses]">
+    <!-- 3. 卡片主要內容區 (Body) -->
+    <div :class="['flex-1 flex flex-col', paddingClasses]">
       <slot />
     </div>
 
-    <!-- 卡片底部 Footer 插槽 -->
+    <!-- 4. 卡片底部操作區 (Footer Slot) -->
     <div
       v-if="$slots.footer"
       :class="[
-        'px-6 py-4 bg-gray-50/50 dark:bg-gray-900/30 flex items-center justify-between mt-auto',
-        footerBorder ? 'border-t border-gray-100 dark:border-gray-800' : '',
+        'px-4 py-3 bg-transparent flex items-center justify-between mt-auto shrink-0',
+        footerBorder ? 'border-t border-[var(--kqc-border)]' : '',
       ]"
     >
       <slot name="footer" />
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.kqc-card {
+  &--default {
+    background-color: var(--kqc-bg-card);
+    border: 1px solid var(--kqc-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  &--flat {
+    background-color: var(--kqc-bg-hover);
+    border: 1px solid transparent;
+  }
+
+  &--outline {
+    background-color: transparent;
+    border: 1px solid var(--kqc-border);
+  }
+
+  &--hoverable {
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+      border-color: var(--kqc-accent);
+    }
+  }
+}
+</style>

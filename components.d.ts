@@ -11,10 +11,12 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AdminHeader: typeof import('./src/components/layout/AdminHeader.vue')['default']
     AdminLayout: typeof import('./src/components/layout/AdminLayout.vue')['default']
     AiSearchBar: typeof import('./src/components/showcase/AiSearchBar.vue')['default']
     AppFooter: typeof import('./src/components/layout/AppFooter.vue')['default']
     AppHeader: typeof import('./src/components/layout/AppHeader.vue')['default']
+    AuthModal: typeof import('./src/components/auth/AuthModal.vue')['default']
     CaseCard: typeof import('./src/components/showcase/CaseCard.vue')['default']
     CaseDetailModal: typeof import('./src/components/admin/CaseDetailModal.vue')['default']
     CaseFormModal: typeof import('./src/components/admin/CaseFormModal.vue')['default']
@@ -22,6 +24,7 @@ declare module 'vue' {
     CaseMetricsCards: typeof import('./src/components/admin/CaseMetricsCards.vue')['default']
     CaseShowcase: typeof import('./src/components/showcase/CaseShowcase.vue')['default']
     CaseTableSection: typeof import('./src/components/admin/CaseTableSection.vue')['default']
+    FrontHeader: typeof import('./src/components/layout/FrontHeader.vue')['default']
     KqcBadge: typeof import('./src/components/ui/KqcBadge.vue')['default']
     KqcBreadcrumb: typeof import('./src/components/ui/KqcBreadcrumb.vue')['default']
     KqcButton: typeof import('./src/components/ui/KqcButton.vue')['default']

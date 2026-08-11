@@ -1,0 +1,630 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Icon } from '@iconify/vue'
+import { useThemeStore } from '@/stores/themeStore'
+import { useCaseStore } from '@/stores/useCaseStore'
+import { useAuthStore } from '@/stores/authStore' // 1. 匯入 Auth Store
+
+// 型別宣告 (Types Definition)
+interface NavItem {
+  name: string
+  path: string
+}
+
+interface BreadcrumbItem {
+  name: string
+  path: string
+}
+
+const route = useRoute()
+const router = useRouter()
+const themeStore = useThemeStore()
+const caseStore = useCaseStore()
+const authStore = useAuthStore() // 2. 實例化 authStore (徹底修復 Template 紅字)
+
+// 頁面滾動監聽：超過 50px 觸發 A 區塊平滑折疊收合
+const isScrolled = ref<boolean>(false)
+
+const handleScroll = (): void => {
+  const scrollTop = window.scrollY || document.documentElement.scrollTop
+  isScrolled.value = scrollTop > 50
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+// 導覽選單定義
+const navItems: NavItem[] = [
+  { name: '產品櫥窗', path: '/products' },
+  { name: '我們公司', path: '/company' },
+  { name: '產業洞察', path: '/insights' },
+  { name: '聯絡我們', path: '/contact' },
+]
+
+// 動態麵包屑 (Breadcrumbs) 計算
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  const matchedRoutes = route.matched.filter((item) => item.meta && item.meta.title)
+  if (matchedRoutes.length > 0) {
+    return matchedRoutes.map((item) => ({
+      name: item.meta.title as string,
+      path: item.path || '/',
+    }))
+  }
+  return [
+    { name: '首頁', path: '/' },
+    { name: '業務櫥窗', path: '/products' },
+  ]
+})
+
+// 全域語意搜尋邏輯
+const searchQuery = ref<string>('')
+
+const handleSearch = (): void => {
+  const query = searchQuery.value.trim()
+  if (!query) return
+
+  caseStore.setFilters({ searchQuery: query })
+  if (route.path !== '/products') {
+    router.push({ path: '/products' })
+  }
+}
+
+// 語音輸入邏輯 (Web Speech API)
+const handleVoiceInput = (): void => {
+  const globalWindow = window as any
+  const SpeechRecognition = globalWindow.SpeechRecognition || globalWindow.webkitSpeechRecognition
+
+  if (!SpeechRecognition) {
+    alert('您的瀏覽器暫時不支援語音辨識，請直接輸入關鍵字。')
+    return
+  }
+
+  const recognition = new SpeechRecognition()
+  recognition.lang = 'zh-TW'
+  recognition.continuous = false
+  recognition.interimResults = false
+
+  recognition.onresult = (event: any): void => {
+    const transcript = event.results[0][0].transcript
+    searchQuery.value = transcript
+    handleSearch()
+  }
+
+  recognition.onerror = (event: any): void => {
+    console.error('語音辨識失敗:', event.error)
+  }
+
+  recognition.start()
+}
+</script>
+
+<template>
+  <header class="kqc-sticky-header">
+    <!-- ========================================================================= -->
+    <!-- 🟥 【全域區 A 主導覽列】：向下滾動時滑順折疊收合 -->
+    <!-- ========================================================================= -->
+    <div class="header-section-a" :class="{ 'is-collapsed': isScrolled }">
+      <div class="header-inner-a">
+        <!-- 1. 左側 Logo 品牌區 -->
+        <router-link to="/" class="brand-link">
+          <div class="brand-logo-badge">KQC</div>
+          <div class="brand-info">
+            <h1 class="brand-title">三爵資訊</h1>
+            <p class="brand-subtitle">智慧運輸與資產交易平台</p>
+          </div>
+        </router-link>
+
+        <!-- 2. 中央即時動態跑馬燈 -->
+        <div class="market-ticker-wrapper">
+          <span class="ticker-badge">
+            <span class="ping-dot"></span>
+            即時動態
+          </span>
+          <div class="ticker-content">
+            <span class="ticker-text">
+              ⚡ 恭喜【甲種運輸業牌照 #KQC-2026-0814】成功完成誠意撮合！目前線上優質待售車隊資產 12 筆，歡迎車行老闆免費預約諮詢...
+            </span>
+          </div>
+        </div>
+
+        <!-- 3. A 區主選單連結 (明確導向 /products, /company, /insights, /contact) -->
+        <nav class="main-nav-links">
+          <router-link
+            v-for="item in navItems"
+            :key="item.path"
+            :to="item.path"
+            class="nav-item"
+            active-class="nav-item--active"
+          >
+            {{ item.name }}
+          </router-link>
+        </nav>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 🟩 【B 功能導覽列】：全程吸頂 -->
+    <!-- ========================================================================= -->
+    <div class="header-section-b">
+      <div class="header-inner-b">
+        <!-- 1. 左側：動態麵包屑 -->
+        <div class="breadcrumbs-container">
+          <Icon icon="lucide:home" class="home-icon" />
+          <template v-for="(crumb, index) in breadcrumbs" :key="index">
+            <Icon icon="lucide:chevron-right" class="chevron-icon" />
+            <router-link
+              :to="crumb.path"
+              class="crumb-item"
+              :class="{ 'is-active': index === breadcrumbs.length - 1 }"
+            >
+              {{ crumb.name }}
+            </router-link>
+          </template>
+        </div>
+
+        <!-- 2. 中央：語意搜尋框 -->
+      <div class="search-bar-container">
+        <div class="search-input-group">
+          <Icon icon="lucide:search" class="search-icon" aria-hidden="true" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="全域搜尋：例如「甲種運輸」、「北部計程車牌」..."
+            class="search-input"
+            @keyup.enter="handleSearch"
+          />
+          <button
+            type="button"
+            class="mic-btn"
+            title="語音輸入語意需求"
+            aria-label="語音輸入"
+            @click="handleVoiceInput"
+          >
+            <Icon icon="lucide:mic" class="mic-icon" />
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. 右側：功能操作與會員登入/登出入口 -->
+      <div class="action-controls">
+        <!-- ☀️/🌙 明暗雙主題切換按鈕 -->
+        <button
+          type="button"
+          class="control-btn theme-btn"
+          :title="themeStore.isDark ? '切換為雲霧極光白亮色主題' : '切換為黑曜石暗黑戰情室'"
+          @click="themeStore.toggleTheme"
+        >
+          <Icon
+            :icon="themeStore.isDark ? 'lucide:sun' : 'lucide:moon'"
+            class="control-icon"
+          />
+        </button>
+      
+        <!-- FAQ 按鈕 -->
+        <button type="button" class="control-btn faq-btn" title="常見問題 FAQ">
+          <Icon icon="lucide:book-open" class="control-icon" />
+        </button>
+      
+        <!-- 系統提醒 -->
+        <button type="button" class="control-btn bell-btn" title="即時系統訊息提醒">
+          <Icon icon="lucide:bell" class="control-icon" />
+          <span class="pulse-ring"></span>
+          <span class="pulse-dot"></span>
+        </button>
+      
+        <!-- 狀態 A：未登入 -> 顯示會員登入按鈕 -->
+        <button
+          v-if="!authStore.isAuthenticated"
+          type="button"
+          class="control-btn login-btn"
+          title="會員登入"
+          @click="authStore.openAuthModal('login')"
+        >
+          <Icon icon="lucide:user" class="control-icon" />
+        </button>
+      
+        <!-- 狀態 B：已登入 -> 顯示使用者名稱與登出按鈕 -->
+        <div v-else class="user-profile-menu">
+          <span class="user-name-badge">{{ authStore.adminName }}</span>
+          <button
+            type="button"
+            class="control-btn logout-btn"
+            title="安全登出"
+            @click="authStore.logout()"
+          >
+            <Icon icon="lucide:log-out" class="control-icon danger" />
+          </button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </header>
+</template>
+
+<style lang="scss" scoped>
+.kqc-sticky-header {
+  position: sticky;
+  top: 1rem; /* 向上留出距離，形成浮動氣質 */
+  z-index: 50;
+  
+  /* 1. 寬度與置中處理 */
+  width: 95%;
+  max-width: 1400px; /* 業界標準：避免 4K 超寬螢幕拉得過寬 */
+  margin: 0 auto;    /* 關鍵：利用外邊距讓 95% 寬度在父容器中水平居中 */
+
+  /* 2. 去除底色與外框 */
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.header-section-a {
+  max-height: 120px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-line);
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.25s ease,
+              visibility 0.25s ease,
+              padding 0.3s ease;
+
+  &.is-collapsed {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    border-bottom-color: transparent !important;
+    padding: 0 !important;
+  }
+}
+
+.header-inner-a {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  flex-shrink: 0;
+
+  .brand-logo-badge {
+    width: 3.5rem;
+    height: 3.5rem;
+    background-color: var(--accent-gold, #eab308);
+    color: #1e293b;
+    font-weight: 900;
+    font-size: 1.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .brand-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .brand-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+}
+
+.market-ticker-wrapper {
+  flex: 1;
+  max-width: 45rem;
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-line);
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  overflow: hidden;
+
+  .ticker-badge {
+    background-color: rgba(234, 179, 8, 0.15);
+    color: #ca8a04;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-shrink: 0;
+
+    .ping-dot {
+      width: 0.375rem;
+      height: 0.375rem;
+      border-radius: 50%;
+      background-color: var(--accent-gold, #eab308);
+    }
+  }
+
+  .ticker-content {
+    white-space: nowrap;
+    overflow: hidden;
+    color: var(--text-muted);
+
+    .ticker-text {
+      display: inline-block;
+      animation: marquee 28s linear infinite;
+    }
+  }
+}
+
+.main-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  flex-shrink: 0;
+
+  .nav-item {
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 0.25rem 0;
+    position: relative;
+    transition: color 0.2s ease;
+
+    &:hover,
+    &--active {
+      color: var(--accent-gold, #eab308);
+      font-weight: 700;
+    }
+
+    &--active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--accent-gold, #eab308);
+      border-radius: 9999px;
+    }
+  }
+}
+
+.header-section-b {
+  padding: 0.625rem 0;
+}
+
+.header-inner-b {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.breadcrumbs-container {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+
+  .home-icon {
+    width: 0.9375rem;
+    height: 0.9375rem;
+    color: var(--accent-gold, #eab308);
+  }
+
+  .chevron-icon {
+    width: 0.8125rem;
+    height: 0.8125rem;
+    opacity: 0.5;
+  }
+
+  .crumb-item {
+    color: var(--text-muted);
+    text-decoration: none;
+
+    &.is-active {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+  }
+}
+
+.search-bar-container {
+  flex: 1;
+  max-width: 32rem; /* 從 22rem 拓寬至 32rem (512px)，確保 Placeholder 不會被截斷 */
+  margin: 0 1rem;
+
+  .search-input-group {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.4rem 0.85rem;
+    background-color: var(--bg-card, #ffffff);
+    
+    /* 1. 將邊框與圓角完全收納在父容器 */
+    border: 1px solid var(--border-line, #e2e8f0);
+    border-radius: 9999px; /* 現代 B2B 膠囊型外框 (Pill Shape) */
+    transition: all 0.2s ease-in-out;
+
+    /* 2. 利用 :focus-within 實現整體金色光暈與邊框高亮 */
+    &:focus-within {
+      border-color: var(--accent-gold, #eab308);
+      box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.18);
+    }
+
+    &:hover:not(:focus-within) {
+      border-color: var(--accent-gold-hover, #facc15);
+    }
+
+    .search-icon {
+      width: 1rem;
+      height: 1rem;
+      color: var(--text-muted, #64748b);
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 0;
+      margin: 0 0.5rem;
+      background: transparent;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      font-size: 0.8125rem;
+      color: var(--text-primary, #1e293b);
+
+      &::placeholder {
+        color: var(--text-muted, #64748b);
+      }
+    }
+
+    .mic-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.2rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted, #64748b);
+      flex-shrink: 0;
+      transition: color 0.15s ease, transform 0.15s ease;
+
+      &:hover {
+        color: var(--accent-gold, #eab308);
+        transform: scale(1.1);
+      }
+    }
+  }
+}
+
+.action-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+
+  .control-btn {
+    padding: 0.4375rem;
+    border-radius: 0.5rem;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-line);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+
+    &:hover {
+      color: var(--accent-gold, #eab308);
+      border-color: var(--accent-gold, #eab308);
+    }
+
+    .control-icon,
+    .theme-icon {
+      width: 0.9375rem;
+      height: 0.9375rem;
+    }
+
+    .theme-icon {
+      color: var(--accent-gold, #eab308);
+    }
+
+    .faq-text {
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+  }
+
+  .bell-btn {
+    position: relative;
+    .pulse-ring {
+      position: absolute;
+      top: 0.25rem;
+      right: 0.25rem;
+      width: 0.4375rem;
+      height: 0.4375rem;
+      background-color: #ef4444;
+      border-radius: 50%;
+      animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+    .pulse-dot {
+      position: absolute;
+      top: 0.25rem;
+      right: 0.25rem;
+      width: 0.4375rem;
+      height: 0.4375rem;
+      background-color: #ef4444;
+      border-radius: 50%;
+    }
+  }
+
+  .divider-line {
+    width: 1px;
+    height: 0.875rem;
+    background-color: var(--border-line);
+    margin: 0 0.125rem;
+  }
+
+  .war-room-cta {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.8125rem;
+    border-radius: 0.5rem;
+    background-color: var(--accent-gold, #eab308);
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-decoration: none;
+
+    &:hover {
+      filter: brightness(1.08);
+    }
+
+    .cta-icon {
+      width: 0.9375rem;
+      height: 0.9375rem;
+    }
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+</style>

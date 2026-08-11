@@ -1,0 +1,55 @@
+// ==========================================================================
+// 🚀 三爵資訊 (KQC) 全域排版系統 (Typography)
+// ==========================================================================
+
+// 🎯 關鍵修復：必須在此檔案頂層明確引入 Tokens，否則 Dart Sass 無法識別變數
+@use "./tokens" as *;
+
+// ==========================================================================
+// 🖋️ 三爵資訊 (KQC) 排版與字型系統 (Typography System)
+// 規範標準：Inter + Noto Sans TC x 8pt 網格律動
+// ==========================================================================
+
+// 全域基礎字體與渲染設定
+body, input, textarea, select, button {
+  font-family: $kqc-font-family;
+  color: var(--text-main);
+  line-height: 1.6;
+  font-size: 1rem; // 16px Base
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// 標題階層 (Headings Architecture)
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-family: $kqc-font-family;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: 2.25rem; } // 36px - 戰情室 / 頁面主標題
+h2 { font-size: 1.75rem; } // 28px - 區塊標題 (例如：三爵精選)
+h3 { font-size: 1.35rem; } // 21.6px - 卡片與彈窗標題
+h4 { font-size: 1.125rem; } // 18px - 表單 Label / 次要標題
+
+// 文字與內文語意輔助類別 (Typography Utilities)
+p, span, li {
+  margin-bottom: 1rem;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.text-main { color: var(--text-main) !important; }
+.text-muted { color: var(--text-muted) !important; }
+.text-brand { color: var(--brand-primary) !important; }
+.text-danger { color: var(--status-alert) !important; }
+
+// B2B 數據標籤微調
+.text-price {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  color: var(--brand-primary);
+}

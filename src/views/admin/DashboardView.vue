@@ -245,4 +245,23 @@ const deleteCase = async (id: string) => {
 .detail-modal-table { width: 100%; border-collapse: collapse; th { width: 30%; background: var(--bg-main); color: #94a3b8; text-align: left; padding: 0.75rem 1rem; font-size: 0.85rem; border-bottom: 1px solid var(--primary); } td { background: #131d31; color: var(--bg-main); padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; border-bottom: 1px solid var(--primary); } .crm-section-row th { background: rgba(234, 179, 8, 0.1); color: var(--accent); } .crm-section-row td { background: rgba(234, 179, 8, 0.03); } .text-white { color: #fff; } .text-gray-desc { color: #cbd5e1; font-size: 0.85rem; line-height: 1.4; } .text-green-desc { color: #34d399; font-weight: bold; } }
 .modal-footer { margin-top: 1.5rem; display: flex; justify-content: flex-end; }
 .btn-modal-done { padding: 0.75rem 1.5rem; background: var(--accent); color: var(--bg-main); font-weight: bold; border-radius: 6px; border: none; cursor: pointer; &:hover { background: #ca8a04; } }
+/* 🟢 採用語意變數，自動響應明暗切換 */
+.dashboard-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+
+  .card-title {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .count {
+    color: var(--brand-primary); // 採用琥珀璀璨金高亮
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+}
 </style>

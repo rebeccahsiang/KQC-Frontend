@@ -1,20 +1,38 @@
 {
   "compilerOptions": {
-    "noEmit": true, // 💡 白話文：只准做 TypeScript 型別檢查，嚴禁擅自釋出任何 JS 實體檔案！
-    "target": "esnext",
+    "target": "ESNext",
     "useDefineForClassFields": true,
-    "module": "esnext",
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+
+    /* 🎯 現代 Vite Bundler 模組解析模式 (TS5+ 無需 baseUrl) */
     "moduleResolution": "bundler",
-    "strict": true,
-    "jsx": "preserve",
-    "sourceMap": true,
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "lib": ["esnext", "dom"],
-    "skipLibCheck": true,    
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+
+    /* 🛡️ 嚴格型別檢查與語法規範 (Strict Mode) */
+    "strict": true,
+    "noUnusedLocals": true,       // 警告未使用的局部變數，保持程式碼潔淨
+    "noUnusedParameters": true,   // 警告未使用的函式參數
+    "noFallthroughCasesInSwitch": true,
+
+    /* 🚀 頂層路徑映射 (對齊 Vite alias @ -> ./src/*，免 baseUrl) */
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+
+    /* 💡 注入 Vite Client 型別 (支援 import.meta.env 與圖片模組聲明) */
+    "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "vite.config.ts"
+  ]
 }

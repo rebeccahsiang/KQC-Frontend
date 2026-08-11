@@ -1,40 +1,49 @@
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import IconsResolver from 'unplugin-icons/resolver'
 import tailwindcss from '@tailwindcss/vite'
-import { fileURLToPath, URL } from 'node:url' // ✨ 關鍵修正：具名匯出加 {}
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
+    tailwindcss(),
     Components({
       resolvers: [
         IconsResolver({
-          prefix: 'icon', // 自動轉為 <icon-lucide-xxx /> 格式
-          enabledCollections: ['lucide']
+          prefix: 'icon'
         })
       ]
     }),
-
     Icons({
       autoInstall: true
-    }),
-    tailwindcss()
+    })
   ],
   resolve: {
     alias: {
-      // 🎯 精準對齊 TypeScript 頂層路徑映射
+      // 🎯 精準對齊 TypeScript / ESM 頂層路徑映射 (取代舊式 __dirname)
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
   css: {
     preprocessorOptions: {
       scss: {
-        // 🚀 全域自動注入 Design Tokens，徹底解決 SFC 元件《未定義變數》問題
-        // 請依據實體檔案路徑確認（常見為 @/styles/_variables.scss 或 @/assets/styles/_variables.scss）
-        additionalData: `@use "@/styles/_variables.scss" as *;`
+        // 跨組件自動注入 SCSS 變數，精準對齊 src/assets/styles/_variables.scss
+        additionalData: `@use "@/assets/styles/_variables.scss" as *;`
+      }
+    }
+  },
+  // 🟢 核心保留：本地開發 API 反向代理設定
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000', // 指向 Node.js Express 後端伺服器
+        changeOrigin: true,             // 允許修改請求標頭的 Origin
+        secure: false                    // 若為 http 協議不強制校驗 SSL
       }
     }
   }

@@ -1,0 +1,82 @@
+// ==========================================================================
+// 🚀 三爵資訊 (KQC) 全域樣式主入口 (Main Style Entry)
+// 架構標準：Sass Modern API + Tailwind CSS v4 引擎 + PrimeVue 4 重寫
+// ==========================================================================
+// 1. 載入設計系統 Tokens 與 SCSS 模組 (符合 Sass @use 規範)
+@use "./tokens" as *;
+@use "./variables" as *;
+@use "./theme" as *;
+@use "./typography" as *;
+
+// 2. 載入 Tailwind CSS v4 核心引擎
+@import "tailwindcss";
+
+
+// 3. Tailwind CSS v4 @theme 變數映射 (完全對齊三爵鋼鐵藍 x 琥珀璀璨金)
+@theme {
+  --color-brand-bg: var(--bg-main);
+  --color-brand-card: var(--bg-card);
+  --color-brand-primary: var(--primary);         /* 三爵鋼鐵藍 #1E293B */
+  --color-brand-accent: var(--accent);           /* 琥珀璀璨金 #EAB308 */
+  --color-brand-text: var(--text-main);
+  --color-brand-muted: var(--text-muted);
+  --color-brand-border: var(--border-grey);
+  --color-brand-danger: var(--danger);
+
+  --font-sans: "Inter", "Microsoft JhengHei", "PingFang TC", sans-serif;
+}
+
+// 4. 全域 CSS Reset & Box-Sizing 強制規範
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+// 5. PrimeUI / PrimeVue 全域組件特化覆蓋 (Component Overrides)
+/* 隱藏授權標籤與浮水印 */
+div[class*="primeui-license"],
+.p-license-badge,
+[data-primeui-license] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* PrimeVue Toast / Dialog 靜音修正 */
+.p-toast-message-error,
+.p-toast-message[severity="error"] {
+  display: none !important;
+}
+
+// 6. 全站共用卡片與容器基底 (Design System Base Containers)
+.card-surface {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-grey);
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 經典金屬光暈 Focus 樣式 (適用於全站 Input/Select) */
+.input-focus-gold {
+  &:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+}

@@ -32,7 +32,7 @@ clientPhone?: string;
 clientMobile?: string;
 clientAddress?: string;
 clientEmail?: string;
-internalNotes?: string;
+internal_notes?: string
 }
 
 /*核心案源資料結構 (Case Item)*/
@@ -78,4 +78,21 @@ intentDetected: AiMatchIntent;
 count: number;
 data: CaseItem[];
 note?: string;
+}
+export interface CaseDetails {
+  target_area: string
+  capital_amount: number
+  requirement_core: string
+}
+
+export interface MarketplaceCase {
+  _id: string
+  case_number: string
+  case_type: 'buyer_request' | 'seller_listing'
+  title: string
+  details: CaseDetails
+  status: 'active' | 'completed'
+  crmData?: CrmData // 前台 API 經 .select('-crmData') 過濾後此欄位為 undefined
+  createdAt?: string
+  updatedAt?: string
 }

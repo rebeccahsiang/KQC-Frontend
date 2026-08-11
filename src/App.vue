@@ -1,45 +1,33 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { onMounted } from 'vue'
-import { useThemeStore } from './stores/themeStore' // 導入 Pinia 主題大腦
+import { useThemeStore } from '@/stores/themeStore'
+import AuthModal from '@/components/auth/AuthModal.vue'
 
 const themeStore = useThemeStore()
 
-// 🚀 全站靈魂初始化：確保車行老闆一開網頁或重整時，主題完全不閃爍跑版
-onMounted(() => {
-  themeStore.initTheme()
-})
+// 🎯 防範 FOUC (Flash of Unstyled Content) 白閃 Bug：DOM 繪製前初始化主題屬性
+themeStore.initTheme()
 </script>
 
 <template>
   <div class="kqc-global-wrapper">
-    <!-- Vue Router 會將比對到的頁面渲染於此 -->
-    <router-view />
+    <!-- 1. 核心頁面渲染（僅保留單一 RouterView 避免重複繪製） -->
+    <RouterView />
+
+    <!-- 2. 全域彈跳登入/註冊模組（置於 wrapper 內部以完整繼承 --bg-main 與 --text-primary 主題變數） -->
+    <AuthModal />
   </div>
 </template>
 
-<style>
-/* 全域 CSS 重置 (CSS Reset) 與無障礙預設值 */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* 💡 乾淨、無雜質、100% 亮綠燈的原生全域通電寫法 */
+<style lang="scss">
+/* 
+  💡 Vite 已於 vite.config.ts 設定 SCSS 全域注入，
+  無需重複寫入 @use "@/assets/styles/_variables.scss" as *;
+*/
 .kqc-global-wrapper {
   min-height: 100vh;
-  background-color: var(--bg-main); /* 實時對齊黑曜石深邃灰黑 / 雲霧極光白 */
-  color: var(--text-main);        /* 實時對齊鉑金流光白 / 石墨深灰 */
+  background-color: var(--bg-main);
+  color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 </style>

@@ -1,22 +1,28 @@
 import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Aura from '@primeuix/themes/aura'
 import App from './App.vue'
 import router from './router'
-import './style.css'
-// 🎯 關鍵：在這裡引入全域樣式變數，才能真正通電到全站！
-import './styles/_theme.scss'
+import { createPinia } from 'pinia'
+import ToastService from 'primevue/toastservice' // 1. 匯入 Toast 服務
+
+// PrimeVue 配置
+import PrimeVue from 'primevue/config'
+import Aura from '@primevue/themes/aura'
+
+// 全域 SCSS / Tailwind 樣式
+// 核心修正：統一由 assets/styles/main.scss 載入全域樣式，移除單獨引入 _theme.scss 的舊路徑
+import '@/assets/styles/main.scss'
 
 const app = createApp(App)
 
+
 app.use(createPinia())
 app.use(router)
+app.use(ToastService) // 2. 啟用 Toast 服務 (AuthModal 必須)
 app.use(PrimeVue, {
     theme: {
-        preset: Aura,
+        preset: Aura, // 使用 PrimeVue 預設主題或客製 preset
         options: {
-      darkModeSelector: '.dark', // 支援你的暗黑戰情室切換
+      darkModeSelector: '[data-theme="dark"]', // 對齊三爵暗黑戰情室切換邏輯
     }
     }
 })

@@ -1,26 +1,98 @@
-// =========================================================================
-// 🎨 三爵資訊 (KQC) 全域 Design Tokens 與主題變數規格表
-// =========================================================================
+// ==========================================================================
+// 🚀 三爵資訊 (KQC) Design Tokens - Single Source of Truth
+// 職責：統一管理全站 Runtime CSS Custom Properties (亮/暗雙主題切換)
+// ==========================================================================
 
-// 1. SCSS 靜態編譯期變數 (SCSS Global Variables)
-$color-primary: #1E293B;
-$color-accent: #EAB308;
+$kqc-font-family: 'Inter', 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !default;
 
-// 2. 原生 CSS Custom Properties (亮/暗雙主題切換)
+// SCSS 靜態預設值
+$color-primary: #1E293B !default;
+$color-accent: #EAB308 !default;
+
 :root {
-  // ☀️ LIGHT THEME (明亮模式)
+  --kqc-font-family: #{$kqc-font-family};
+
+  /* ☀️ (A) 頁面與容器背景 (70% 雲霧極光白) */
   --bg-main: #F8FAFC;
   --bg-card: #FFFFFF;
-  --primary: #1E293B;
-  --accent: #EAB308;
-  --status-alert: #EF4444;
+  --bg-hover: rgba(30, 41, 59, 0.05);
+  --bg-active: rgba(30, 41, 59, 0.1);
+  --bg-track: #E2E8F0;
+  --bg-thumb: #FFFFFF;
+
+  /* 🔵 (B) 品牌核心色 (25% 鋼鐵藍 x 5% 琥珀金) */
+  --primary: #1E293B;         // 三爵鋼鐵藍
+  --primary-hover: #334155;
+  --primary-active: #0F172A;
+
+  --accent: #EAB308;          // 琥珀璀璨金 (CTA)
+  --accent-hover: #FACC15;
+  --accent-active: #CA8A04;
+  --accent-rgb: 234, 179, 8;
+
+  /* ⚪ (C) 文字與中性邊框 */
+  --text-main: #1E293B;       // 炭黑標題字
+  --text-muted: #64748B;      // 石墨次要字
+  --border-grey: #E2E8F0;     // 邊框框線灰
+  --disabled-bg: #CBD5E1;     // 停用灰
+
+  /* 🔴 (D) 狀態、警示與 Messages */
+  --danger: #EF4444;
+  --danger-bg: #FEF2F2;
+  --success: #10B981;
+  --success-bg: #ECFDF5;
+  --warning: #F59E0B;
+  --warning-bg: #FFFBEB;
+  --info: #3B82F6;
+  --info-bg: #EFF6FF;
+
+  /* 陰影與動畫 */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.08), 0 1px 3px 0 rgba(15, 23, 42, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.12);
+  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 🔗 舊版 --kqc-* 向下相容別名 (指向標準權杖) */
+  --kqc-bg-main: var(--bg-main);
+  --kqc-bg-card: var(--bg-card);
+  --kqc-primary: var(--primary);
+  --kqc-accent: var(--accent);
+  --kqc-text-main: var(--text-main);
+  --kqc-text-muted: var(--text-muted);
+  --kqc-border: var(--border-grey);
 }
 
+/* 🌙 黑曜石暗黑戰情室主題 (Obsidian Dark Mode Overrides) */
 [data-theme="dark"] {
-  // 🌙 DARK THEME (暗黑模式)
-  --bg-main: #0B0F19;
-  --bg-card: #111827;
-  --primary: #38BDF8; // 暗色高亮主色
-  --accent: #EAB308;  // 琥珀金保持點睛
-  --status-alert: #F87171;
+  --bg-main: #0B0F19;         // 黑曜石深邃灰黑
+  --bg-card: #111827;         // 卡牌與容器深灰
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --bg-active: rgba(255, 255, 255, 0.15);
+  --bg-track: #1F2937;
+  --bg-thumb: #F8FAFC;
+
+  --primary: #38BDF8;         // 天藍高亮主色
+  --primary-hover: #7DD3FC;
+  --primary-active: #0284C7;
+
+  --accent: #EAB308;          // 琥珀金保持點睛
+  --accent-hover: #FACC15;
+  --accent-active: #CA8A04;
+
+  --text-main: #F8FAFC;       // 雲霧亮白字
+  --text-muted: #94A3B8;      // 石墨次要字
+  --border-grey: #374151;     // 暗色清晰邊框
+  --disabled-bg: #475569;
+
+  --danger: #F87171;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --success: #34D399;
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --warning: #FBBF24;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --info: #60A5FA;
+  --info-bg: rgba(59, 130, 246, 0.15);
+
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.6);
 }

@@ -1,0 +1,60 @@
+// ==========================================================================
+// 🚀 三爵資訊 (KQC) SCSS 靜態編譯期變數 (Static SCSS Variables)
+// 職責：RWD 斷點、8pt 網格 Spacing、圓角尺寸與 SCSS 向下相容別名
+// 注意：本檔案禁止定義 `:root`，避免與 _tokens.scss 產生雙重宣告衝突！
+// ==========================================================================
+
+@use "./tokens" as *;
+
+// 1. RWD 響應式斷點 (Breakpoints)
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+
+// 2. 8pt 網格系統 (Spacing)
+$kqc-spacing-3xs: 0.125rem; // 2px
+$kqc-spacing-2xs: 0.25rem;  // 4px
+$kqc-spacing-xs:  0.375rem; // 6px
+$kqc-spacing-sm:  0.5rem;   // 8px
+$kqc-spacing-md:  0.75rem;  // 12px
+$kqc-spacing-lg:  1.0rem;   // 16px
+$kqc-spacing-xl:  1.5rem;   // 24px
+$kqc-spacing-2xl: 2.0rem;   // 32px
+
+// 3. 元件尺寸與字級 (Typography & Heights)
+$kqc-control-height-sm: 2.0rem; // 32px
+$kqc-control-height-md: 2.5rem; // 40px
+$kqc-control-height-lg: 3.0rem; // 48px
+
+$kqc-font-size-xs: 0.75rem;  // 12px
+$kqc-font-size-sm: 0.875rem; // 14px
+$kqc-font-size-md: 1.0rem;   // 16px
+$kqc-font-size-lg: 1.125rem; // 18px
+$kqc-font-size-xl: 1.25rem;  // 20px
+$kqc-font-size-2xl: 1.5rem; // 24px
+
+// 4. 圓角規格 (Radius)
+$kqc-radius-sm: 0.25rem;   // 4px
+$kqc-radius-md: 0.375rem;  // 6px
+$kqc-radius-lg: 0.5rem;    // 8px
+$kqc-radius-xl: 0.75rem;   // 12px
+$kqc-radius-full: 9999px;  // 圓形/膠囊
+
+// 5. SCSS 靜態別名映射 (指向原生 CSS 變數)
+$color-base-light: var(--bg-main);
+$color-base-white: var(--bg-card);
+$color-danger:     var(--danger);
+$color-success:    var(--success);
+$color-warning:    var(--warning);
+$color-info:       var(--info);
+$color-disabled:   var(--disabled-bg);
+$color-text-main:  var(--text-main);
+$color-text-muted: var(--text-muted);
+$color-border:     var(--border-grey);
+
+body {
+  font-family: var(--kqc-font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 interface Props {
-  variant?: 'primary' | 'accent' | 'secondary' | 'outline' | 'text' | 'danger'
+  variant?: 'primary' | 'accent' | 'secondary' | 'outline' | 'text' | 'danger' | 'success'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean
@@ -54,7 +54,7 @@ withDefaults(defineProps<Props>(), {
   &--md { height: 40px; padding: 0 16px; font-size: 14px; }
   &--lg { height: 48px; padding: 0 24px; font-size: 16px; }
 
-  /* 變體 Variants (100% Tokens 驅動，零 Hex 硬編碼) */
+  /* 變體 Variants (100% 全域 Theme Token 驅動，無任何 HEX 硬編碼) */
   /* 1. 三爵鋼鐵藍 (Primary) */
   &--primary {
     background-color: var(--kqc-btn-primary-bg);
@@ -98,11 +98,19 @@ withDefaults(defineProps<Props>(), {
     &:hover:not(:disabled) { background-color: var(--kqc-bg-hover); }
   }
 
-  /* 6. 危險操作 (Danger) */
+  /* 6. 霓虹警告紅 (Danger) */
   &--danger {
     background-color: var(--kqc-danger);
     color: var(--kqc-color-white);
     &:hover:not(:disabled) { background-color: var(--kqc-danger-hover); }
+  }
+
+  /* 7. 成功媒合綠 (Success) */
+  &--success {
+    background-color: var(--kqc-success);
+    color: var(--kqc-color-white);
+    &:hover:not(:disabled) { background-color: var(--kqc-success-hover); }
+    &:active:not(:disabled) { background-color: var(--kqc-success-active); }
   }
 
   &.is-block { width: 100%; }
