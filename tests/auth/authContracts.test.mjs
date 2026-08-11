@@ -147,3 +147,67 @@ test('Change Password form validates and clears sensitive fields without browser
   assert.match(source, /requested !== ['"]\/change-password['"]/)
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|refreshToken|console\.log|console\.error/)
 })
+
+test('Email verification and invitation acceptance are public lifecycle routes', () => {
+  const source = read('src/router/index.ts')
+  const verifyStart = source.indexOf("path: '/verify-email'")
+  const invitationStart = source.indexOf("path: '/accept-invitation'")
+  const changePasswordStart = source.indexOf("path: '/change-password'")
+  assert.ok(verifyStart >= 0 && invitationStart > verifyStart && changePasswordStart > invitationStart)
+  for (const routeStart of [verifyStart, invitationStart]) {
+    const routeRecord = source.slice(routeStart, source.indexOf('},', routeStart) + 2)
+    assert.doesNotMatch(routeRecord, /requiresAuth|roles/)
+  }
+  assert.match(source, /const requiresAuth = to\.matched\.some/)
+  assert.match(source, /if \(!requiresAuth\) return true/)
+})
+
+test('Lifecycle tokens are consumed from navigation memory and removed from the URL before API submission', () => {
+  const cases = [
+    ['src/views/VerifyEmailView.vue', 'authApi.verifyEmail(token)'],
+    ['src/views/AcceptInvitationView.vue', 'authApi.acceptInvitation(invitationToken.value, form.password)']
+  ]
+  for (const [path, requestExpression] of cases) {
+    const source = read(path)
+    const readToken = source.indexOf('route.query.token')
+    const clearQuery = source.indexOf('await router.replace')
+    const submit = source.indexOf(requestExpression)
+    assert.ok(readToken >= 0 && readToken < clearQuery && clearQuery < submit)
+    assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|decode|console\.log|console\.error/)
+  }
+})
+
+test('Verification and invitation success do not invent a session or frontend identity', () => {
+  const verification = read('src/views/VerifyEmailView.vue')
+  const invitation = read('src/views/AcceptInvitationView.vue')
+  assert.match(verification, /await authApi\.verifyEmail\(token\)/)
+  assert.match(verification, /authStore\.openAuthModal\(['"]login['"]\)/)
+  assert.match(invitation, /await authApi\.acceptInvitation\(invitationToken\.value, form\.password\)/)
+  assert.match(invitation, /name:\s*['"]Login['"]/)
+  for (const source of [verification, invitation]) {
+    assert.doesNotMatch(source, /accessToken\.value|fetchIdentity\(|authStatus\.value|passwordChangeRequired\.value|decode|jwt|JWT/)
+  }
+  assert.match(read('src/stores/authStore.ts'), /const fetchIdentity = async[\s\S]*authApi\.me\(\)/)
+})
+
+test('Resend verification is generic, single-flight at the form level, and creates no auth state', () => {
+  const source = read('src/views/VerifyEmailView.vue')
+  const request = source.indexOf('await authApi.resendVerification(email)')
+  const pendingStart = source.lastIndexOf('resendPending.value = true', request)
+  const pendingEnd = source.indexOf('resendPending.value = false', request)
+  assert.ok(pendingStart >= 0 && pendingStart < request && request < pendingEnd)
+  assert.match(source, /若此 Email 可進行驗證/)
+  assert.match(source, /:disabled="resendPending"/)
+  assert.doesNotMatch(source, /user\.value|accessToken\.value|authStatus\.value/)
+})
+
+test('Invitation validation follows the backend password contract and preserves Step 2A routing security', () => {
+  const invitation = read('src/views/AcceptInvitationView.vue')
+  const router = read('src/router/index.ts')
+  assert.match(invitation, /form\.password\.length < 8/)
+  assert.match(invitation, /form\.password !== form\.confirmPassword/)
+  assert.match(invitation, /clearPasswords\(\)/)
+  assert.doesNotMatch(invitation, /form\.(name|email|role|currentPassword)/)
+  assert.match(router, /passwordChangeRequired\s*&&\s*!isPasswordChangeRoute/)
+  assert.match(read('src/views/ChangePasswordView.vue'), /!requested\.startsWith\(['"]\/\/['"]\)/)
+})

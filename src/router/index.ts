@@ -10,6 +10,18 @@ const routes: RouteRecordRaw[] = [
   { path: '/contact', name: 'Contact', component: () => import('@/views/ContactView.vue'), meta: { title: '聯絡我們與一對一諮詢 - 三爵資訊 KQC' } },
   { path: '/login', name: 'Login', component: () => import('@/views/LoginView.vue'), meta: { title: '會員與管理員登入 - 三爵資訊 KQC' } },
   {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: () => import('@/views/VerifyEmailView.vue'),
+    meta: { title: '驗證電子郵件 - 三爵資訊 KQC' }
+  },
+  {
+    path: '/accept-invitation',
+    name: 'AcceptInvitation',
+    component: () => import('@/views/AcceptInvitationView.vue'),
+    meta: { title: '接受後台帳號邀請 - 三爵資訊 KQC' }
+  },
+  {
     path: '/change-password',
     name: 'ChangePassword',
     component: () => import('@/views/ChangePasswordView.vue'),
