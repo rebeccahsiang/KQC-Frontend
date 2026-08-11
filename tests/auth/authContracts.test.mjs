@@ -89,3 +89,61 @@ test('Frontend Auth and routing contain only the four approved roles', () => {
   assert.doesNotMatch(source, /\beditor\b|\bsuperadmin\b|\bcustomer\b/)
   for (const role of ['user', 'sales', 'manager', 'admin']) assert.match(source, new RegExp(`['"]${role}['"]`))
 })
+
+test('Change Password route requires authentication and forced accounts cannot enter protected routes', () => {
+  const source = read('src/router/index.ts')
+  assert.match(source, /path:\s*['"]\/change-password['"]/)
+  assert.match(source, /name:\s*['"]ChangePassword['"]/)
+  assert.match(source, /meta:\s*\{\s*requiresAuth:\s*true/)
+  assert.match(source, /passwordChangeRequired\s*&&\s*!isPasswordChangeRoute/)
+  assert.match(source, /name:\s*['"]ChangePassword['"],\s*query:\s*\{\s*redirect:\s*to\.fullPath/)
+  assert.doesNotMatch(source, /passwordChangeRequired[\s\S]{0,100}name:\s*['"]Login['"]/)
+})
+
+test('Admin and frontend login flows route forced accounts to Change Password', () => {
+  const adminLogin = read('src/views/LoginView.vue')
+  const frontendLogin = read('src/components/auth/AuthModal.vue')
+  for (const source of [adminLogin, frontendLogin]) {
+    assert.match(source, /result\.passwordChangeRequired/)
+    assert.match(source, /name:\s*['"]ChangePassword['"]/)
+  }
+  assert.match(adminLogin, /redirect:\s*['"]\/admin\/dashboard['"]/)
+  assert.match(frontendLogin, /redirect:\s*['"]\/['"]/)
+})
+
+test('Password change replaces the old runtime token before clearing the gate and fetching identity', () => {
+  const source = read('src/stores/authStore.ts')
+  const actionStart = source.indexOf('const changePassword = async')
+  const actionEnd = source.indexOf('const recordActivity', actionStart)
+  const action = source.slice(actionStart, actionEnd)
+  const request = action.indexOf('authApi.changePassword')
+  const replaceToken = action.indexOf('accessToken.value = response.data.accessToken')
+  const clearGate = action.indexOf('passwordChangeRequired.value = false')
+  const identity = action.indexOf('await fetchIdentity()')
+  assert.ok(request >= 0 && request < replaceToken)
+  assert.ok(replaceToken < clearGate)
+  assert.ok(clearGate < identity)
+  assert.doesNotMatch(action, /localStorage|sessionStorage|document\.cookie|refreshToken/)
+})
+
+test('Reload hydration preserves the forced-password lifecycle without requiring me', () => {
+  const source = read('src/stores/authStore.ts')
+  assert.match(source, /await refreshAccessToken\(\)/)
+  assert.match(source, /if \(!passwordChangeRequired\.value\) await fetchIdentity\(\)/)
+  assert.match(source, /passwordChangeRequired\.value = response\.data\.passwordChangeRequired/)
+  assert.match(source, /authStatus\.value = ['"]authenticated['"]/)
+})
+
+test('Change Password form validates and clears sensitive fields without browser persistence', () => {
+  const source = read('src/views/ChangePasswordView.vue')
+  for (const field of ['currentPassword', 'newPassword', 'confirmPassword']) {
+    assert.match(source, new RegExp(`${field}:?`))
+  }
+  assert.match(source, /form\.newPassword\.length < 8/)
+  assert.match(source, /form\.currentPassword === form\.newPassword/)
+  assert.match(source, /form\.newPassword !== form\.confirmPassword/)
+  assert.match(source, /authStore\.changePassword\(form\.currentPassword, form\.newPassword\)/)
+  assert.match(source, /clearPasswords\(\)/)
+  assert.match(source, /requested !== ['"]\/change-password['"]/)
+  assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|refreshToken|console\.log|console\.error/)
+})

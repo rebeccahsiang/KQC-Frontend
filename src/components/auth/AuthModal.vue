@@ -273,6 +273,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from 'primevue/usetoast'
 
@@ -291,6 +292,7 @@ import Toast from 'primevue/toast'
 
 const authStore = useAuthStore()
 const toast = useToast()
+const router = useRouter()
 
 const isLoading = ref<boolean>(false)
 const activeStep = ref<number>(1)
@@ -391,6 +393,12 @@ const handleLogin = async () => {
   try {
     const result = await authStore.login({ email, password, portal: 'frontend' })
     if (!result.success) throw new Error(result.message)
+
+    loginForm.password = ''
+    if (result.passwordChangeRequired) {
+      authStore.closeAuthModal()
+      await router.push({ name: 'ChangePassword', query: { redirect: '/' } })
+    }
 
     toast.add({
       severity: 'success',

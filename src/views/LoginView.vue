@@ -19,7 +19,12 @@ const handleLogin = async () => {
     portal: 'admin'
   })
   statusMessage.value = result.message
-  if (!result.success || result.passwordChangeRequired) return
+  if (!result.success) return
+  password.value = ''
+  if (result.passwordChangeRequired) {
+    await router.push({ name: 'ChangePassword', query: { redirect: '/admin/dashboard' } })
+    return
+  }
 
   const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
     ? route.query.redirect

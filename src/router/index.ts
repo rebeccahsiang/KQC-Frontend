@@ -9,6 +9,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/insights', name: 'Insights', component: () => import('@/views/InsightsView.vue'), meta: { title: '產業洞察與趨勢分析 - 三爵資訊 KQC' } },
   { path: '/contact', name: 'Contact', component: () => import('@/views/ContactView.vue'), meta: { title: '聯絡我們與一對一諮詢 - 三爵資訊 KQC' } },
   { path: '/login', name: 'Login', component: () => import('@/views/LoginView.vue'), meta: { title: '會員與管理員登入 - 三爵資訊 KQC' } },
+  {
+    path: '/change-password',
+    name: 'ChangePassword',
+    component: () => import('@/views/ChangePasswordView.vue'),
+    meta: { requiresAuth: true, title: '變更密碼 - 三爵資訊 KQC' }
+  },
   { path: '/design-system', name: 'DesignSystem', component: () => import('@/views/DesignSystemView.vue'), meta: { title: 'Design System - 三爵鋼鐵藍 × 琥珀金 Token 展示' } },
   {
     path: '/admin',
@@ -76,8 +82,9 @@ router.beforeEach(async (to) => {
   if (!authStore.isAuthenticated) {
     return { name: 'Login', query: { redirect: to.fullPath } }
   }
-  if (authStore.passwordChangeRequired) {
-    return { name: 'Login', query: { passwordChangeRequired: '1' } }
+  const isPasswordChangeRoute = to.name === 'ChangePassword'
+  if (authStore.passwordChangeRequired && !isPasswordChangeRoute) {
+    return { name: 'ChangePassword', query: { redirect: to.fullPath } }
   }
 
   const allowedRoles = to.meta.roles as string[] | undefined
