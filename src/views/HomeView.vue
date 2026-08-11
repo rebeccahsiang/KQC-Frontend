@@ -326,7 +326,7 @@ onUnmounted(() => {
           <!-- 6. 即時案件卡牌展示櫥窗 -->
           <section class="kqc-card-block">
             <h2 class="block-section-title">💼 即時資產買賣與委託櫥窗</h2>
-            <CaseShowcase :cases-data="casesData" />
+            <CaseShowcase :cases="casesData" />
           </section>
 
         </div>

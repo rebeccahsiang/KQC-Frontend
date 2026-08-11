@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import CaseCard from '@/components/showcase/CaseCard.vue'
+import type { MarketplaceCase } from '@/types/case'
 
-defineProps({
-  cases: {
-    type: Array,
-    default: () => []
-  },
-  loading: {
-    type: Boolean,
-    default: false
-  }
+withDefaults(defineProps<{
+  cases?: MarketplaceCase[]
+  loading?: boolean
+}>(), {
+  cases: () => [],
+  loading: false
 })
 </script>
 
@@ -40,7 +38,7 @@ defineProps({
     <div v-else class="case-grid">
       <CaseCard
         v-for="item in cases"
-        :key="(item as any)._id || (item as any).case_number"
+        :key="item._id || item.case_number"
         :case-data="item"
       />
     </div>

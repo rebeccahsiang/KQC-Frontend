@@ -71,7 +71,7 @@ const handleInput = (event: Event) => {
 </script>
 
 <style lang="scss" scoped>
-@import "@/styles/variables";
+@use "@/assets/styles/variables" as *;
 
 .kqc-input-wrapper {
   display: inline-flex;
@@ -109,7 +109,7 @@ const handleInput = (event: Event) => {
 
   /* Focus 狀態與 CSS Custom Properties 響應式切換 */
   &:focus-within {
-    border-color: $color-primary;
+    border-color: var(--primary);
     box-shadow: 0 0 0 3px var(--kqc-focus-ring-primary);
   }
 

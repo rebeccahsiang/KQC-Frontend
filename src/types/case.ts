@@ -92,6 +92,8 @@ export interface MarketplaceCase {
   title: string
   details: CaseDetails
   status: 'active' | 'completed'
+  cover_image?: string
+  image_url?: string
   crmData?: CrmData // 前台 API 經 .select('-crmData') 過濾後此欄位為 undefined
   createdAt?: string
   updatedAt?: string

@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
+import apiClient from '@/api/axios'
 import type { 
   CaseItem, 
   SupplyDemandStats, 
@@ -11,6 +12,13 @@ import type {
  * 負責向後端 REST API 請求資料，並管理響應式狀態 (Cases, Stats, Loading, Error)
  */
 export function useCases() {
+  const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (axios.isAxiosError<{ message?: string }>(error)) {
+      return error.response?.data?.message || fallback
+    }
+    return fallback
+  }
+
   // 響應式狀態 (Reactive States)
   const cases = ref<CaseItem[]>([])
   const stats = ref<SupplyDemandStats>({
@@ -29,12 +37,12 @@ export function useCases() {
     loading.value = true
     error.value = null
     try {
-      const response = await axios.get<{ success: boolean; data: CaseItem[] }>(
-        `/api/cases${isAdmin ? '?isAdmin=true' : ''}`
+      const response = await apiClient.get<{ success: boolean; data: CaseItem[] }>(
+        `/cases${isAdmin ? '?isAdmin=true' : ''}`
       )
-      cases.value = response.data.data
-    } catch (err: any) {
-      error.value = err.response?.data?.message || '無法取得案源清單，請檢查後端連線'
+      cases.value = response.data
+    } catch (err: unknown) {
+      error.value = getErrorMessage(err, '無法取得案源清單，請檢查後端連線')
       console.error('❌ [useCases] fetchCases Error:', err)
     } finally {
       loading.value = false
@@ -46,9 +54,9 @@ export function useCases() {
    */
   const fetchStats = async (): Promise<void> => {
     try {
-      const response = await axios.get<SupplyDemandStats>('/api/cases/stats/supply-demand')
+      const response = await apiClient.get<{ success: boolean; data: SupplyDemandStats }>('/cases/stats/supply-demand')
       stats.value = response.data
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('⚠️ [useCases] 供需晴雨窗數據撈取失敗，啟動預設 50% 保底機制')
       stats.value = { sellerCount: 0, buyerCount: 0, demandRatio: 50 }
     }
@@ -67,15 +75,15 @@ export function useCases() {
     loading.value = true
     error.value = null
     try {
-      const response = await axios.post<AiMatchResponse>('/api/ai/match', { textInput })
+      const response = await apiClient.post<AiMatchResponse>('/ai/match', { textInput })
       
       // 自動將配對到的精準案件覆蓋至 cases 響應式狀態，UI 卡片會毫秒級自動更新！
-      if (response.data.success) {
-        cases.value = response.data.data
+      if (response.success) {
+        cases.value = response.data
       }
-      return response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'AI 語意匹配服務暫時無法連線'
+      return response
+    } catch (err: unknown) {
+      error.value = getErrorMessage(err, 'AI 語意匹配服務暫時無法連線')
       console.error('❌ [useCases] matchWithAI Error:', err)
       return null
     } finally {
@@ -91,11 +99,11 @@ export function useCases() {
     loading.value = true
     error.value = null
     try {
-      const response = await axios.post<{ success: boolean; data: CaseItem }>('/api/cases', newCaseData)
+      const response = await apiClient.post<{ success: boolean; data: CaseItem }>('/cases', newCaseData)
       await fetchCases(true) // 重新撈取最新後台資料
-      return response.data.data
-    } catch (err: any) {
-      error.value = err.response?.data?.message || '案源建立失敗，請檢查輸入格式'
+      return response.data
+    } catch (err: unknown) {
+      error.value = getErrorMessage(err, '案源建立失敗，請檢查輸入格式')
       throw new Error(error.value || '建立失敗')
     } finally {
       loading.value = false

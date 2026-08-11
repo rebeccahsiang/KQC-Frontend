@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
-import { menuTree } from './menuConfig'
+import { sidebarMenu } from '@/config/sidebarMenu'
 import SidebarMenuItem from './SidebarMenuItem.vue'
 
 // 控制側邊欄展開/折疊狀態
@@ -59,7 +59,7 @@ const isCollapsed = ref(false)
       ]"
     >
       <SidebarMenuItem
-        v-for="item in menuTree"
+        v-for="item in sidebarMenu"
         :key="item.id"
         :item="item"
         :isCollapsed="isCollapsed"

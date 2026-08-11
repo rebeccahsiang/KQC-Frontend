@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { MarketplaceCase } from '@/types/case'
 
-const props = defineProps({
-  caseData: {
-    type: Object,
-    required: true
-  }
-})
+const props = defineProps<{
+  caseData: MarketplaceCase
+}>()
 
 const isBuyer = computed(() => props.caseData.case_type === 'buyer_request')
 

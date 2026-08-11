@@ -2,10 +2,10 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import type { MenuItem } from './menuConfig'
+import type { SidebarMenuItem as SidebarMenuItemConfig } from '@/config/sidebarMenu'
 
 const props = defineProps<{
-  item: MenuItem
+  item: SidebarMenuItemConfig
   isCollapsed?: boolean
 }>()
 

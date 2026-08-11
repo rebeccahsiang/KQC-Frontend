@@ -194,6 +194,17 @@ const deleteCase = async (id: string) => {
     refreshData()
   }
 }
+
+// The current dashboard template renders only statistics. Keep the existing
+// management callbacks type-checked without executing or exposing them.
+void statusTextMap
+void filteredAndSortedCases
+void openDetailModal
+void closeDetailModal
+void bringBackToForm
+void handleSubmit
+void changeStatus
+void deleteCase
 </script>
 
 <style lang="scss" scoped>

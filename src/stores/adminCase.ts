@@ -52,7 +52,7 @@ export const useAdminCaseStore = defineStore('adminCase', () => {
     errorMsg.value = ''
     try {
       // 呼叫後端 RESTful API: GET /api/admin/cases
-      const response = await api.get<AdminCaseItem[]>('/admin/cases')
+      const response = await api.get<{ success: boolean; data: AdminCaseItem[] }>('/admin/cases')
       cases.value = response.data
     } catch (err: any) {
       console.error('[AdminCaseStore fetchError]:', err)
