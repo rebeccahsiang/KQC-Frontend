@@ -273,8 +273,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore, type AdminUser } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useToast } from 'primevue/usetoast'
 
 import Dialog from 'primevue/dialog'
@@ -290,19 +289,11 @@ import ToggleButton from 'primevue/togglebutton'
 import Divider from 'primevue/divider'
 import Toast from 'primevue/toast'
 
-const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
 
 const isLoading = ref<boolean>(false)
 const activeStep = ref<number>(1)
-
-// 模擬 DB 中已被註冊的 Email 清單 (防止重複註冊)
-const registeredEmails = ref<string[]>([
-  'service@kqc.com.tw',
-  'kitty@kqj.com.tw',
-  'admin@kqc.com.tw'
-])
 
 // 忘記密碼通道切換
 const resetMethod = ref<'email' | 'phone'>('email')
@@ -374,7 +365,7 @@ const isValidEmail = (email: string): boolean => {
 // ----------------------------------------------------
 const handleLogin = async () => {
   const email = loginForm.email.trim()
-  const password = loginForm.password.trim()
+  const password = loginForm.password
 
   if (!email || !isValidEmail(email)) {
     toast.add({
@@ -398,34 +389,20 @@ const handleLogin = async () => {
 
   isLoading.value = true
   try {
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    const isAdminUser = email.includes('admin')
-    const mockUser: AdminUser = {
-      _id: 'u_' + Date.now(),
-      username: email.split('@')[0] || 'kqc_user',
-      name: isAdminUser ? '系統管理員' : email.split('@')[0] || '三爵會員',
-      email: email,
-      role: isAdminUser ? 'admin' : 'user'
-    }
-
-    authStore.setAuthData(mockUser, 'jwt_token_' + Date.now())
+    const result = await authStore.login({ email, password, portal: 'frontend' })
+    if (!result.success) throw new Error(result.message)
 
     toast.add({
       severity: 'success',
       summary: '登入成功',
-      detail: `歡迎回到三爵資訊，${mockUser.name}`,
+      detail: result.passwordChangeRequired ? '請先完成密碼變更。' : '歡迎回到三爵資訊。',
       life: 3000
     })
-
-    if (mockUser.role === 'admin') {
-      router.push('/admin/dashboard')
-    }
-  } catch (error) {
+  } catch (error: unknown) {
     toast.add({
       severity: 'error',
       summary: '登入失敗',
-      detail: '帳號或密碼錯誤，請重新核對。',
+      detail: error instanceof Error ? error.message : '登入失敗，請稍後再試。',
       life: 3000
     })
   } finally {
@@ -462,17 +439,6 @@ const handleStep1Next = (activateCallback: (step: number) => void) => {
     return
   }
 
-  // 重複註冊阻擋核心邏輯
-  if (registeredEmails.value.includes(email)) {
-    toast.add({
-      severity: 'error',
-      summary: '帳號已存在',
-      detail: `信箱 ${email} 已在三爵資訊註冊，請直接登入或使用忘記密碼。`,
-      life: 4000
-    })
-    return
-  }
-
   if (!password || password.length < 8) {
     toast.add({
       severity: 'warn',
@@ -492,23 +458,24 @@ const handleStep1Next = (activateCallback: (step: number) => void) => {
 const handleRegister = async () => {
   isLoading.value = true
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    
-    // 註冊成功後將該 Email 寫入模擬 DB 清單
-    registeredEmails.value.push(registerForm.email.trim().toLowerCase())
-    
+    const result = await authStore.register({
+      email: registerForm.email.trim().toLowerCase(),
+      password: registerForm.password,
+      name: `${registerForm.companyName.trim()} (${registerForm.name.trim()})`
+    })
+    if (!result.success) throw new Error(result.message)
     activeStep.value = 3
     toast.add({
       severity: 'success',
       summary: '帳號建立成功',
-      detail: '您的三爵會員帳號已順利建立！',
+      detail: result.message,
       life: 3000
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     toast.add({
       severity: 'error',
       summary: '註冊失敗',
-      detail: '伺服器連線異常，請稍後再試。',
+      detail: error instanceof Error ? error.message : '伺服器連線異常，請稍後再試。',
       life: 3000
     })
   } finally {
@@ -517,25 +484,16 @@ const handleRegister = async () => {
 }
 
 // ----------------------------------------------------
-// 4. 完成註冊並自動登入
+// 4. 完成註冊後回到登入；Email 驗證前不建立登入狀態
 // ----------------------------------------------------
 const finishRegister = () => {
-  const newUser: AdminUser = {
-    _id: 'u_' + Date.now(),
-    username: registerForm.email.split('@')[0] || 'kqc_user',
-    name: `${registerForm.companyName} (${registerForm.name})`,
-    email: registerForm.email.trim(),
-    role: 'user'
-  }
-
-  authStore.setAuthData(newUser, 'jwt_token_' + Date.now())
-
   toast.add({
     severity: 'info',
-    summary: '歡迎加入三爵資訊',
-    detail: `已為 ${newUser.name} 開啟全域語意搜尋與 AI 配對權限。`,
+    summary: '請完成 Email 驗證',
+    detail: '驗證完成後即可使用會員登入。',
     life: 4000
   })
+  authStore.authMode = 'login'
 }
 
 // ----------------------------------------------------
@@ -564,28 +522,12 @@ const handleForgotPassword = async () => {
     }
   }
 
-  isLoading.value = true
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    
-    const targetInfo = resetMethod.value === 'email' ? forgotEmail.value : forgotPhone.value
-    toast.add({
-      severity: 'success',
-      summary: '驗證訊息已發送',
-      detail: `已發送重設資訊至 ${targetInfo}`,
-      life: 4000
-    })
-    authStore.authMode = 'login'
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: '發送失敗',
-      detail: '請確認輸入資料是否正確。',
-      life: 3000
-    })
-  } finally {
-    isLoading.value = false
-  }
+  toast.add({
+    severity: 'info',
+    summary: '功能尚未開放',
+    detail: '密碼重設流程將於後續階段接入，請聯絡 KQC 管理員。',
+    life: 4000
+  })
 }
 </script>
 

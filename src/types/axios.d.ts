@@ -2,6 +2,15 @@
 import 'axios'
 
 declare module 'axios' {
+  export interface AxiosRequestConfig {
+    skipAuthRefresh?: boolean
+    _authRetry?: boolean
+  }
+
+  export interface InternalAxiosRequestConfig {
+    skipAuthRefresh?: boolean
+    _authRetry?: boolean
+  }
   export interface AxiosInstance {
     request<T = any>(config: AxiosRequestConfig): Promise<T>
     get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>

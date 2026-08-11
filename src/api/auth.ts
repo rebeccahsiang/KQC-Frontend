@@ -1,0 +1,63 @@
+import api from './axios'
+
+export type Role = 'user' | 'sales' | 'manager' | 'admin'
+export type Portal = 'frontend' | 'admin'
+
+export interface AuthUser {
+  _id: string
+  email: string
+  name: string
+  role: Role
+  accountStatus: 'pending' | 'active' | 'suspended' | 'disabled'
+  emailVerifiedAt: string | null
+  mustChangePassword: boolean
+}
+
+interface Envelope<T> {
+  success: true
+  data: T
+}
+
+interface TokenResult {
+  accessToken: string
+  passwordChangeRequired: boolean
+  user: AuthUser
+}
+
+export interface LoginInput {
+  email: string
+  password: string
+  portal: Portal
+}
+
+export const authApi = {
+  login: (input: LoginInput) =>
+    api.post<Envelope<TokenResult>>('/v1/auth/login', input, { skipAuthRefresh: true }),
+  refresh: () =>
+    api.post<Envelope<TokenResult>>('/v1/auth/refresh', undefined, { skipAuthRefresh: true }),
+  me: () => api.get<Envelope<{ user: AuthUser }>>('/v1/auth/me'),
+  logout: () => api.post<Envelope<{ loggedOut: boolean }>>('/v1/auth/logout', undefined, {
+    skipAuthRefresh: true
+  }),
+  logoutAll: () => api.post<Envelope<{ revokedCount: number }>>('/v1/auth/logout-all'),
+  activity: () => api.post<Envelope<{ activityRecorded: boolean }>>('/v1/auth/activity'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post<Envelope<TokenResult & { revokedOtherSessions: number }>>('/v1/auth/change-password', {
+      currentPassword,
+      newPassword
+    }),
+  register: (input: { email: string; password: string; name: string }) =>
+    api.post<Envelope<{ user: AuthUser }>>('/v1/auth/register', input, { skipAuthRefresh: true }),
+  resendVerification: (email: string) =>
+    api.post<Envelope<{ accepted: boolean }>>('/v1/auth/resend-verification', { email }, {
+      skipAuthRefresh: true
+    }),
+  verifyEmail: (token: string) =>
+    api.post<Envelope<{ user: AuthUser }>>('/v1/auth/verify-email', { token }, {
+      skipAuthRefresh: true
+    }),
+  acceptInvitation: (token: string, password: string) =>
+    api.post<Envelope<{ user: AuthUser }>>('/v1/auth/accept-invitation', { token, password }, {
+      skipAuthRefresh: true
+    })
+}

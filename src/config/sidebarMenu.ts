@@ -13,7 +13,7 @@ export const sidebarMenu: SidebarMenuItem[] = [
     title: '總覽戰情室',
     icon: 'lucide:layout-dashboard',
     path: '/admin/dashboard',
-    roles: ['admin', 'editor']
+    roles: ['admin', 'manager']
   },
   {
     id: 'frontend',
@@ -29,11 +29,11 @@ export const sidebarMenu: SidebarMenuItem[] = [
     id: 'cases',
     title: '案件管理',
     icon: 'lucide:gem',
-    roles: ['admin', 'editor'],
+    roles: ['sales', 'manager', 'admin'],
     children: [
       { id: 'case-photos', title: '案件照片管理', icon: 'lucide:image', path: '/admin/cases/photos', roles: ['admin'] },
-      { id: 'case-create', title: '新增案例', icon: 'lucide:layers-plus', path: '/admin/cases/create', roles: ['admin'] },
-      { id: 'case-list', title: '案件列表', icon: 'lucide:list-check', path: '/admin/cases/list', roles: ['admin', 'editor'] }
+      { id: 'case-create', title: '新增案例', icon: 'lucide:layers-plus', path: '/admin/cases/create', roles: ['sales', 'manager', 'admin'] },
+      { id: 'case-list', title: '案件列表', icon: 'lucide:list-check', path: '/admin/cases/list', roles: ['admin', 'manager'] }
     ]
   },
   {

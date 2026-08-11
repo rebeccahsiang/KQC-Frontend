@@ -1,44 +1,46 @@
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import api from '@/api/axios'
+import { isAxiosError } from 'axios'
 
-// ----------------------------------------------------
-// 1. TypeScript 介面定義
-// ----------------------------------------------------
+import { authApi, type AuthUser, type LoginInput, type Portal } from '@/api/auth'
+import { configureAuthRuntime } from '@/auth/authRuntime'
+
 export type AuthMode = 'login' | 'register' | 'forgot'
-
-export interface AdminUser {
-  _id: string
-  username: string
-  name: string
-  role: 'admin' | 'superadmin' | 'user'
-  email?: string
-}
-
-export interface LoginCredentials {
-  username: string
-  password: string
-}
-
-export interface LoginResponse {
-  token: string
-  user: AdminUser
-}
+export type AuthStatus = 'unknown' | 'authenticated' | 'unauthenticated'
 
 export interface ActionResult {
   success: boolean
   message: string
+  passwordChangeRequired?: boolean
 }
 
-/**
- * KQC 三爵資訊 - 全域身份驗證與彈窗狀態 Store
- */
+const errorMessageFrom = (error: unknown, fallback: string) => {
+  if (!isAxiosError(error)) return fallback
+  const payload = error.response?.data as { error?: { message?: string } } | undefined
+  return payload?.error?.message || fallback
+}
+
 export const useAuthStore = defineStore('auth', () => {
-  // ----------------------------------------------------
-  // 2. 彈窗狀態管理 (Modal State)
-  // ----------------------------------------------------
-  const isAuthModalOpen = ref<boolean>(false)
+  const isAuthModalOpen = ref(false)
   const authMode = ref<AuthMode>('login')
+  const user = ref<AuthUser | null>(null)
+  const accessToken = ref<string | null>(null)
+  const authStatus = ref<AuthStatus>('unknown')
+  const initialized = ref(false)
+  const passwordChangeRequired = ref(false)
+  const isLoading = ref(false)
+  const errorMessage = ref('')
+
+  let refreshPromise: Promise<string> | null = null
+  let initializationPromise: Promise<void> | null = null
+  let authEpoch = 0
+
+  const isAuthenticated = computed(() => authStatus.value === 'authenticated')
+  const isAdmin = computed(() => user.value?.role === 'admin')
+  const isAdminPortalUser = computed(() =>
+    user.value != null && ['sales', 'manager', 'admin'].includes(user.value.role)
+  )
+  const adminName = computed(() => user.value?.name || '未登入使用者')
 
   const openAuthModal = (mode: AuthMode = 'login') => {
     authMode.value = mode
@@ -49,116 +51,171 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthModalOpen.value = false
   }
 
-  // ----------------------------------------------------
-  // 3. 身份驗證狀態 (Auth State)
-  // ----------------------------------------------------
-  const token = ref<string>(localStorage.getItem('kqc_admin_token') || '')
+  const clearAuth = () => {
+    authEpoch += 1
+    accessToken.value = null
+    user.value = null
+    authStatus.value = 'unauthenticated'
+    passwordChangeRequired.value = false
+    errorMessage.value = ''
+  }
 
-  const getInitialUser = (): AdminUser | null => {
-    const savedUser = localStorage.getItem('kqc_admin_user')
-    if (!savedUser) return null
-    try {
-      return JSON.parse(savedUser) as AdminUser
-    } catch (e) {
-      console.error('[AuthStore] 無法解析本地使用者快取:', e)
-      localStorage.removeItem('kqc_admin_user')
-      return null
+  const markPasswordChangeRequired = () => {
+    passwordChangeRequired.value = true
+  }
+
+  const fetchIdentity = async () => {
+    const response = await authApi.me()
+    user.value = response.data.user
+    authStatus.value = 'authenticated'
+    passwordChangeRequired.value = response.data.user.mustChangePassword
+    return response.data.user
+  }
+
+  const refreshAccessToken = () => {
+    if (!refreshPromise) {
+      const requestEpoch = authEpoch
+      refreshPromise = authApi.refresh()
+        .then((response) => {
+          if (requestEpoch !== authEpoch) throw new Error('Auth state changed during refresh')
+          accessToken.value = response.data.accessToken
+          passwordChangeRequired.value = response.data.passwordChangeRequired
+          authStatus.value = 'authenticated'
+          return response.data.accessToken
+        })
+        .finally(() => {
+          refreshPromise = null
+        })
     }
+    return refreshPromise
   }
 
-  const user = ref<AdminUser | null>(getInitialUser())
-  const isLoading = ref<boolean>(false)
-  const errorMessage = ref<string>('')
-
-  // ----------------------------------------------------
-  // 4. Getters
-  // ----------------------------------------------------
-  const isAuthenticated = computed<boolean>(() => !!token.value)
-  const isAdmin = computed<boolean>(
-    () => user.value?.role === 'admin' || user.value?.role === 'superadmin'
-  )
-  const adminName = computed<string>(() => user.value?.name || '未登入使用者')
-
-  // ----------------------------------------------------
-  // 5. Actions
-  // ----------------------------------------------------
-
-  /** 設定認證資料並自動關閉彈窗 */
-  function setAuthData(userData: AdminUser, jwtToken: string) {
-    token.value = jwtToken
-    user.value = userData
-    localStorage.setItem('kqc_admin_token', jwtToken)
-    localStorage.setItem('kqc_admin_user', JSON.stringify(userData))
-    api.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`
-    closeAuthModal()
+  const initialize = () => {
+    if (initialized.value) return Promise.resolve()
+    if (!initializationPromise) {
+      initializationPromise = (async () => {
+        authStatus.value = 'unknown'
+        try {
+          await refreshAccessToken()
+          if (!passwordChangeRequired.value) await fetchIdentity()
+        } catch {
+          clearAuth()
+        } finally {
+          initialized.value = true
+          initializationPromise = null
+        }
+      })()
+    }
+    return initializationPromise
   }
 
-  /** 管理員/會員登入 API */
-  async function login(credentials: LoginCredentials): Promise<ActionResult> {
+  const login = async (credentials: Omit<LoginInput, 'portal'> & { portal?: Portal }): Promise<ActionResult> => {
     isLoading.value = true
     errorMessage.value = ''
     try {
-      const response = (await api.post<LoginResponse>('/auth/login', credentials)) as unknown as LoginResponse
-      const { token: jwtToken, user: userData } = response
+      if (!initialized.value) await initialize()
+      const response = await authApi.login({ ...credentials, portal: credentials.portal || 'frontend' })
+      accessToken.value = response.data.accessToken
+      passwordChangeRequired.value = response.data.passwordChangeRequired
+      authStatus.value = 'authenticated'
 
-      setAuthData(userData, jwtToken)
+      if (!passwordChangeRequired.value) {
+        await fetchIdentity()
+        closeAuthModal()
+      }
 
-      return { success: true, message: '登入成功，歡迎回到三爵資產戰情室' }
-    } catch (error: any) {
-      console.error('[AuthStore Login Error]:', error)
-      const msg = error.response?.data?.message || error.message || '登入失敗，請檢查帳號密碼或網路連線'
-      errorMessage.value = msg
-      return { success: false, message: msg }
+      return {
+        success: true,
+        message: '登入成功',
+        passwordChangeRequired: passwordChangeRequired.value
+      }
+    } catch (error) {
+      clearAuth()
+      const message = errorMessageFrom(error, '登入失敗，請確認帳號與密碼')
+      errorMessage.value = message
+      return { success: false, message }
     } finally {
       isLoading.value = false
     }
   }
 
-  /** 校驗 Token 有效性 */
-  async function checkAuth(): Promise<boolean> {
-    if (!token.value) return false
-
+  const register = async (input: { email: string; password: string; name: string }): Promise<ActionResult> => {
+    isLoading.value = true
+    errorMessage.value = ''
     try {
-      const response = (await api.get<{ user: AdminUser }>('/auth/me')) as unknown as { user: AdminUser }
-      user.value = response.user
-      localStorage.setItem('kqc_admin_user', JSON.stringify(response.user))
-      return true
+      await authApi.register(input)
+      return { success: true, message: '註冊完成，請至信箱完成驗證' }
     } catch (error) {
-      console.warn('[AuthStore CheckAuth Failed]: Token 已過期或失效，自動清除登入狀態')
-      logout()
-      return false
+      const message = errorMessageFrom(error, '註冊失敗，請稍後再試')
+      errorMessage.value = message
+      return { success: false, message }
+    } finally {
+      isLoading.value = false
     }
   }
 
-  /** 安全登出 */
-  function logout(): void {
-    token.value = ''
-    user.value = null
-    errorMessage.value = ''
-
-    localStorage.removeItem('kqc_admin_token')
-    localStorage.removeItem('kqc_admin_user')
-
-    delete api.defaults.headers.common['Authorization']
+  const logout = async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      // Local credentials must be cleared even when the server is unreachable.
+    } finally {
+      clearAuth()
+    }
   }
 
+  const logoutAll = async () => {
+    try {
+      await authApi.logoutAll()
+    } catch {
+      // Keep the local result deterministic; server revocation can be retried after a new login.
+    } finally {
+      clearAuth()
+    }
+  }
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    const response = await authApi.changePassword(currentPassword, newPassword)
+    accessToken.value = response.data.accessToken
+    passwordChangeRequired.value = false
+    await fetchIdentity()
+    return response.data
+  }
+
+  const recordActivity = () => authApi.activity()
+
+  configureAuthRuntime({
+    getAccessToken: () => accessToken.value,
+    refreshAccessToken,
+    clearAuth,
+    requirePasswordChange: markPasswordChangeRequired
+  })
+
   return {
-    // Modal State & Actions
     isAuthModalOpen,
     authMode,
-    openAuthModal,
-    closeAuthModal,
-    setAuthData,
-    // Auth State & Actions
-    token,
     user,
+    accessToken,
+    authStatus,
+    initialized,
+    passwordChangeRequired,
     isLoading,
     errorMessage,
     isAuthenticated,
     isAdmin,
+    isAdminPortalUser,
     adminName,
+    openAuthModal,
+    closeAuthModal,
+    clearAuth,
+    initialize,
     login,
-    checkAuth,
-    logout
+    register,
+    logout,
+    logoutAll,
+    changePassword,
+    recordActivity,
+    fetchIdentity,
+    refreshAccessToken
   }
 })

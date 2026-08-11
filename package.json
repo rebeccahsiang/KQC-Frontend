@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "test:auth-contracts": "node --test tests/auth/authContracts.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { createPinia } from 'pinia'
+import { useAuthStore } from '@/stores/authStore'
 import ToastService from 'primevue/toastservice' // 1. 匯入 Toast 服務
 
 // PrimeVue 配置
@@ -13,9 +14,10 @@ import Aura from '@primevue/themes/aura'
 import '@/assets/styles/main.scss'
 
 const app = createApp(App)
+const pinia = createPinia()
 
-
-app.use(createPinia())
+app.use(pinia)
+void useAuthStore(pinia).initialize()
 app.use(router)
 app.use(ToastService) // 2. 啟用 Toast 服務 (AuthModal 必須)
 app.use(PrimeVue, {
