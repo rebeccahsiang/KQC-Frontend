@@ -211,3 +211,66 @@ test('Invitation validation follows the backend password contract and preserves 
   assert.match(router, /passwordChangeRequired\s*&&\s*!isPasswordChangeRoute/)
   assert.match(read('src/views/ChangePasswordView.vue'), /!requested\.startsWith\(['"]\/\/['"]\)/)
 })
+
+test('Activity uses the existing Auth API client with no frontend identity payload', () => {
+  const api = read('src/api/auth.ts')
+  const store = read('src/stores/authStore.ts')
+  assert.match(api, /activity:\s*\(\)\s*=>\s*api\.post<Envelope<\{ activityRecorded: boolean \}>>\(['"]\/v1\/auth\/activity['"]\)/)
+  assert.doesNotMatch(api, /activity:[\s\S]{0,180}(userId|sessionId|role|portal|email)/)
+  assert.match(store, /const recordActivity = \(\) => authApi\.activity\(\)/)
+})
+
+test('Activity tracker accepts only explicit human interaction events and has no heartbeat', () => {
+  const source = read('src/auth/activityTracker.ts')
+  const eventMatch = source.match(/HUMAN_ACTIVITY_EVENTS = \[([^\]]+)\]/)
+  assert.ok(eventMatch)
+  const events = [...eventMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map((match) => match[1])
+  assert.deepEqual(events, ['pointerdown', 'keydown', 'touchstart'])
+  assert.doesNotMatch(source, /mousemove|scroll|focus|blur|visibilitychange|setInterval|setTimeout|heartbeat|keepAlive|polling/i)
+  assert.equal((source.match(/auth\.recordActivity\(\)/g) || []).length, 1)
+})
+
+test('Activity network sends are gated by auth readiness and a minimum sixty-second interval', () => {
+  const source = read('src/auth/activityTracker.ts')
+  const intervalMatch = source.match(/AUTH_ACTIVITY_SEND_INTERVAL_MS = ([\d_]+)/)
+  assert.ok(intervalMatch)
+  assert.ok(Number(intervalMatch[1].replaceAll('_', '')) >= 60_000)
+
+  const handlerStart = source.indexOf('const handleHumanActivity')
+  const request = source.indexOf('auth.recordActivity()', handlerStart)
+  for (const guard of ['!auth.initialized', '!auth.isAuthenticated', 'auth.passwordChangeRequired']) {
+    const guardIndex = source.indexOf(guard, handlerStart)
+    assert.ok(guardIndex >= handlerStart && guardIndex < request)
+  }
+  assert.ok(source.indexOf('document.visibilityState', handlerStart) < request)
+  assert.ok(source.indexOf('requestInFlight', handlerStart) < request)
+  assert.ok(source.indexOf('currentTime - lastAttemptAt < AUTH_ACTIVITY_SEND_INTERVAL_MS', handlerStart) < request)
+})
+
+test('Activity listeners initialize once at the App root and always support cleanup', () => {
+  const tracker = read('src/auth/activityTracker.ts')
+  const app = read('src/App.vue')
+  assert.match(tracker, /activeCleanup\?\.\(\)/)
+  assert.match(tracker, /eventTarget\.addEventListener\(eventName, handleHumanActivity, LISTENER_OPTIONS\)/)
+  assert.match(tracker, /eventTarget\.removeEventListener\(eventName, handleHumanActivity, LISTENER_OPTIONS\)/)
+  assert.match(app, /onMounted\(\(\) => \{\s*stopAuthActivityTracker = startAuthActivityTracker\(authStore\)/)
+  assert.match(app, /onUnmounted\(\(\) => \{\s*stopAuthActivityTracker\?\.\(\)/)
+  assert.equal((app.match(/startAuthActivityTracker\(/g) || []).length, 1)
+})
+
+test('Activity is never emitted by login, hydration, lifecycle pages, or logout code paths', () => {
+  const store = read('src/stores/authStore.ts')
+  for (const [startMarker, endMarker] of [
+    ['const initialize =', 'const login ='],
+    ['const login =', 'const register ='],
+    ['const logout =', 'const logoutAll ='],
+    ['const logoutAll =', 'const changePassword =']
+  ]) {
+    const section = store.slice(store.indexOf(startMarker), store.indexOf(endMarker))
+    assert.doesNotMatch(section, /recordActivity|authApi\.activity/)
+  }
+  for (const page of ['src/views/VerifyEmailView.vue', 'src/views/AcceptInvitationView.vue', 'src/views/ChangePasswordView.vue']) {
+    assert.doesNotMatch(read(page), /activityTracker|recordActivity|authApi\.activity/)
+  }
+  assert.match(store, /finally \{\s*clearAuth\(\)/)
+})

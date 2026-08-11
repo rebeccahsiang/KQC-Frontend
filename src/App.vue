@@ -1,12 +1,26 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useThemeStore } from '@/stores/themeStore'
+import { useAuthStore } from '@/stores/authStore'
+import { startAuthActivityTracker } from '@/auth/activityTracker'
 import AuthModal from '@/components/auth/AuthModal.vue'
 
 const themeStore = useThemeStore()
+const authStore = useAuthStore()
+let stopAuthActivityTracker: (() => void) | null = null
 
 // 🎯 防範 FOUC (Flash of Unstyled Content) 白閃 Bug：DOM 繪製前初始化主題屬性
 themeStore.initTheme()
+
+onMounted(() => {
+  stopAuthActivityTracker = startAuthActivityTracker(authStore)
+})
+
+onUnmounted(() => {
+  stopAuthActivityTracker?.()
+  stopAuthActivityTracker = null
+})
 </script>
 
 <template>
