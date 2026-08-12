@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { onMounted, onUnmounted, watch } from 'vue'
+import { RouterView, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/themeStore'
 import { useAuthStore } from '@/stores/authStore'
 import { startAuthActivityTracker } from '@/auth/activityTracker'
@@ -8,7 +8,22 @@ import AuthModal from '@/components/auth/AuthModal.vue'
 
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
+const router = useRouter()
 let stopAuthActivityTracker: (() => void) | null = null
+
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuthenticated, wasAuthenticated) => {
+    if (
+      wasAuthenticated &&
+      !isAuthenticated &&
+      router.currentRoute.value.name === 'MemberSessions'
+    ) {
+      await router.replace({ name: 'Home' })
+      authStore.openAuthModal('login', '登入狀態已失效，請重新登入。')
+    }
+  }
+)
 
 // 🎯 防範 FOUC (Flash of Unstyled Content) 白閃 Bug：DOM 繪製前初始化主題屬性
 themeStore.initTheme()

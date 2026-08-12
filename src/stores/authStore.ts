@@ -23,6 +23,7 @@ const errorMessageFrom = (error: unknown, fallback: string) => {
 export const useAuthStore = defineStore('auth', () => {
   const isAuthModalOpen = ref(false)
   const authMode = ref<AuthMode>('login')
+  const authPromptMessage = ref('')
   const user = ref<AuthUser | null>(null)
   const accessToken = ref<string | null>(null)
   const authStatus = ref<AuthStatus>('unknown')
@@ -42,13 +43,15 @@ export const useAuthStore = defineStore('auth', () => {
   )
   const adminName = computed(() => user.value?.name || '未登入使用者')
 
-  const openAuthModal = (mode: AuthMode = 'login') => {
+  const openAuthModal = (mode: AuthMode = 'login', message = '') => {
     authMode.value = mode
+    authPromptMessage.value = message
     isAuthModalOpen.value = true
   }
 
   const closeAuthModal = () => {
     isAuthModalOpen.value = false
+    authPromptMessage.value = ''
   }
 
   const clearAuth = () => {
@@ -194,6 +197,7 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     isAuthModalOpen,
     authMode,
+    authPromptMessage,
     user,
     accessToken,
     authStatus,

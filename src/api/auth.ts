@@ -13,6 +13,23 @@ export interface AuthUser {
   mustChangePassword: boolean
 }
 
+export interface AuthSession {
+  id: string
+  deviceName: string | null
+  isCurrent: boolean
+  lastActiveAt: string
+  createdAt: string
+}
+
+export interface SessionListResult {
+  sessions: AuthSession[]
+}
+
+export interface RevokeSessionResult {
+  revoked: boolean
+  isCurrent: boolean
+}
+
 interface Envelope<T> {
   success: true
   data: T
@@ -36,6 +53,9 @@ export const authApi = {
   refresh: () =>
     api.post<Envelope<TokenResult>>('/v1/auth/refresh', undefined, { skipAuthRefresh: true }),
   me: () => api.get<Envelope<{ user: AuthUser }>>('/v1/auth/me'),
+  sessions: () => api.get<Envelope<SessionListResult>>('/v1/auth/sessions'),
+  revokeSession: (sessionId: string) =>
+    api.delete<Envelope<RevokeSessionResult>>(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`),
   logout: () => api.post<Envelope<{ loggedOut: boolean }>>('/v1/auth/logout', undefined, {
     skipAuthRefresh: true
   }),

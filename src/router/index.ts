@@ -27,6 +27,17 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ChangePasswordView.vue'),
     meta: { requiresAuth: true, title: '變更密碼 - 三爵資訊 KQC' }
   },
+  {
+    path: '/account/sessions',
+    name: 'MemberSessions',
+    component: () => import('@/views/account/SessionManagementView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['user'],
+      authPortal: 'frontend',
+      title: '登入中的裝置 - 三爵資訊 KQC'
+    }
+  },
   { path: '/design-system', name: 'DesignSystem', component: () => import('@/views/DesignSystemView.vue'), meta: { title: 'Design System - 三爵鋼鐵藍 × 琥珀金 Token 展示' } },
   {
     path: '/admin',
@@ -92,6 +103,10 @@ router.beforeEach(async (to) => {
   if (!authStore.initialized) await authStore.initialize()
 
   if (!authStore.isAuthenticated) {
+    if (to.meta.authPortal === 'frontend') {
+      authStore.openAuthModal('login', '請先重新登入。')
+      return { name: 'Home' }
+    }
     return { name: 'Login', query: { redirect: to.fullPath } }
   }
   const isPasswordChangeRoute = to.name === 'ChangePassword'

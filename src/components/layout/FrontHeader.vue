@@ -232,6 +232,15 @@ const handleVoiceInput = (): void => {
         <!-- 狀態 B：已登入 -> 顯示使用者名稱與登出按鈕 -->
         <div v-else class="user-profile-menu">
           <span class="user-name-badge">{{ authStore.adminName }}</span>
+          <router-link
+            v-if="authStore.user?.role === 'user'"
+            to="/account/sessions"
+            class="control-btn session-btn"
+            title="登入中的裝置"
+            aria-label="登入中的裝置"
+          >
+            <Icon icon="lucide:monitor-smartphone" class="control-icon" />
+          </router-link>
           <button
             type="button"
             class="control-btn logout-btn"

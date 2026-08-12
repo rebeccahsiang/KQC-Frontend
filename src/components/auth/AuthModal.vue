@@ -25,6 +25,15 @@
           <p>請輸入您的電子郵件與密碼登入戰情室</p>
         </div>
 
+        <Message
+          v-if="authStore.authPromptMessage"
+          severity="info"
+          :closable="false"
+          role="status"
+        >
+          {{ authStore.authPromptMessage }}
+        </Message>
+
         <form @submit.prevent="handleLogin" class="auth-form">
           <div class="field-group">
             <label for="login-email">電子郵件 Email <span class="required-star">*</span></label>
@@ -288,6 +297,7 @@ import StepPanels from 'primevue/steppanels'
 import StepPanel from 'primevue/steppanel'
 import ToggleButton from 'primevue/togglebutton'
 import Divider from 'primevue/divider'
+import Message from 'primevue/message'
 import Toast from 'primevue/toast'
 
 const authStore = useAuthStore()

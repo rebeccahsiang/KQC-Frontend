@@ -274,3 +274,45 @@ test('Activity is never emitted by login, hydration, lifecycle pages, or logout 
   }
   assert.match(store, /finally \{\s*clearAuth\(\)/)
 })
+
+test('Session API types expose only the approved frontend DTO and result fields', () => {
+  const source = read('src/api/auth.ts')
+  const sessionType = source.slice(
+    source.indexOf('export interface AuthSession'),
+    source.indexOf('export interface SessionListResult')
+  )
+  const listType = source.slice(
+    source.indexOf('export interface SessionListResult'),
+    source.indexOf('export interface RevokeSessionResult')
+  )
+  const revokeType = source.slice(
+    source.indexOf('export interface RevokeSessionResult'),
+    source.indexOf('interface Envelope')
+  )
+
+  assert.deepEqual(
+    [...sessionType.matchAll(/^\s{2}(\w+):/gm)].map((match) => match[1]),
+    ['id', 'deviceName', 'isCurrent', 'lastActiveAt', 'createdAt']
+  )
+  assert.match(sessionType, /deviceName: string \| null/)
+  assert.match(listType, /sessions: AuthSession\[\]/)
+  assert.deepEqual(
+    [...revokeType.matchAll(/^\s{2}(\w+):/gm)].map((match) => match[1]),
+    ['revoked', 'isCurrent']
+  )
+  assert.doesNotMatch(sessionType, /userId|ip|location|userAgent|token|expires|revoke|audit/i)
+})
+
+test('Session APIs use the existing Axios client without identity authority, body, cookie, or JWT logic', () => {
+  const source = read('src/api/auth.ts')
+  const methods = source.slice(
+    source.indexOf('sessions: ()'),
+    source.indexOf('logout: ()')
+  )
+
+  assert.match(methods, /sessions: \(\) => api\.get<Envelope<SessionListResult>>\(['"]\/v1\/auth\/sessions['"]\)/)
+  assert.match(methods, /revokeSession: \(sessionId: string\) =>\s*api\.delete<Envelope<RevokeSessionResult>>\(`\/v1\/auth\/sessions\/\$\{encodeURIComponent\(sessionId\)\}`\)/)
+  assert.doesNotMatch(methods, /userId|owner|isCurrent|revokeReason|body|params|cookie|localStorage|sessionStorage|decode|jwt/i)
+  assert.equal((source.match(/axios\.create\(/g) || []).length, 0)
+  assert.match(source, /^import api from ['"]\.\/axios['"]/m)
+})
