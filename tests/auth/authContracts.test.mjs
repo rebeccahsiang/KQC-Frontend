@@ -79,6 +79,18 @@ test('Logout clears memory state and PASSWORD_CHANGE_REQUIRED has a centralized 
   assert.match(client, /signalPasswordChangeRequired\(\)/)
 })
 
+test('Logout sends the memory Access Token through the shared interceptor before deterministic local cleanup', () => {
+  const store = read('src/stores/authStore.ts')
+  const client = read('src/api/axios.ts')
+  const logoutFlow = store.slice(store.indexOf('const logout = async'), store.indexOf('const logoutAll'))
+
+  assert.match(logoutFlow, /try \{\s*await authApi\.logout\(\)/)
+  assert.match(logoutFlow, /finally \{\s*clearAuth\(\)/)
+  assert.ok(logoutFlow.indexOf('await authApi.logout()') < logoutFlow.indexOf('clearAuth()'))
+  assert.match(client, /const token = getRuntimeAccessToken\(\)/)
+  assert.match(client, /config\.headers\.Authorization = `Bearer \$\{token\}`/)
+})
+
 test('Frontend Auth and routing contain only the four approved roles', () => {
   const source = [
     read('src/api/auth.ts'),
