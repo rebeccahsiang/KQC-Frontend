@@ -1,69 +1,90 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
 import { Icon } from '@iconify/vue'
-import type { SidebarMenuItem as SidebarMenuItemConfig } from '@/config/sidebarMenu'
+import { useRoute, useRouter } from 'vue-router'
 
-const props = defineProps<{
-  item: SidebarMenuItemConfig
-  isCollapsed?: boolean
-}>()
+import type { SidebarMenuItem } from '@/config/sidebarMenu'
+import { useAuthStore } from '@/stores/authStore'
 
-const router = useRouter()
+const props = defineProps<{ item: SidebarMenuItem; isCollapsed?: boolean }>()
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 const isOpen = ref(true)
+const visibleChildren = computed(() => props.item.children?.filter((child) =>
+  !child.roles || (authStore.user?.role && child.roles.includes(authStore.user.role))
+) || [])
+const isActive = computed(() => props.item.path
+  ? route.path === props.item.path
+  : visibleChildren.value.some((child) => child.path === route.path))
 
-const handleClick = () => {
-  if (props.item.children) {
-    isOpen.value = !isOpen.value
-  } else if (props.item.path) {
-    router.push(props.item.path)
-  }
+const activate = () => {
+  if (visibleChildren.value.length) isOpen.value = !isOpen.value
+  else if (props.item.path) void router.push(props.item.path)
 }
 </script>
 
 <template>
-  <div class="menu-item-wrapper">
+  <div class="menu-item">
     <button
-      @click="handleClick"
-      :class="[
-        'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 group text-sm font-medium',
-        route.path === item.path
-          ? 'bg-[var(--accent)] text-slate-950 font-semibold shadow-lg shadow-amber-500/20'
-          : 'hover:bg-slate-800 text-slate-300 hover:text-white'
-      ]"
-      v-tooltip.right="isCollapsed ? item.title : ''"
+      type="button"
+      class="menu-button"
+      :class="{ active: isActive, compact: isCollapsed }"
+      :title="isCollapsed ? item.title : undefined"
+      :aria-expanded="visibleChildren.length ? isOpen : undefined"
+      @click="activate"
     >
-      <!-- Lucide Icon 動態渲染 -->
+      <Icon :icon="item.icon" class="menu-icon" aria-hidden="true" />
+      <span v-if="!isCollapsed" class="menu-title">{{ item.title }}</span>
       <Icon
-        :icon="item.icon"
-        :class="[
-          'w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110',
-          route.path === item.path ? 'text-slate-950' : 'text-amber-400/90 group-hover:text-amber-400'
-        ]"
-      />
-
-      <!-- 選單標題 (修復：修正為 item.title) -->
-      <span v-if="!isCollapsed" class="whitespace-nowrap tracking-wide flex-1 text-left">
-        {{ item.title }}
-      </span>
-
-      <!-- 下拉選單箭頭 (修復：補上 lucide:chevron-down) -->
-      <Icon
-        v-if="item.children && !isCollapsed"
+        v-if="visibleChildren.length && !isCollapsed"
         icon="lucide:chevron-down"
-        :class="['w-4 h-4 transition-transform duration-200', isOpen ? 'rotate-180' : '']"
+        class="chevron"
+        :class="{ open: isOpen }"
+        aria-hidden="true"
       />
     </button>
 
-    <!-- 子選單遞迴渲染 -->
-    <div v-if="item.children && isOpen && !isCollapsed" class="pl-6 mt-1 space-y-1">
+    <div v-if="visibleChildren.length && isOpen && !isCollapsed" class="submenu">
       <SidebarMenuItem
-        v-for="child in item.children"
+        v-for="child in visibleChildren"
         :key="child.id"
         :item="child"
-        :isCollapsed="isCollapsed"
+        :is-collapsed="false"
       />
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.menu-item + .menu-item { margin-top: 4px; }
+.menu-button {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #cbd5e1;
+  font-family: var(--kqc-font-family);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+
+  &:hover { background: rgba(51, 65, 85, 0.85); color: #fff; }
+  &.active { background: var(--accent); color: #172033; font-weight: 700; }
+  &.compact { justify-content: center; padding-inline: 8px; }
+}
+.menu-icon { width: 18px; height: 18px; flex: 0 0 18px; color: #facc15; }
+.active .menu-icon { color: #172033; }
+.menu-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chevron { width: 15px; height: 15px; transition: transform 0.18s ease; }
+.chevron.open { transform: rotate(180deg); }
+.submenu { margin: 4px 0 6px 17px; padding-left: 9px; border-left: 1px solid rgba(148, 163, 184, 0.22); }
+.submenu :deep(.menu-button) { min-height: 36px; padding-block: 7px; font-size: 0.78rem; }
+</style>

@@ -1,102 +1,133 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Icon } from '@iconify/vue'
+
 import { sidebarMenu } from '@/config/sidebarMenu'
+import { useAuthStore } from '@/stores/authStore'
 import SidebarMenuItem from './SidebarMenuItem.vue'
 
-// 控制側邊欄展開/折疊狀態
+const authStore = useAuthStore()
 const isCollapsed = ref(false)
+const visibleMenu = computed(() => {
+  const role = authStore.user?.role
+  return sidebarMenu.filter((item) => !item.roles || (role && item.roles.includes(role)))
+})
 </script>
 
 <template>
-  <aside
-    :class="[
-      'h-screen sticky top-0 bg-[var(--primary)] text-slate-200 transition-all duration-300 flex flex-col border-r border-slate-700/50 shadow-xl z-20 select-none',
-      isCollapsed ? 'w-24' : 'w-64'
-    ]"
-  >
-    <!-- 1. 頂部 Header：Logo 與收折按鈕 (精準 Flex 控管，嚴格防重疊) -->
-    <div 
-      :class="[
-        'h-16 flex-shrink-0 flex items-center border-b border-slate-700/50 transition-all duration-300 overflow-hidden',
-        isCollapsed ? 'px-3 justify-center gap-2' : 'px-4 justify-between'
-      ]"
-    >
-      <!-- 左側品牌標誌區塊 -->
-      <div class="flex items-center gap-2.5 min-w-0 flex-shrink-0">
-        <!-- KQC 品牌 Icon：固定 32x32px 不可壓縮 -->
-        <div class="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center font-bold text-slate-900 shadow-md flex-shrink-0 min-w-[32px] min-h-[32px]">
-          KQC
-        </div>
-        
-        <!-- 系統標題：僅在展開時顯示 -->
-        <span 
-          v-if="!isCollapsed" 
-          class="font-bold text-lg tracking-wider whitespace-nowrap text-white truncate min-w-0"
-        >
-          三爵後台管理
-        </span>
+  <aside class="sidebar" :class="{ collapsed: isCollapsed }">
+    <div class="sidebar-brand">
+      <div class="brand-lockup">
+        <div class="logo-block">KQC</div>
+        <span v-if="!isCollapsed" class="brand-title">三爵後台管理</span>
       </div>
-
-      <!-- 收折控制按鈕：獨立 32x32px 實體按鈕，緊跟在 Logo 右側面，絕不重疊 -->
       <button
+        class="collapse-button"
+        type="button"
+        :title="isCollapsed ? '展開側邊欄' : '收合側邊欄'"
+        :aria-label="isCollapsed ? '展開側邊欄' : '收合側邊欄'"
         @click="isCollapsed = !isCollapsed"
-        class="w-8 h-8 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-[var(--accent)] transition-all flex items-center justify-center flex-shrink-0 min-w-[32px] min-h-[32px] shadow-sm"
-        :title="isCollapsed ? '展開側邊欄' : '折疊側邊欄'"
       >
-        <Icon 
-          :icon="isCollapsed ? 'lucide:panel-left-open' : 'lucide:panel-left-close'" 
-          class="w-4.5 h-4.5 flex-shrink-0" 
-        />
+        <Icon :icon="isCollapsed ? 'lucide:panel-left-open' : 'lucide:panel-left-close'" />
       </button>
     </div>
 
-    <!-- 2. 中央選單列表區塊 -->
-    <nav 
-      :class="[
-        'flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-1.5 custom-sidebar-scroll',
-        isCollapsed ? 'flex flex-col items-center' : ''
-      ]"
-    >
+    <nav class="sidebar-menu" aria-label="後台主要導覽">
       <SidebarMenuItem
-        v-for="item in sidebarMenu"
+        v-for="item in visibleMenu"
         :key="item.id"
         :item="item"
-        :isCollapsed="isCollapsed"
+        :is-collapsed="isCollapsed"
       />
     </nav>
 
-    <!-- 3. 底部管理員資訊區塊 -->
-    <div class="p-3 border-t border-slate-700/50 flex-shrink-0">
-      <div :class="['flex items-center gap-3 p-2 rounded-lg bg-slate-800/60 transition-all', isCollapsed ? 'justify-center' : '']">
-        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-[var(--accent)] font-semibold border border-[var(--accent)]/30 flex-shrink-0">
-          <Icon icon="lucide:user-check" class="w-4 h-4" />
-        </div>
-        <div v-if="!isCollapsed" class="overflow-hidden">
-          <p class="text-xs font-semibold text-white truncate">系統管理員</p>
-          <p class="text-[10px] text-slate-400 truncate">admin@kqc.com.tw</p>
-        </div>
+    <div class="sidebar-footer">
+      <div class="footer-avatar"><Icon icon="lucide:user-check" /></div>
+      <div v-if="!isCollapsed" class="footer-copy">
+        <strong>{{ authStore.adminName }}</strong>
+        <span>{{ authStore.user?.email || 'admin@kqc.com.tw' }}</span>
       </div>
     </div>
   </aside>
 </template>
 
 <style lang="scss" scoped>
-.custom-sidebar-scroll {
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 4px;
-    &:hover {
-      background: var(--accent);
-    }
-  }
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+.sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  width: 256px;
+  height: 100vh;
+  flex: 0 0 256px;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid rgba(148, 163, 184, 0.18);
+  background: #1e293b;
+  color: #e2e8f0;
+  box-shadow: var(--shadow-lg);
+  transition: width 0.25s ease, flex-basis 0.25s ease;
+
+  &.collapsed { width: 76px; flex-basis: 76px; }
 }
+
+.sidebar-brand {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.brand-lockup { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.logo-block {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #172033;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.brand-title { overflow: hidden; color: #fff; font-weight: 700; white-space: nowrap; }
+.collapse-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.45);
+  color: #cbd5e1;
+  cursor: pointer;
+  svg { width: 16px; height: 16px; }
+  &:hover { border-color: var(--accent); color: var(--accent); }
+}
+.collapsed .sidebar-brand { justify-content: center; padding: 0 10px; flex-direction: column; gap: 2px; }
+.collapsed .logo-block { width: 30px; height: 26px; flex-basis: 26px; }
+.collapsed .collapse-button { height: 24px; }
+.sidebar-menu { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 10px; }
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px;
+  padding: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.38);
+}
+.footer-avatar { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 50%; color: var(--accent); background: #334155; }
+.footer-avatar svg { width: 16px; height: 16px; }
+.footer-copy { display: flex; min-width: 0; flex-direction: column; line-height: 1.3; }
+.footer-copy strong { overflow: hidden; color: #fff; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+.footer-copy span { overflow: hidden; color: #94a3b8; font-size: 0.65rem; text-overflow: ellipsis; white-space: nowrap; }
+.collapsed .sidebar-footer { justify-content: center; padding: 8px; }
 </style>

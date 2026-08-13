@@ -1,25 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import AppHeader from '@/components/layout/AppHeader.vue'
-import Sidebar from '@/components/layout/Sidebar.vue'
-
-const isSidebarCollapsed = ref(false)
-
-const toggleSidebar = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-}
+import AdminHeader from '@/components/layout/AdminHeader.vue'
+import SidebarNav from '@/components/layout/sidebar/SidebarNav.vue'
 </script>
 
 <template>
   <div class="admin-layout">
-    <!-- 全域頂部導覽列 -->
-    <AppHeader />
-
-    <!-- 主體：側欄 + 內容 -->
-    <div class="admin-body">
-      <Sidebar :is-collapsed="isSidebarCollapsed" @toggle="toggleSidebar" />
-
-      <main class="admin-main" :class="{ 'sidebar-expanded': !isSidebarCollapsed }">
+    <SidebarNav />
+    <div class="admin-workspace">
+      <AdminHeader />
+      <main class="admin-main">
         <router-view />
       </main>
     </div>
@@ -28,23 +17,25 @@ const toggleSidebar = () => {
 
 <style lang="scss" scoped>
 .admin-layout {
-  min-height: 100vh;
   display: flex;
-  flex-direction: column;
-  background-color: #F8FAFC; /* 70% 雲霧極光白 */
+  min-height: 100vh;
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--kqc-font-family);
 }
 
-.admin-body {
+.admin-workspace {
   display: flex;
   flex: 1;
-  overflow: hidden;
+  min-width: 0;
+  flex-direction: column;
 }
 
 .admin-main {
   flex: 1;
+  min-width: 0;
   padding: 24px;
-  overflow-y: auto;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 0; /* 防止 flex 溢出 */
+  overflow: auto;
+  background: var(--bg-main);
 }
 </style>

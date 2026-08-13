@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Icon } from '@iconify/vue'
+import { useThemeStore } from '@/stores/themeStore'
 
 const router = useRouter()
 const route = useRoute()
-const isDarkMode = ref(false)
+const themeStore = useThemeStore()
 
 // 70/25/5 設計規範: 暗黑切換
-const toggleTheme = () => {
-  isDarkMode.value = !isDarkMode.value
-  document.documentElement.classList.toggle('dark-mode', isDarkMode.value)
-}
 
 // 主選單
 const navItems = [
@@ -61,17 +58,16 @@ const isAdminRoute = () => route.path.startsWith('/admin')
         <!-- 暗黑模式切換 -->
         <button
           class="btn-icon-action"
-          @click="toggleTheme"
-          :title="isDarkMode ? '切換為亮色模式' : '切換為暗黑戰情室'"
+          @click="themeStore.toggleTheme"
+          :title="themeStore.isDark ? '切換為亮色模式' : '切換為暗黑戰情室'"
           aria-label="切換主題"
         >
-          <span v-if="isDarkMode">☀️</span>
-          <span v-else>🌙</span>
+          <Icon :icon="themeStore.isDark ? 'lucide:sun' : 'lucide:moon'" />
         </button>
 
         <!-- 系統訊息鈴 -->
         <button class="btn-icon-action btn-bell" title="即時系統訊息" aria-label="通知">
-          🔔
+          <Icon icon="lucide:bell" />
           <span class="notification-dot"></span>
         </button>
 

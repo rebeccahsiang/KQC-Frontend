@@ -102,6 +102,39 @@ test('Frontend Auth and routing contain only the four approved roles', () => {
   for (const role of ['user', 'sales', 'manager', 'admin']) assert.match(source, new RegExp(`['"]${role}['"]`))
 })
 
+test('Admin account routes stay behind the existing admin-only route contract', () => {
+  const source = read('src/router/index.ts')
+  for (const path of ['members', 'sales', 'managers', 'admins']) {
+    assert.match(source, new RegExp(`path:\\s*['"]${path}['"][^}]+roles:\\s*\\[['"]admin['"]\\]`))
+  }
+  assert.match(source, /path:\s*['"]users['"][\s\S]{0,180}roles:\s*\[['"]admin['"]\]/)
+  assert.match(source, /const allowedRoles = to\.meta\.roles/)
+})
+
+test('Restored admin shell uses Lucide navigation and the canonical data-theme contract', () => {
+  const menu = read('src/config/sidebarMenu.ts')
+  const sidebar = read('src/components/layout/sidebar/SidebarNav.vue')
+  const header = read('src/components/layout/AdminHeader.vue')
+  const theme = read('src/stores/themeStore.ts')
+
+  for (const route of [
+    '/admin/users/members', '/admin/users/sales',
+    '/admin/users/managers', '/admin/users/admins'
+  ]) assert.match(menu, new RegExp(route.replaceAll('/', '\\/')))
+  for (const label of ['會員帳號', '業務帳號', '主管帳號', '系統管理員']) {
+    assert.match(menu, new RegExp(label))
+  }
+  assert.doesNotMatch(`${menu}\n${sidebar}\n${header}`, /document\.documentElement\.classList|dark-mode/)
+  assert.match(theme, /document\.documentElement\.dataset\.theme = theme/)
+  assert.match(theme, /localStorage\.setItem\(STORAGE_KEY, theme\)/)
+  assert.match(header, /lucide:sun/)
+  assert.match(header, /lucide:moon/)
+  assert.match(header, /lucide:bell/)
+  assert.match(sidebar, /lucide:panel-left-open/)
+  assert.match(sidebar, /lucide:panel-left-close/)
+  assert.doesNotMatch(`${menu}\n${sidebar}\n${header}`, /[😀-🙏🌀-🫿]/u)
+})
+
 test('Change Password route requires authentication and forced accounts cannot enter protected routes', () => {
   const source = read('src/router/index.ts')
   assert.match(source, /path:\s*['"]\/change-password['"]/)

@@ -23,7 +23,7 @@
   --color-brand-border: var(--border-grey);
   --color-brand-danger: var(--danger);
 
-  --font-sans: "Inter", "Microsoft JhengHei", "PingFang TC", sans-serif;
+  --font-sans: var(--kqc-font-family);
 }
 
 // 4. 全域 CSS Reset & Box-Sizing 強制規範
