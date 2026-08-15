@@ -12,6 +12,6 @@ export const ROLE_LABELS: Record<Role, string> = { user: '會員', sales: '業�
 export const STATUS_LABELS: Record<AccountStatus, string> = { pending: '待啟用', active: '使用中', suspended: '已暫停', disabled: '已停用' }
 export const STATUS_SEVERITY: Record<AccountStatus, 'warn' | 'success' | 'danger' | 'secondary'> = { pending: 'warn', active: 'success', suspended: 'danger', disabled: 'secondary' }
 
-export const formatAdminDate = (value: string | null) => value
+export const formatAdminDate = (value: string | null, fallback = '尚未登入') => value
   ? new Intl.DateTimeFormat('zh-TW', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-  : '尚未登入'
+  : fallback
