@@ -102,12 +102,13 @@ test('Frontend Auth and routing contain only the four approved roles', () => {
   for (const role of ['user', 'sales', 'manager', 'admin']) assert.match(source, new RegExp(`['"]${role}['"]`))
 })
 
-test('Admin account routes stay behind the existing admin-only route contract', () => {
+test('Admin account routes expose manager-contained scopes and keep admins admin-only', () => {
   const source = read('src/router/index.ts')
-  for (const path of ['members', 'sales', 'managers', 'admins']) {
-    assert.match(source, new RegExp(`path:\\s*['"]${path}['"][^}]+roles:\\s*\\[['"]admin['"]\\]`))
+  for (const path of ['members', 'sales', 'managers']) {
+    assert.match(source, new RegExp(`path:\\s*['"]${path}['"][^}]+roles:\\s*\\[['"]manager['"],\\s*['"]admin['"]\\]`))
   }
-  assert.match(source, /path:\s*['"]users['"][\s\S]{0,180}roles:\s*\[['"]admin['"]\]/)
+  assert.match(source, /path:\s*['"]admins['"][^}]+roles:\s*\[['"]admin['"]\]/)
+  assert.match(source, /path:\s*['"]users['"][\s\S]{0,180}roles:\s*\[['"]manager['"],\s*['"]admin['"]\]/)
   assert.match(source, /const allowedRoles = to\.meta\.roles/)
 })
 
@@ -121,7 +122,7 @@ test('Restored admin shell uses Lucide navigation and the canonical data-theme c
     '/admin/users/members', '/admin/users/sales',
     '/admin/users/managers', '/admin/users/admins'
   ]) assert.match(menu, new RegExp(route.replaceAll('/', '\\/')))
-  for (const label of ['會員帳號', '業務帳號', '主管帳號', '系統管理員']) {
+  for (const label of ['帳號管理', '一般帳號管理', '會員', '業務', '平台管理者', '最高管理', '最高管理者']) {
     assert.match(menu, new RegExp(label))
   }
   assert.doesNotMatch(`${menu}\n${sidebar}\n${header}`, /document\.documentElement\.classList|dark-mode/)

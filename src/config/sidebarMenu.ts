@@ -13,12 +13,22 @@ export const sidebarMenu: SidebarMenuItem[] = [
     path: '/admin/dashboard', roles: ['manager', 'admin']
   },
   {
-    id: 'accounts', title: '帳號管理', icon: 'lucide:users', roles: ['admin'],
+    id: 'accounts', title: '帳號管理', icon: 'lucide:users', roles: ['manager', 'admin'],
     children: [
-      { id: 'members', title: '會員帳號', icon: 'lucide:user-round', path: '/admin/users/members', roles: ['admin'] },
-      { id: 'sales', title: '業務帳號', icon: 'lucide:briefcase-business', path: '/admin/users/sales', roles: ['admin'] },
-      { id: 'managers', title: '主管帳號', icon: 'lucide:shield', path: '/admin/users/managers', roles: ['admin'] },
-      { id: 'admins', title: '系統管理員', icon: 'lucide:crown', path: '/admin/users/admins', roles: ['admin'] }
+      {
+        id: 'general-accounts', title: '一般帳號管理', icon: 'lucide:users-round', roles: ['manager', 'admin'],
+        children: [
+          { id: 'members', title: '會員', icon: 'lucide:user-round', path: '/admin/users/members', roles: ['manager', 'admin'] },
+          { id: 'sales', title: '業務', icon: 'lucide:briefcase-business', path: '/admin/users/sales', roles: ['manager', 'admin'] },
+          { id: 'managers', title: '平台管理者', icon: 'lucide:shield', path: '/admin/users/managers', roles: ['manager', 'admin'] }
+        ]
+      },
+      {
+        id: 'highest-management', title: '最高管理', icon: 'lucide:shield-check', roles: ['admin'],
+        children: [
+          { id: 'admins', title: '最高管理者', icon: 'lucide:crown', path: '/admin/users/admins', roles: ['admin'] }
+        ]
+      }
     ]
   },
   {

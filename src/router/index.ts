@@ -55,12 +55,12 @@ const routes: RouteRecordRaw[] = [
         path: 'users',
         name: 'AdminUserManagement',
         redirect: '/admin/users/members',
-        meta: { title: '帳號管理', roles: ['admin'] },
+        meta: { title: '帳號管理', roles: ['manager', 'admin'] },
         children: [
-          { path: 'members', name: 'AdminMembers', component: () => import('@/views/admin/users/AdminUsersPlaceholderView.vue'), meta: { title: '會員帳號', userSectionLabel: '會員帳號', roles: ['admin'] } },
-          { path: 'sales', name: 'AdminSalesUsers', component: () => import('@/views/admin/users/AdminUsersPlaceholderView.vue'), meta: { title: '業務帳號', userSectionLabel: '業務帳號', roles: ['admin'] } },
-          { path: 'managers', name: 'AdminManagerUsers', component: () => import('@/views/admin/users/AdminUsersPlaceholderView.vue'), meta: { title: '主管帳號', userSectionLabel: '主管帳號', roles: ['admin'] } },
-          { path: 'admins', name: 'AdminUsers', component: () => import('@/views/admin/users/AdminUsersPlaceholderView.vue'), meta: { title: '系統管理員', userSectionLabel: '系統管理員', roles: ['admin'] } }
+          { path: 'members', name: 'AdminMembers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '會員帳號', userSection: 'members', roles: ['manager', 'admin'] } },
+          { path: 'sales', name: 'AdminSalesUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '業務帳號', userSection: 'sales', roles: ['manager', 'admin'] } },
+          { path: 'managers', name: 'AdminManagerUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '平台管理者', userSection: 'managers', roles: ['manager', 'admin'] } },
+          { path: 'admins', name: 'AdminUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '最高管理者', userSection: 'admins', roles: ['admin'] } }
         ]
       },
       {
