@@ -4,6 +4,7 @@ export interface SidebarMenuItem {
   icon: string
   path?: string
   roles?: string[]
+  disabled?: boolean
   children?: SidebarMenuItem[]
 }
 

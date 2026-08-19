@@ -19,6 +19,8 @@ const isActive = computed(() => props.item.path
   : visibleChildren.value.some((child) => child.path === route.path))
 
 const activate = () => {
+  // 預留項目只呈現資訊架構，不允許展開或觸發 router navigation。
+  if (props.item.disabled) return
   if (visibleChildren.value.length) isOpen.value = !isOpen.value
   else if (props.item.path) void router.push(props.item.path)
 }
@@ -29,13 +31,16 @@ const activate = () => {
     <button
       type="button"
       class="menu-button"
-      :class="{ active: isActive, compact: isCollapsed }"
-      :title="isCollapsed ? item.title : undefined"
+      :class="{ active: isActive, compact: isCollapsed, reserved: item.disabled }"
+      :disabled="item.disabled"
+      :aria-disabled="item.disabled ? 'true' : undefined"
+      :title="isCollapsed ? `${item.title}${item.disabled ? '（尚未開放）' : ''}` : undefined"
       :aria-expanded="visibleChildren.length ? isOpen : undefined"
       @click="activate"
     >
       <Icon :icon="item.icon" class="menu-icon" aria-hidden="true" />
       <span v-if="!isCollapsed" class="menu-title">{{ item.title }}</span>
+      <span v-if="item.disabled && !isCollapsed" class="reserved-badge">尚未開放</span>
       <Icon
         v-if="visibleChildren.length && !isCollapsed"
         icon="lucide:chevron-down"
@@ -79,10 +84,17 @@ const activate = () => {
   &:hover { background: rgba(51, 65, 85, 0.85); color: #fff; }
   &.active { background: var(--accent); color: #172033; font-weight: 700; }
   &.compact { justify-content: center; padding-inline: 8px; }
+  &.reserved, &.reserved:hover {
+    background: transparent;
+    color: #64748b;
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
 }
 .menu-icon { width: 18px; height: 18px; flex: 0 0 18px; color: #facc15; }
 .active .menu-icon { color: #172033; }
 .menu-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reserved-badge { padding: 2px 6px; border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 999px; color: #94a3b8; font-size: 0.62rem; white-space: nowrap; }
 .chevron { width: 15px; height: 15px; transition: transform 0.18s ease; }
 .chevron.open { transform: rotate(180deg); }
 .submenu { margin: 4px 0 6px 17px; padding-left: 9px; border-left: 1px solid rgba(148, 163, 184, 0.22); }

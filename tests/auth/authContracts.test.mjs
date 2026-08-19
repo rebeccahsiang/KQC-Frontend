@@ -136,6 +136,20 @@ test('Restored admin shell uses Lucide navigation and the canonical data-theme c
   assert.doesNotMatch(`${menu}\n${sidebar}\n${header}`, /[😀-🙏🌀-🫿]/u)
 })
 
+test('Sidebar reserved items are visibly disabled, accessible, and never navigate', () => {
+  const menu = read('src/config/sidebarMenu.ts')
+  const item = read('src/components/layout/sidebar/SidebarMenuItem.vue')
+  assert.match(menu, /disabled\?: boolean/)
+  assert.match(item, /if \(props\.item\.disabled\) return/)
+  assert.ok(item.indexOf('if (props.item.disabled) return') < item.indexOf('router.push(props.item.path)'))
+  assert.match(item, /:disabled="item\.disabled"/)
+  assert.match(item, /:aria-disabled="item\.disabled \? 'true' : undefined"/)
+  assert.match(item, /class="reserved-badge">尚未開放/)
+  assert.match(item, /&\.reserved, &\.reserved:hover[\s\S]{0,160}cursor: not-allowed/)
+  assert.match(item, /else if \(props\.item\.path\) void router\.push\(props\.item\.path\)/)
+  assert.doesNotMatch(menu, /CRM 業務管理|績效戰情室|業務主管/)
+})
+
 test('Change Password route requires authentication and forced accounts cannot enter protected routes', () => {
   const source = read('src/router/index.ts')
   assert.match(source, /path:\s*['"]\/change-password['"]/)
