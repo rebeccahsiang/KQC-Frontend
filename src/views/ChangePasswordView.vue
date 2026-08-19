@@ -44,7 +44,7 @@ const destinationAfterChange = () => {
   ) {
     return requested
   }
-  return authStore.user?.role === 'user' ? '/' : '/admin/dashboard'
+  return authStore.isAdminPortalUser ? '/admin/dashboard' : '/'
 }
 
 const messageForError = (error: unknown): string => {

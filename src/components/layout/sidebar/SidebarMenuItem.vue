@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import type { SidebarMenuItem } from '@/config/sidebarMenu'
 import { useAuthStore } from '@/stores/authStore'
+import { hasAnyCapability } from '@/config/capabilities'
 
 const props = defineProps<{ item: SidebarMenuItem; isCollapsed?: boolean }>()
 const route = useRoute()
@@ -12,7 +13,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const isOpen = ref(true)
 const visibleChildren = computed(() => props.item.children?.filter((child) =>
-  !child.roles || (authStore.user?.role && child.roles.includes(authStore.user.role))
+  (!child.roles || (authStore.user?.role && child.roles.includes(authStore.user.role))) &&
+  (!child.capabilities || hasAnyCapability(authStore.user, child.capabilities))
 ) || [])
 const isActive = computed(() => props.item.path
   ? route.path === props.item.path

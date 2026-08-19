@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import { useAuthStore } from '@/stores/authStore'
+import { hasAnyCapability, type Capability } from '@/config/capabilities'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'Home', component: () => import('@/views/HomeView.vue'), meta: { title: '三爵資訊 KQC - 智慧運輸與 AI 轉型平台' } },
@@ -43,7 +44,7 @@ const routes: RouteRecordRaw[] = [
     path: '/admin',
     component: () => import('@/components/layout/AdminLayout.vue'),
     redirect: '/admin/dashboard',
-    meta: { requiresAuth: true, title: '後台管理戰情室', roles: ['sales', 'manager', 'admin'] },
+    meta: { requiresAuth: true, title: '後台管理戰情室', capabilities: ['SALES', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER', 'ADMIN'] },
     children: [
       {
         path: 'dashboard',
@@ -51,16 +52,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/DashboardView.vue'),
         meta: { title: '總覽戰情室', roles: ['manager', 'admin'] }
       },
+      { path: 'invitations', name: 'AdminInvitations', component: () => import('@/views/admin/invitations/AdminInvitationsView.vue'), meta: { title: '員工邀請', capabilities: ['ADMIN'] } },
+      { path: 'organizations', name: 'AdminOrganizations', component: () => import('@/views/admin/organizations/AdminOrganizationsView.vue'), meta: { title: '組織管理', capabilities: ['ADMIN', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER'] } },
       {
         path: 'users',
         name: 'AdminUserManagement',
         redirect: '/admin/users/members',
-        meta: { title: '帳號管理', roles: ['manager', 'admin'] },
+        meta: { title: '帳號管理', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
         children: [
-          { path: 'members', name: 'AdminMembers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '會員帳號', userSection: 'members', roles: ['manager', 'admin'] } },
-          { path: 'sales', name: 'AdminSalesUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '業務帳號', userSection: 'sales', roles: ['manager', 'admin'] } },
-          { path: 'managers', name: 'AdminManagerUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '平台管理者', userSection: 'managers', roles: ['manager', 'admin'] } },
-          { path: 'admins', name: 'AdminUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '最高管理者', userSection: 'admins', roles: ['admin'] } }
+          { path: 'members', name: 'AdminMembers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '會員帳號', userSection: 'members', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
+          { path: 'sales', name: 'AdminSalesUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '業務帳號', userSection: 'sales', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
+          { path: 'managers', name: 'AdminManagerUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '平台管理者', userSection: 'managers', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
+          { path: 'admins', name: 'AdminUsers', component: () => import('@/views/admin/users/AdminUsersView.vue'), meta: { title: '最高管理者', userSection: 'admins', capabilities: ['ADMIN'] } }
         ]
       },
       {
@@ -130,6 +133,8 @@ router.beforeEach(async (to) => {
   if (allowedRoles && (!authStore.user || !allowedRoles.includes(authStore.user.role))) {
     return { name: 'Home' }
   }
+  const requiredCapabilities = to.meta.capabilities as Capability[] | undefined
+  if (requiredCapabilities && !hasAnyCapability(authStore.user, requiredCapabilities)) return { name: 'Home' }
   return true
 })
 

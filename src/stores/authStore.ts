@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios'
 
 import { authApi, type AuthUser, type LoginInput, type Portal } from '@/api/auth'
 import { configureAuthRuntime } from '@/auth/authRuntime'
+import { canManageAccounts, canManageOrganization, hasAnyCapability, hasCapability } from '@/config/capabilities'
 
 export type AuthMode = 'login' | 'register' | 'forgot'
 export type AuthStatus = 'unknown' | 'authenticated' | 'unauthenticated'
@@ -37,10 +38,12 @@ export const useAuthStore = defineStore('auth', () => {
   let authEpoch = 0
 
   const isAuthenticated = computed(() => authStatus.value === 'authenticated')
-  const isAdmin = computed(() => user.value?.role === 'admin')
+  const isAdmin = computed(() => hasCapability(user.value, 'ADMIN'))
   const isAdminPortalUser = computed(() =>
-    user.value != null && ['sales', 'manager', 'admin'].includes(user.value.role)
+    user.value != null && hasAnyCapability(user.value, ['SALES', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER', 'ADMIN'])
   )
+  const canAccessAccountManagement = computed(() => canManageAccounts(user.value))
+  const canAccessOrganizationManagement = computed(() => canManageOrganization(user.value))
   const adminName = computed(() => user.value?.name || '未登入使用者')
 
   const openAuthModal = (mode: AuthMode = 'login', message = '') => {
@@ -208,6 +211,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isAdmin,
     isAdminPortalUser,
+    canAccessAccountManagement,
+    canAccessOrganizationManagement,
     adminName,
     openAuthModal,
     closeAuthModal,

@@ -5,12 +5,15 @@ import { Icon } from '@iconify/vue'
 import { sidebarMenu } from '@/config/sidebarMenu'
 import { useAuthStore } from '@/stores/authStore'
 import SidebarMenuItem from './SidebarMenuItem.vue'
+import { hasAnyCapability } from '@/config/capabilities'
 
 const authStore = useAuthStore()
 const isCollapsed = ref(false)
 const visibleMenu = computed(() => {
   const role = authStore.user?.role
-  return sidebarMenu.filter((item) => !item.roles || (role && item.roles.includes(role)))
+  return sidebarMenu.filter((item) =>
+    (!item.roles || (role && item.roles.includes(role))) &&
+    (!item.capabilities || hasAnyCapability(authStore.user, item.capabilities)))
 })
 </script>
 

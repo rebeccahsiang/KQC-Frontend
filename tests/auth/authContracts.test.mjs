@@ -102,14 +102,15 @@ test('Frontend Auth and routing contain only the four approved roles', () => {
   for (const role of ['user', 'sales', 'manager', 'admin']) assert.match(source, new RegExp(`['"]${role}['"]`))
 })
 
-test('Admin account routes expose manager-contained scopes and keep admins admin-only', () => {
+test('Admin governance routes use authoritative capability metadata', () => {
   const source = read('src/router/index.ts')
   for (const path of ['members', 'sales', 'managers']) {
-    assert.match(source, new RegExp(`path:\\s*['"]${path}['"][^}]+roles:\\s*\\[['"]manager['"],\\s*['"]admin['"]\\]`))
+    assert.match(source, new RegExp(`path:\\s*['"]${path}['"][^}]+capabilities:\\s*\\[['"]PLATFORM_MANAGER['"],\\s*['"]ADMIN['"]\\]`))
   }
-  assert.match(source, /path:\s*['"]admins['"][^}]+roles:\s*\[['"]admin['"]\]/)
-  assert.match(source, /path:\s*['"]users['"][\s\S]{0,180}roles:\s*\[['"]manager['"],\s*['"]admin['"]\]/)
+  assert.match(source, /path:\s*['"]admins['"][^}]+capabilities:\s*\[['"]ADMIN['"]\]/)
+  assert.match(source, /path:\s*['"]users['"][\s\S]{0,180}capabilities:\s*\[['"]PLATFORM_MANAGER['"],\s*['"]ADMIN['"]\]/)
   assert.match(source, /const allowedRoles = to\.meta\.roles/)
+  assert.match(source, /const requiredCapabilities = to\.meta\.capabilities/)
 })
 
 test('Restored admin shell uses Lucide navigation and the canonical data-theme contract', () => {

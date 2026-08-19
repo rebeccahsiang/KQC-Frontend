@@ -1,4 +1,5 @@
 import api from './axios'
+import type { Capability } from '@/config/capabilities'
 
 export type Role = 'user' | 'sales' | 'manager' | 'admin'
 export type Portal = 'frontend' | 'admin'
@@ -8,6 +9,7 @@ export interface AuthUser {
   email: string
   name: string
   role: Role
+  capabilities?: Capability[]
   accountStatus: 'pending' | 'active' | 'suspended' | 'disabled'
   emailVerifiedAt: string | null
   mustChangePassword: boolean

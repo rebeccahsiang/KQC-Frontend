@@ -5,6 +5,7 @@ export interface SidebarMenuItem {
   path?: string
   roles?: string[]
   disabled?: boolean
+  capabilities?: import('./capabilities').Capability[]
   children?: SidebarMenuItem[]
 }
 
@@ -14,22 +15,30 @@ export const sidebarMenu: SidebarMenuItem[] = [
     path: '/admin/dashboard', roles: ['manager', 'admin']
   },
   {
-    id: 'accounts', title: '帳號管理', icon: 'lucide:users', roles: ['manager', 'admin'],
+    id: 'accounts', title: '帳號管理', icon: 'lucide:users', capabilities: ['PLATFORM_MANAGER', 'ADMIN'],
     children: [
       {
-        id: 'general-accounts', title: '一般帳號管理', icon: 'lucide:users-round', roles: ['manager', 'admin'],
+        id: 'general-accounts', title: '一般帳號管理', icon: 'lucide:users-round', capabilities: ['PLATFORM_MANAGER', 'ADMIN'],
         children: [
-          { id: 'members', title: '會員', icon: 'lucide:user-round', path: '/admin/users/members', roles: ['manager', 'admin'] },
-          { id: 'sales', title: '業務', icon: 'lucide:briefcase-business', path: '/admin/users/sales', roles: ['manager', 'admin'] },
-          { id: 'managers', title: '平台管理者', icon: 'lucide:shield', path: '/admin/users/managers', roles: ['manager', 'admin'] }
+          { id: 'members', title: '會員', icon: 'lucide:user-round', path: '/admin/users/members', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
+          { id: 'sales', title: '業務', icon: 'lucide:briefcase-business', path: '/admin/users/sales', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
+          { id: 'managers', title: '平台管理者', icon: 'lucide:shield', path: '/admin/users/managers', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] }
         ]
       },
       {
-        id: 'highest-management', title: '最高管理', icon: 'lucide:shield-check', roles: ['admin'],
+        id: 'highest-management', title: '最高管理', icon: 'lucide:shield-check', capabilities: ['ADMIN'],
         children: [
-          { id: 'admins', title: '最高管理者', icon: 'lucide:crown', path: '/admin/users/admins', roles: ['admin'] }
+          { id: 'admins', title: '最高管理者', icon: 'lucide:crown', path: '/admin/users/admins', capabilities: ['ADMIN'] }
         ]
       }
+    ]
+  },
+  {
+    id: 'organization-governance', title: '組織管理', icon: 'lucide:network',
+    capabilities: ['ADMIN', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER'],
+    children: [
+      { id: 'invitations', title: '員工邀請', icon: 'lucide:mail-plus', path: '/admin/invitations', capabilities: ['ADMIN'] },
+      { id: 'organizations', title: '組織管理', icon: 'lucide:network', path: '/admin/organizations', capabilities: ['ADMIN', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER'] }
     ]
   },
   {

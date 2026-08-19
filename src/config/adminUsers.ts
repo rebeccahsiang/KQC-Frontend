@@ -2,10 +2,10 @@ import type { AccountStatus } from '@/api/adminUsers'
 import type { Role } from '@/api/auth'
 
 export const ADMIN_USER_SECTIONS = Object.freeze({
-  members: { role: 'user', label: '會員帳號' },
-  sales: { role: 'sales', label: '業務帳號' },
-  managers: { role: 'manager', label: '平台管理者' },
-  admins: { role: 'admin', label: '最高管理者' }
+  members: { capability: 'MEMBER', label: '會員帳號' },
+  sales: { capability: 'SALES', label: '業務帳號' },
+  managers: { capability: 'PLATFORM_MANAGER', label: '平台管理者' },
+  admins: { capability: 'ADMIN', label: '最高管理者' }
 } as const)
 
 export const ROLE_LABELS: Record<Role, string> = { user: '會員', sales: '業務', manager: '平台管理者', admin: '最高管理者' }

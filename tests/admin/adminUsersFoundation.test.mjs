@@ -5,31 +5,31 @@ import { readFileSync } from 'node:fs'
 const root = new URL('../../', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
 
-test('four account routes share one view and map to canonical backend roles', () => {
+test('four account routes share one view and map to canonical backend capabilities', () => {
   const router = read('src/router/index.ts')
   const config = read('src/config/adminUsers.ts')
-  for (const [section, role] of [['members', 'user'], ['sales', 'sales'], ['managers', 'manager'], ['admins', 'admin']]) {
+  for (const [section, capability] of [['members', 'MEMBER'], ['sales', 'SALES'], ['managers', 'PLATFORM_MANAGER'], ['admins', 'ADMIN']]) {
     assert.match(router, new RegExp(`path:\\s*['"]${section}['"][^}]+AdminUsersView\\.vue[^}]+userSection:\\s*['"]${section}['"]`))
-    assert.match(config, new RegExp(`${section}: \\{ role: ['"]${role}['"]`))
+    assert.match(config, new RegExp(`${section}: \\{ capability: ['"]${capability}['"]`))
   }
 })
 
-test('sidebar preserves the formal hierarchy and manager/admin visibility', () => {
+test('sidebar preserves the formal hierarchy with capability visibility', () => {
   const menu = read('src/config/sidebarMenu.ts')
   assert.match(menu, /title: '帳號管理'/)
-  assert.match(menu, /id: 'general-accounts'[\s\S]{0,100}title: '一般帳號管理'[\s\S]{0,100}roles: \['manager', 'admin'\]/)
-  for (const path of ['members', 'sales', 'managers']) assert.match(menu, new RegExp(`${path}[^\\n]+roles: \\['manager', 'admin'\\]`))
-  assert.match(menu, /id: 'highest-management'[\s\S]{0,100}title: '最高管理'[\s\S]{0,100}roles: \['admin'\]/)
-  assert.match(menu, /title: '最高管理者'[^\n]+roles: \['admin'\]/)
-  assert.doesNotMatch(menu, /id: 'highest-management'[\s\S]{0,100}roles: \[[^\]]*'manager'/)
+  assert.match(menu, /id: 'general-accounts'[^\n]+capabilities: \['PLATFORM_MANAGER', 'ADMIN'\]/)
+  for (const path of ['members', 'sales', 'managers']) assert.match(menu, new RegExp(`${path}[^\\n]+capabilities: \\['PLATFORM_MANAGER', 'ADMIN'\\]`))
+  assert.match(menu, /id: 'highest-management'[^\n]+capabilities: \['ADMIN'\]/)
+  assert.match(menu, /title: '最高管理者'[^\n]+capabilities: \['ADMIN'\]/)
 })
 
-test('API and view preserve backend pagination and canonical role query', () => {
+test('API and view preserve backend pagination and canonical capability query', () => {
   const api = read('src/api/adminUsers.ts')
   const view = read('src/views/admin/users/AdminUsersView.vue')
   assert.match(api, /'\/v1\/admin\/users'/)
   for (const field of ['id', 'email', 'name', 'role', 'accountStatus', 'emailVerifiedAt', 'lastLoginAt', 'createdAt', 'updatedAt']) assert.match(api, new RegExp(`\\b${field}:`))
-  assert.match(view, /role: section\.value\.role/)
+  assert.match(api, /capabilities: Capability\[\]/)
+  assert.match(view, /capability: section\.value\.capability/)
   assert.match(view, /pagination\.total/)
   assert.match(view, /total-records="total"/)
   assert.match(view, /placeholder="搜尋姓名或 Email"/)
@@ -54,20 +54,22 @@ test('view implements loading, empty, error, mapping and null last-login states'
   }
 })
 
-test('foundation has no mutation, invitation, AI risk, notification, or browser credential logic', () => {
+test('account integration uses authoritative mutation reload without browser credential logic', () => {
   const source = [read('src/api/adminUsers.ts'), read('src/views/admin/users/AdminUsersView.vue')].join('\n')
   const executableSource = source.replace(/<!--[\s\S]*?-->/g, '')
-  assert.doesNotMatch(executableSource, /patch\(|post\(|delete\(|invitation|risk|notification|localStorage|sessionStorage|document\.cookie|decode/i)
+  assert.match(executableSource, /changeCapabilities/)
+  assert.match(executableSource, /Promise\.all\(\[loadGovernance\(userId\), loadUsers\(\)\]\)/)
+  assert.doesNotMatch(executableSource, /localStorage|sessionStorage|document\.cookie|decode|jwt/i)
 })
 
-test('search clear control resets only search and pagination while preserving role and status', () => {
+test('search clear control resets only search and pagination while preserving capability and status', () => {
   const view = read('src/views/admin/users/AdminUsersView.vue')
   const handler = view.slice(view.indexOf('const clearSearch'), view.indexOf('const loadUsers'))
   assert.match(view, /v-if="search"[^>]+aria-label="清除搜尋"[^>]+@click="clearSearch"/)
   assert.match(handler, /search\.value = ''/)
   assert.match(handler, /page\.value = 1/)
   assert.doesNotMatch(handler, /status\.value|section|router|route/)
-  assert.match(view, /role: section\.value\.role/)
+  assert.match(view, /capability: section\.value\.capability/)
   assert.match(view, /status: status\.value/)
 })
 
@@ -75,7 +77,7 @@ test('DataTable uses PrimeVue vertical scrolling without changing columns or fil
   const view = read('src/views/admin/users/AdminUsersView.vue')
   assert.match(view, /<DataTable[^>]+\bscrollable\b/)
   assert.match(view, /scroll-height="clamp\(18rem, 52vh, 38rem\)"/)
-  for (const header of ['姓名', '角色', '帳號狀態', '建立日期', '最後登入', '操作']) {
+  for (const header of ['姓名', '權限', '帳號狀態', '建立日期', '最後登入', '操作']) {
     assert.match(view, new RegExp(`header="${header}"`))
   }
   assert.match(view, /aria-label="清除搜尋"/)
@@ -91,7 +93,7 @@ test('enabled View action selects the row id and loads authoritative detail API 
   assert.match(view, /#body="\{ data \}"[^>]*><button[^>]+@click="openUserDetail\(data\.id\)"/)
   assert.doesNotMatch(view, /class="detail-button"[^>]+disabled/)
   assert.match(view, /selectedUserId\.value = userId/)
-  assert.match(view, /const response = await adminUsersApi\.get\(userId\)/)
+  assert.match(view, /adminUsersApi\.get\(userId\)/)
   assert.match(view, /detail\.value = response\.data\.user/)
 })
 
