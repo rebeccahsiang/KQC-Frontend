@@ -4,11 +4,13 @@ import 'axios'
 declare module 'axios' {
   export interface AxiosRequestConfig {
     skipAuthRefresh?: boolean
+    authPortal?: 'frontend' | 'admin'
     _authRetry?: boolean
   }
 
   export interface InternalAxiosRequestConfig {
     skipAuthRefresh?: boolean
+    authPortal?: 'frontend' | 'admin'
     _authRetry?: boolean
   }
   export interface AxiosInstance {

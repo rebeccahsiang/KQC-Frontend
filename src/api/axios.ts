@@ -7,6 +7,7 @@ import axios, {
 
 import {
   clearRuntimeAuth,
+  getRuntimeAuthPortal,
   getRuntimeAccessToken,
   refreshRuntimeAccessToken,
   signalPasswordChangeRequired
@@ -27,7 +28,9 @@ const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = getRuntimeAccessToken()
+    const portal = config.authPortal || getRuntimeAuthPortal()
+    config.authPortal = portal
+    const token = getRuntimeAccessToken(portal)
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
   },
@@ -54,11 +57,12 @@ apiClient.interceptors.response.use(
     ) {
       original._authRetry = true
       try {
-        const accessToken = await refreshRuntimeAccessToken()
+        const portal = original.authPortal || getRuntimeAuthPortal()
+        const accessToken = await refreshRuntimeAccessToken(portal)
         original.headers.Authorization = `Bearer ${accessToken}`
         return apiClient.request(original)
       } catch {
-        clearRuntimeAuth()
+        clearRuntimeAuth(original.authPortal || getRuntimeAuthPortal())
       }
     }
 

@@ -39,7 +39,9 @@ test('Auth API uses the approved v1 endpoints and never models a refresh token r
 
 test('Axios gets Bearer credentials only from the runtime bridge and enables HttpOnly cookie transport', () => {
   const source = read('src/api/axios.ts')
-  assert.match(source, /getRuntimeAccessToken\(\)/)
+  assert.match(source, /const portal = config\.authPortal \|\| getRuntimeAuthPortal\(\)/)
+  assert.match(source, /config\.authPortal = portal/)
+  assert.match(source, /const token = getRuntimeAccessToken\(portal\)/)
   assert.match(source, /withCredentials:\s*true/)
   assert.match(source, /Authorization = `Bearer \$\{token\}`/)
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie/)
@@ -84,11 +86,18 @@ test('Logout sends the memory Access Token through the shared interceptor before
   const client = read('src/api/axios.ts')
   const logoutFlow = store.slice(store.indexOf('const logout = async'), store.indexOf('const logoutAll'))
 
-  assert.match(logoutFlow, /try \{\s*await authApi\.logout\(\)/)
+  assert.match(logoutFlow, /if \(isAdminAuthenticated\.value\) await authApi\.logout\('admin'\)\.catch\(\(\) => undefined\)/)
+  assert.match(logoutFlow, /await authApi\.logout\('frontend'\)/)
+  assert.ok(logoutFlow.indexOf("await authApi.logout('admin')") < logoutFlow.indexOf("await authApi.logout('frontend')"))
   assert.match(logoutFlow, /finally \{\s*clearAuth\(\)/)
-  assert.ok(logoutFlow.indexOf('await authApi.logout()') < logoutFlow.indexOf('clearAuth()'))
-  assert.match(client, /const token = getRuntimeAccessToken\(\)/)
+  assert.ok(logoutFlow.indexOf("await authApi.logout('frontend')") < logoutFlow.indexOf('clearAuth()'))
+  assert.match(logoutFlow, /catch \{[\s\S]*server is unreachable[\s\S]*\}\s*finally \{\s*clearAuth\(\)/)
+  assert.match(client, /withCredentials: true/)
+  assert.match(client, /const portal = config\.authPortal \|\| getRuntimeAuthPortal\(\)/)
+  assert.match(client, /config\.authPortal = portal/)
+  assert.match(client, /const token = getRuntimeAccessToken\(portal\)/)
   assert.match(client, /config\.headers\.Authorization = `Bearer \$\{token\}`/)
+  assert.doesNotMatch(client, /localStorage|sessionStorage/)
 })
 
 test('Frontend Auth and routing contain only the four approved roles', () => {
@@ -273,12 +282,12 @@ test('Invitation validation follows the backend password contract and preserves 
   assert.match(read('src/views/ChangePasswordView.vue'), /!requested\.startsWith\(['"]\/\/['"]\)/)
 })
 
-test('Activity uses the existing Auth API client with no frontend identity payload', () => {
+test('Activity uses the existing Auth API client with portal-selected access-token identity only', () => {
   const api = read('src/api/auth.ts')
   const store = read('src/stores/authStore.ts')
-  assert.match(api, /activity:\s*\(\)\s*=>\s*api\.post<Envelope<\{ activityRecorded: boolean \}>>\(['"]\/v1\/auth\/activity['"]\)/)
-  assert.doesNotMatch(api, /activity:[\s\S]{0,180}(userId|sessionId|role|portal|email)/)
-  assert.match(store, /const recordActivity = \(\) => authApi\.activity\(\)/)
+  assert.match(api, /activity:\s*\(portal: Portal = 'frontend'\)\s*=>\s*api\.post<Envelope<\{ activityRecorded: boolean \}>>\(['"]\/v1\/auth\/activity['"], undefined, \{ authPortal: portal \}\)/)
+  assert.doesNotMatch(api, /activity:[\s\S]{0,220}(userId|sessionId|role|email)/)
+  assert.match(store, /const recordActivity = \(\) => authApi\.activity\(getRuntimeAuthPortal\(\)\)/)
 })
 
 test('Activity tracker accepts only explicit human interaction events and has no heartbeat', () => {

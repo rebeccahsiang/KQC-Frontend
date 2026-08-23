@@ -52,17 +52,20 @@ export interface LoginInput {
 export const authApi = {
   login: (input: LoginInput) =>
     api.post<Envelope<TokenResult>>('/v1/auth/login', input, { skipAuthRefresh: true }),
-  refresh: () =>
-    api.post<Envelope<TokenResult>>('/v1/auth/refresh', undefined, { skipAuthRefresh: true }),
-  me: () => api.get<Envelope<{ user: AuthUser }>>('/v1/auth/me'),
+  refresh: (portal: Portal = 'frontend') =>
+    api.post<Envelope<TokenResult>>('/v1/auth/refresh', { portal }, { skipAuthRefresh: true, authPortal: portal }),
+  adminElevation: (password?: string) => api.post<Envelope<TokenResult>>(
+    '/v1/auth/admin-elevation', password ? { password } : {}, { skipAuthRefresh: true, authPortal: 'frontend' }
+  ),
+  me: (portal: Portal = 'frontend') => api.get<Envelope<{ user: AuthUser }>>('/v1/auth/me', { authPortal: portal }),
   sessions: () => api.get<Envelope<SessionListResult>>('/v1/auth/sessions'),
   revokeSession: (sessionId: string) =>
     api.delete<Envelope<RevokeSessionResult>>(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`),
-  logout: () => api.post<Envelope<{ loggedOut: boolean }>>('/v1/auth/logout', undefined, {
-    skipAuthRefresh: true
+  logout: (portal: Portal = 'frontend') => api.post<Envelope<{ loggedOut: boolean }>>('/v1/auth/logout', { portal }, {
+    skipAuthRefresh: true, authPortal: portal
   }),
   logoutAll: () => api.post<Envelope<{ revokedCount: number }>>('/v1/auth/logout-all'),
-  activity: () => api.post<Envelope<{ activityRecorded: boolean }>>('/v1/auth/activity'),
+  activity: (portal: Portal = 'frontend') => api.post<Envelope<{ activityRecorded: boolean }>>('/v1/auth/activity', undefined, { authPortal: portal }),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post<Envelope<TokenResult & { revokedOtherSessions: number }>>('/v1/auth/change-password', {
       currentPassword,

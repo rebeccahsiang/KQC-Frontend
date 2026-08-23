@@ -19,7 +19,7 @@ test('MemberSessions route has the approved member-only frontend metadata', () =
 test('Unauthenticated frontend member navigation goes Home and opens the existing login modal', () => {
   const router = read('src/router/index.ts')
   const unauthenticated = router.slice(
-    router.indexOf('if (!authStore.isAuthenticated)'),
+    router.indexOf("if (portal === 'frontend' && !authStore.isAuthenticated)"),
     router.indexOf('const isPasswordChangeRoute')
   )
 

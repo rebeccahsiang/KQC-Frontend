@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import { useAuthStore } from '@/stores/authStore'
 import { hasAnyCapability, type Capability } from '@/config/capabilities'
+import { setRuntimeAuthPortal } from '@/auth/authRuntime'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'Home', component: () => import('@/views/HomeView.vue'), meta: { title: '三爵資訊 KQC - 智慧運輸與 AI 轉型平台' } },
@@ -44,7 +45,7 @@ const routes: RouteRecordRaw[] = [
     path: '/admin',
     component: () => import('@/components/layout/AdminLayout.vue'),
     redirect: '/admin/dashboard',
-    meta: { requiresAuth: true, title: '後台管理戰情室', capabilities: ['SALES', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER', 'ADMIN'] },
+    meta: { requiresAuth: true, authPortal: 'admin', title: '後台管理戰情室', capabilities: ['SALES', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER', 'ADMIN'] },
     children: [
       {
         path: 'dashboard',
@@ -111,13 +112,22 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   if (to.meta.title) document.title = String(to.meta.title)
 
+  const portal = to.matched.some((record) => record.meta.authPortal === 'admin') ? 'admin' : 'frontend'
+  if (portal === 'frontend') setRuntimeAuthPortal('frontend')
+
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   if (!requiresAuth) return true
 
   const authStore = useAuthStore()
   if (!authStore.initialized) await authStore.initialize()
 
-  if (!authStore.isAuthenticated) {
+  if (portal === 'admin') {
+    if (!authStore.isAuthenticated || !authStore.isAdminPortalUser) return { name: 'Home' }
+    if (!await authStore.ensureAdminSession()) return { name: 'Login', query: { redirect: to.fullPath } }
+  }
+  setRuntimeAuthPortal(portal)
+
+  if (portal === 'frontend' && !authStore.isAuthenticated) {
     if (to.meta.authPortal === 'frontend') {
       authStore.openAuthModal('login', '請先重新登入。')
       return { name: 'Home' }

@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios'
 
 import { authApi, type AuthUser, type LoginInput, type Portal } from '@/api/auth'
 import { configureAuthRuntime } from '@/auth/authRuntime'
+import { getRuntimeAuthPortal } from '@/auth/authRuntime'
 import { canManageAccounts, canManageOrganization, hasAnyCapability, hasCapability } from '@/config/capabilities'
 
 export type AuthMode = 'login' | 'register' | 'forgot'
@@ -28,16 +29,20 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthUser | null>(null)
   const accessToken = ref<string | null>(null)
   const authStatus = ref<AuthStatus>('unknown')
+  const adminAccessToken = ref<string | null>(null)
+  const adminStatus = ref<AuthStatus>('unknown')
   const initialized = ref(false)
   const passwordChangeRequired = ref(false)
   const isLoading = ref(false)
   const errorMessage = ref('')
 
   let refreshPromise: Promise<string> | null = null
+  let adminRefreshPromise: Promise<string> | null = null
   let initializationPromise: Promise<void> | null = null
   let authEpoch = 0
 
   const isAuthenticated = computed(() => authStatus.value === 'authenticated')
+  const isAdminAuthenticated = computed(() => adminStatus.value === 'authenticated')
   const isAdmin = computed(() => hasCapability(user.value, 'ADMIN'))
   const isAdminPortalUser = computed(() =>
     user.value != null && hasAnyCapability(user.value, ['SALES', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER', 'ADMIN'])
@@ -64,6 +69,12 @@ export const useAuthStore = defineStore('auth', () => {
     authStatus.value = 'unauthenticated'
     passwordChangeRequired.value = false
     errorMessage.value = ''
+    clearAdminAuth()
+  }
+
+  const clearAdminAuth = () => {
+    adminAccessToken.value = null
+    adminStatus.value = 'unauthenticated'
   }
 
   const markPasswordChangeRequired = () => {
@@ -81,7 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshAccessToken = () => {
     if (!refreshPromise) {
       const requestEpoch = authEpoch
-      refreshPromise = authApi.refresh()
+      refreshPromise = authApi.refresh('frontend')
         .then((response) => {
           if (requestEpoch !== authEpoch) throw new Error('Auth state changed during refresh')
           accessToken.value = response.data.accessToken
@@ -94,6 +105,35 @@ export const useAuthStore = defineStore('auth', () => {
         })
     }
     return refreshPromise
+  }
+
+  const refreshAdminAccessToken = () => {
+    if (!adminRefreshPromise) {
+      adminRefreshPromise = authApi.refresh('admin').then((response) => {
+        adminAccessToken.value = response.data.accessToken
+        adminStatus.value = 'authenticated'
+        return response.data.accessToken
+      }).finally(() => { adminRefreshPromise = null })
+    }
+    return adminRefreshPromise
+  }
+
+  const elevateAdmin = async (password?: string) => {
+    try {
+      const response = await authApi.adminElevation(password)
+      adminAccessToken.value = response.data.accessToken
+      adminStatus.value = 'authenticated'
+      return { success: true, message: '後台驗證成功' }
+    } catch (error) {
+      clearAdminAuth()
+      return { success: false, message: errorMessageFrom(error, '後台驗證失敗') }
+    }
+  }
+
+  const ensureAdminSession = async () => {
+    if (isAdminAuthenticated.value) return true
+    try { await refreshAdminAccessToken(); return true } catch { clearAdminAuth() }
+    return (await elevateAdmin()).success
   }
 
   const initialize = () => {
@@ -120,12 +160,19 @@ export const useAuthStore = defineStore('auth', () => {
     errorMessage.value = ''
     try {
       if (!initialized.value) await initialize()
-      const response = await authApi.login({ ...credentials, portal: credentials.portal || 'frontend' })
-      accessToken.value = response.data.accessToken
+      const portal = credentials.portal || 'frontend'
+      const response = await authApi.login({ ...credentials, portal })
+      if (portal === 'admin') {
+        adminAccessToken.value = response.data.accessToken
+        adminStatus.value = 'authenticated'
+        user.value ||= response.data.user
+      } else {
+        accessToken.value = response.data.accessToken
+        authStatus.value = 'authenticated'
+      }
       passwordChangeRequired.value = response.data.passwordChangeRequired
-      authStatus.value = 'authenticated'
 
-      if (!passwordChangeRequired.value) {
+      if (!passwordChangeRequired.value && portal === 'frontend') {
         await fetchIdentity()
         closeAuthModal()
       }
@@ -136,7 +183,8 @@ export const useAuthStore = defineStore('auth', () => {
         passwordChangeRequired: passwordChangeRequired.value
       }
     } catch (error) {
-      clearAuth()
+      if ((credentials.portal || 'frontend') === 'admin') clearAdminAuth()
+      else clearAuth()
       const message = errorMessageFrom(error, '登入失敗，請確認帳號與密碼')
       errorMessage.value = message
       return { success: false, message }
@@ -162,7 +210,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try {
-      await authApi.logout()
+      if (isAdminAuthenticated.value) await authApi.logout('admin').catch(() => undefined)
+      await authApi.logout('frontend')
     } catch {
       // Local credentials must be cleared even when the server is unreachable.
     } finally {
@@ -188,12 +237,12 @@ export const useAuthStore = defineStore('auth', () => {
     return response.data
   }
 
-  const recordActivity = () => authApi.activity()
+  const recordActivity = () => authApi.activity(getRuntimeAuthPortal())
 
   configureAuthRuntime({
-    getAccessToken: () => accessToken.value,
-    refreshAccessToken,
-    clearAuth,
+    getAccessToken: (portal) => portal === 'admin' ? adminAccessToken.value : accessToken.value,
+    refreshAccessToken: (portal) => portal === 'admin' ? refreshAdminAccessToken() : refreshAccessToken(),
+    clearAuth: (portal) => portal === 'admin' ? clearAdminAuth() : clearAuth(),
     requirePasswordChange: markPasswordChangeRequired
   })
 
@@ -204,11 +253,14 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     accessToken,
     authStatus,
+    adminAccessToken,
+    adminStatus,
     initialized,
     passwordChangeRequired,
     isLoading,
     errorMessage,
     isAuthenticated,
+    isAdminAuthenticated,
     isAdmin,
     isAdminPortalUser,
     canAccessAccountManagement,
@@ -217,6 +269,7 @@ export const useAuthStore = defineStore('auth', () => {
     openAuthModal,
     closeAuthModal,
     clearAuth,
+    clearAdminAuth,
     initialize,
     login,
     register,
@@ -225,6 +278,9 @@ export const useAuthStore = defineStore('auth', () => {
     changePassword,
     recordActivity,
     fetchIdentity,
-    refreshAccessToken
+    refreshAccessToken,
+    refreshAdminAccessToken,
+    elevateAdmin,
+    ensureAdminSession
   }
 })
