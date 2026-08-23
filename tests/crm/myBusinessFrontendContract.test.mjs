@@ -39,12 +39,13 @@ test('CRM API uses shared portal-aware Axios for approved read and Customer crea
   assert.doesNotMatch(source, /api\.(patch|put|delete)/)
 })
 
-test('DTOs preserve nullable claim/calendar/customer contracts and backend-owned Customer Number', () => {
+test('DTOs preserve nullable contracts and canonical BusinessCase Customer display fields', () => {
   const api = read('src/api/crm.ts')
   assert.match(api, /claimPendingCount: number \| null/)
   assert.match(api, /activityType: string \| null/)
   assert.match(api, /hasBusinessCase: boolean/)
   assert.match(api, /customerNumber: string/)
+  assert.match(api, /BusinessCaseListItem.*customerId: string; customerNumber: string \| null; customerDisplayName: string \| null;/)
   const view = read('src/views/admin/crm/MyBusinessView.vue')
   assert.match(view, /item\.customerNumber/)
   assert.doesNotMatch(view, /customerNumber\s*=|generateCustomer|cultivation|customerStage/i)
@@ -83,10 +84,13 @@ test('Calendar is lightweight, DateTime-based, non-polling, and localization sta
   assert.doesNotMatch(pkg, /fullcalendar/i)
 })
 
-test('Cases avoid invented customer names/detail routes and customers support no-Case/read-only note states', () => {
+test('Cases render canonical Customer display on desktop/mobile without cross-join or raw ID fallback', () => {
   const source = read('src/views/admin/crm/MyBusinessView.vue')
-  assert.match(source, /Customer ID/)
-  assert.match(source, /item\.customerId/)
+  assert.match(source, /<Column header="客戶">.*data\.customerDisplayName \|\| '—'.*data\.customerNumber \|\| '客戶資料未完整'/)
+  assert.match(source, /客戶：\{\{ item\.customerDisplayName \|\| '—' \}\}/)
+  assert.match(source, /客戶編號：\{\{ item\.customerNumber \|\| '客戶資料未完整' \}\}/)
+  assert.doesNotMatch(source, /Customer ID|item\.customerId|data\.customerId/)
+  assert.doesNotMatch(source, /customers\.find|customerLookup|customersById|crmApi\.customerDetail|crmApi\.customer\(/i)
   assert.doesNotMatch(source, /router\.(push|replace)|customerName.*businessCases|caseDetail/i)
   assert.match(source, /item\.hasBusinessCase \? '已有案件' : '尚無案件'/)
   assert.match(source, /data\.note \|\| '—'/)

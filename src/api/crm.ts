@@ -6,7 +6,7 @@ export interface MyBusinessSummary { today: { from: string; to: string; upcoming
 export interface CustomerListItem { id: string; customerNumber: string; customerType: 'PERSON' | 'COMPANY'; displayName: string; grade: 'A' | 'B' | 'C' | 'D'; phone: string | null; mobile: string | null; email: string | null; primarySalesId: string | null; note: string | null; hasBusinessCase: boolean; latestContactAt: string | null; nextPlannedAt: string | null }
 export interface CustomerDetail extends Omit<CustomerListItem, 'hasBusinessCase' | 'latestContactAt' | 'nextPlannedAt'> { name: string | null; companyName: string | null; taxId: string | null; representative: string | null; contactPerson: string | null; address: string | null; status: string }
 export interface CreateCustomerInput { customerType: 'PERSON' | 'COMPANY'; name?: string; companyName?: string; taxId?: string; representative?: string; contactPerson?: string; phone?: string; mobile?: string; email?: string; address?: string; grade: 'A' | 'B' | 'C' | 'D'; note: string | null }
-export interface BusinessCaseListItem { id: string; caseNumber: string | null; customerId: string; category: string; assetCategory: string; direction: string; caseSource: string; assignedTo: string; expectedAmount: number | null; expectedCloseDate: string | null; status: string }
+export interface BusinessCaseListItem { id: string; caseNumber: string | null; customerId: string; customerNumber: string | null; customerDisplayName: string | null; category: string; assetCategory: string; direction: string; caseSource: string; assignedTo: string; expectedAmount: number | null; expectedCloseDate: string | null; status: string }
 
 const adminRequest = { authPortal: 'admin' as const }
 export const crmApi = {
