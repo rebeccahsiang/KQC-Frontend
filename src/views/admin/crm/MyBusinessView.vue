@@ -7,27 +7,42 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
-import { crmApi, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CustomerListItem, type MyBusinessSummary } from '@/api/crm'
-import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate } from '@/config/crm'
+import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type ProspectDetail, type ProspectGrade, type ProspectListItem, type ProspectType, type UpdateProspectInput } from '@/api/crm'
+import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate, PROSPECT_GRADE_PRESENTATION, PROSPECT_STATUS_LABELS, prospectStatusLabel } from '@/config/crm'
 
 const summary = ref<MyBusinessSummary | null>(null)
 const calendar = ref<CalendarItem[]>([])
 const customers = ref<CustomerListItem[]>([])
 const businessCases = ref<BusinessCaseListItem[]>([])
+const prospects = ref<ProspectListItem[]>([])
 const loadingSummary = ref(true)
 const loadingCalendar = ref(true)
 const loadingCustomers = ref(true)
 const loadingCases = ref(true)
+const loadingProspects = ref(true)
 const summaryError = ref('')
 const calendarError = ref('')
 const customerError = ref('')
 const caseError = ref('')
+const prospectError = ref('')
+const prospectSuccess = ref('')
+const prospectDetail = ref<ProspectDetail | null>(null)
+const detailProspectVisible = ref(false)
+const loadingProspectDetail = ref(false)
+const prospectFormVisible = ref(false)
+const editingProspect = ref(false)
+const savingProspect = ref(false)
+const prospectFormError = ref('')
+const prospectConflict = ref(false)
 const createCustomerVisible = ref(false)
 const creatingCustomer = ref(false)
 const createCustomerError = ref('')
 const createCustomerSuccess = ref('')
 const emptyCustomerForm = () => ({ customerType: 'PERSON' as 'PERSON' | 'COMPANY', name: '', companyName: '', taxId: '', representative: '', contactPerson: '', phone: '', mobile: '', email: '', address: '', grade: 'C' as 'A' | 'B' | 'C' | 'D', note: '' })
 const customerForm = ref(emptyCustomerForm())
+const emptyProspectForm = () => ({ prospectType: 'PERSON' as ProspectType, name: '', companyName: '', taxId: '', representative: '', contactPerson: '', phone: '', mobile: '', email: '', address: '', prospectGrade: 'NORMAL' as ProspectGrade, developmentStatus: 'NEW_CONTACT' as ActiveProspectDevelopmentStatus, note: '', revision: 0 })
+const prospectForm = ref(emptyProspectForm())
+const activeProspectStatuses = ['NEW_CONTACT', 'CULTIVATING', 'INTERESTED', 'ON_HOLD'] as const
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const customerFormError = computed(() => {
   if (customerForm.value.customerType === 'PERSON' && !customerForm.value.name.trim()) return '請輸入客戶姓名。'
@@ -46,7 +61,8 @@ const loadSummary = async () => { loadingSummary.value = true; summaryError.valu
 const loadCalendar = async () => { loadingCalendar.value = true; calendarError.value = ''; try { const range = calendarRange(); calendar.value = (await crmApi.myBusinessCalendar(range.from, range.to)).data } catch { calendarError.value = safeError } finally { loadingCalendar.value = false } }
 const loadCustomers = async () => { loadingCustomers.value = true; customerError.value = ''; try { customers.value = (await crmApi.customers()).data } catch { customerError.value = safeError } finally { loadingCustomers.value = false } }
 const loadCases = async () => { loadingCases.value = true; caseError.value = ''; try { businessCases.value = (await crmApi.businessCases()).data } catch { caseError.value = safeError } finally { loadingCases.value = false } }
-const refresh = () => { void Promise.all([loadSummary(), loadCalendar(), loadCustomers(), loadCases()]) }
+const loadProspects = async () => { loadingProspects.value = true; prospectError.value = ''; try { prospects.value = (await crmApi.listMyProspects()).data } catch { prospectError.value = safeError } finally { loadingProspects.value = false } }
+const refresh = () => { void Promise.all([loadSummary(), loadCalendar(), loadCustomers(), loadCases(), loadProspects()]) }
 const kpis = computed(() => summary.value ? [
   { label: '進行中', value: summary.value.metrics.operatingCount.toLocaleString('zh-TW'), icon: 'lucide:briefcase-business' },
   { label: '待跟進', value: summary.value.metrics.followUpDueCount.toLocaleString('zh-TW'), icon: 'lucide:clock-3' },
@@ -74,6 +90,74 @@ const submitCustomer = async () => {
     await loadCustomers()
     createCustomerSuccess.value = `客戶建立成功，客戶編號：${created.customerNumber}`
   } catch { createCustomerError.value = '客戶建立失敗，請確認資料後再試。' } finally { creatingCustomer.value = false }
+}
+const prospectContact = (prospect: ProspectListItem) => prospect.mobile || prospect.phone || prospect.email || '—'
+const prospectGrade = (grade: ProspectGrade) => PROSPECT_GRADE_PRESENTATION[grade]
+const prospectTypeLabel = (type: ProspectType) => type === 'PERSON' ? '個人' : '公司'
+const prospectValidation = computed(() => {
+  if (prospectForm.value.prospectType === 'PERSON' && !prospectForm.value.name.trim()) return '請填寫開發客戶姓名。'
+  if (prospectForm.value.prospectType === 'COMPANY' && !prospectForm.value.companyName.trim()) return '請填寫公司名稱。'
+  if (prospectForm.value.email.trim() && !emailPattern.test(prospectForm.value.email.trim())) return '請填寫有效的 Email。'
+  return ''
+})
+const resetProspectForm = () => { prospectForm.value = emptyProspectForm(); prospectFormError.value = ''; prospectConflict.value = false; editingProspect.value = false }
+const openCreateProspect = () => { resetProspectForm(); prospectSuccess.value = ''; prospectFormVisible.value = true }
+const fillProspectForm = (detail: ProspectDetail) => {
+  prospectForm.value = {
+    prospectType: detail.prospectType, name: detail.name || '', companyName: detail.companyName || '',
+    taxId: detail.taxId || '', representative: detail.representative || '', contactPerson: detail.contactPerson || '',
+    phone: detail.phone || '', mobile: detail.mobile || '', email: detail.email || '', address: detail.address || '',
+    prospectGrade: detail.prospectGrade,
+    developmentStatus: detail.developmentStatus === 'CONVERTED' ? 'ON_HOLD' : detail.developmentStatus,
+    note: detail.note || '', revision: detail.revision
+  }
+}
+const loadProspectDetail = async (prospectId: string) => {
+  loadingProspectDetail.value = true; prospectFormError.value = ''; prospectDetail.value = null; detailProspectVisible.value = true
+  try { prospectDetail.value = (await crmApi.getMyProspect(prospectId)).data } catch { detailProspectVisible.value = false; prospectError.value = safeError } finally { loadingProspectDetail.value = false }
+}
+const openEditProspect = async (prospectId: string) => {
+  loadingProspectDetail.value = true; prospectFormError.value = ''; prospectConflict.value = false; prospectSuccess.value = ''
+  try {
+    const detail = (await crmApi.getMyProspect(prospectId)).data
+    prospectDetail.value = detail
+    if (detail.developmentStatus === 'CONVERTED') { detailProspectVisible.value = true; return }
+    fillProspectForm(detail); editingProspect.value = true; prospectFormVisible.value = true
+  } catch { prospectError.value = safeError } finally { loadingProspectDetail.value = false }
+}
+const prospectPayload = (): CreateProspectInput => {
+  const shared = { phone: optional(prospectForm.value.phone), mobile: optional(prospectForm.value.mobile), email: optional(prospectForm.value.email), address: optional(prospectForm.value.address), prospectGrade: prospectForm.value.prospectGrade, developmentStatus: prospectForm.value.developmentStatus, note: prospectForm.value.note.trim() || null }
+  return prospectForm.value.prospectType === 'PERSON'
+    ? { prospectType: 'PERSON', name: prospectForm.value.name.trim(), ...shared }
+    : { prospectType: 'COMPANY', companyName: prospectForm.value.companyName.trim(), taxId: optional(prospectForm.value.taxId), representative: optional(prospectForm.value.representative), contactPerson: optional(prospectForm.value.contactPerson), ...shared }
+}
+const backendErrorCode = (error: unknown) => (error as { response?: { data?: { error?: { code?: string } } } })?.response?.data?.error?.code
+const submitProspect = async () => {
+  if (savingProspect.value || prospectValidation.value) return
+  savingProspect.value = true; prospectFormError.value = ''
+  try {
+    if (editingProspect.value && prospectDetail.value) {
+      const { prospectType: _immutableType, ...changes } = prospectPayload()
+      void _immutableType
+      const input: UpdateProspectInput = { ...changes, revision: prospectForm.value.revision }
+      prospectDetail.value = (await crmApi.updateMyProspect(prospectDetail.value.id, input)).data
+      prospectSuccess.value = '開發客戶資料已更新。'
+    } else {
+      prospectDetail.value = (await crmApi.createMyProspect(prospectPayload())).data
+      prospectSuccess.value = '開發客戶已新增。'
+    }
+    prospectFormVisible.value = false; resetProspectForm(); await loadProspects()
+  } catch (error) {
+    if (backendErrorCode(error) === 'PROSPECT_REVISION_CONFLICT') { prospectConflict.value = true; prospectFormError.value = '這筆開發客戶資料已在其他地方更新，請重新載入後再編輯。' }
+    else if (backendErrorCode(error) === 'PROSPECT_CONVERTED_READ_ONLY' && prospectDetail.value) {
+      prospectFormError.value = '此開發客戶已轉正式客戶，無法再編輯。'
+      const prospectId = prospectDetail.value.id
+      prospectFormVisible.value = false
+      await loadProspectDetail(prospectId)
+      await loadProspects()
+    }
+    else prospectFormError.value = '開發客戶資料儲存失敗，請確認內容後再試一次。'
+  } finally { savingProspect.value = false }
 }
 
 onMounted(refresh)
@@ -105,6 +189,22 @@ onMounted(refresh)
       <header class="section-header"><div><h2>未來 7 天行程</h2><p>依下一步行動時間排列</p></div><Tag :value="`${calendar.length} 筆`" severity="secondary" /></header>
       <div v-if="loadingCalendar" class="skeleton-list"><Skeleton v-for="i in 4" :key="i" height="3rem" /></div><div v-else-if="calendarError" class="state error" role="alert"><span>{{ calendarError }}</span><Button label="重試" text @click="loadCalendar" /></div><div v-else-if="!calendar.length" class="state"><Icon icon="lucide:calendar-x" /><strong>未來 7 天沒有排定行程</strong></div>
       <div v-else class="calendar-list"><article v-for="item in calendar" :key="item.id"><time><strong>{{ formatDate(item.startAt, { month: '2-digit', day: '2-digit' }) }}</strong><span>{{ time(item.startAt) }}</span></time><span class="activity-mark" /><div><strong>{{ activityLabel(item.activityType) }}</strong><span>{{ item.customerName || '未命名客戶' }} · {{ item.caseNumber || '尚無案件編號' }}</span><small>{{ item.content || '無補充內容' }}</small></div></article></div>
+    </article>
+
+    <article class="surface-card data-section prospect-section">
+      <header class="section-header"><div><p class="eyebrow">Prospects</p><h2>開發客戶</h2><p>管理尚未轉為正式客戶的潛在對象與開發狀態</p></div><Button label="＋新增開發客戶" @click="openCreateProspect"><template #icon><Icon icon="lucide:user-round-plus" /></template></Button></header>
+      <p v-if="prospectSuccess" class="success-message" role="status">{{ prospectSuccess }}</p>
+      <div v-if="loadingProspects" class="skeleton-list"><Skeleton v-for="i in 4" :key="i" height="3rem" /></div>
+      <div v-else-if="prospectError" class="state error" role="alert"><span>{{ prospectError }}</span><Button label="重新載入" text @click="loadProspects" /></div>
+      <div v-else-if="!prospects.length" class="state"><Icon icon="lucide:user-search" /><strong>目前沒有開發客戶</strong><Button label="＋新增開發客戶" text @click="openCreateProspect" /></div>
+      <DataTable v-else :value="prospects" class="desktop-table prospect-table" striped-rows>
+        <Column field="displayName" header="名稱" /><Column header="類型"><template #body="{ data }">{{ prospectTypeLabel(data.prospectType) }}</template></Column>
+        <Column header="等級"><template #body="{ data }"><Tag :value="prospectGrade(data.prospectGrade).label" :severity="prospectGrade(data.prospectGrade).severity" :title="prospectGrade(data.prospectGrade).title" /></template></Column>
+        <Column header="開發狀態"><template #body="{ data }"><Tag :value="prospectStatusLabel(data.developmentStatus)" :severity="data.developmentStatus === 'CONVERTED' ? 'success' : 'secondary'" /></template></Column>
+        <Column header="聯絡方式"><template #body="{ data }">{{ prospectContact(data) }}</template></Column><Column header="更新時間"><template #body="{ data }">{{ formatDate(data.updatedAt) }}</template></Column>
+        <Column header="操作"><template #body="{ data }"><Button label="查看" text @click="loadProspectDetail(data.id)" /><Button label="編輯" text :disabled="data.developmentStatus === 'CONVERTED'" :aria-disabled="data.developmentStatus === 'CONVERTED'" :title="data.developmentStatus === 'CONVERTED' ? '已轉正式客戶，無法編輯' : '編輯開發客戶'" @click="openEditProspect(data.id)" /></template></Column>
+      </DataTable>
+      <div v-if="!loadingProspects && prospects.length" class="mobile-cards prospect-cards"><article v-for="item in prospects" :key="item.id"><header><div><strong>{{ item.displayName }}</strong><small>{{ prospectTypeLabel(item.prospectType) }}</small></div><Tag :value="prospectGrade(item.prospectGrade).label" :severity="prospectGrade(item.prospectGrade).severity" :title="prospectGrade(item.prospectGrade).title" /></header><p>{{ prospectContact(item) }}</p><span>{{ prospectStatusLabel(item.developmentStatus) }} · 更新於 {{ formatDate(item.updatedAt) }}</span><div class="card-actions"><Button label="查看" text @click="loadProspectDetail(item.id)" /><Button label="編輯" text :disabled="item.developmentStatus === 'CONVERTED'" :aria-disabled="item.developmentStatus === 'CONVERTED'" :title="item.developmentStatus === 'CONVERTED' ? '已轉正式客戶，無法編輯' : '編輯開發客戶'" @click="openEditProspect(item.id)" /></div></article></div>
     </article>
 
     <article class="surface-card data-section">
@@ -142,12 +242,38 @@ onMounted(refresh)
       </form>
       <template #footer><Button label="取消" severity="secondary" outlined :disabled="creatingCustomer" @click="createCustomerVisible = false" /><Button type="submit" form="create-customer-form" label="建立客戶" :loading="creatingCustomer" :disabled="Boolean(customerFormError) || creatingCustomer" /></template>
     </Dialog>
+
+    <Dialog v-model:visible="detailProspectVisible" modal header="開發客戶詳細資料" :style="{ width: 'min(48rem, calc(100vw - 2rem))' }">
+      <div v-if="loadingProspectDetail" class="skeleton-list"><Skeleton v-for="i in 5" :key="i" height="2.5rem" /></div>
+      <div v-else-if="prospectDetail" class="prospect-detail">
+        <header><div><small>{{ prospectTypeLabel(prospectDetail.prospectType) }}</small><h3>{{ prospectDetail.displayName }}</h3></div><Tag :value="prospectStatusLabel(prospectDetail.developmentStatus)" :severity="prospectDetail.developmentStatus === 'CONVERTED' ? 'success' : 'secondary'" /></header>
+        <dl><div><dt>等級</dt><dd><Tag :value="prospectGrade(prospectDetail.prospectGrade).label" :title="prospectGrade(prospectDetail.prospectGrade).title" /></dd></div><div v-if="prospectDetail.companyName"><dt>公司名稱</dt><dd>{{ prospectDetail.companyName }}</dd></div><div v-if="prospectDetail.taxId"><dt>統一編號</dt><dd>{{ prospectDetail.taxId }}</dd></div><div v-if="prospectDetail.representative"><dt>負責人</dt><dd>{{ prospectDetail.representative }}</dd></div><div v-if="prospectDetail.contactPerson"><dt>聯絡人</dt><dd>{{ prospectDetail.contactPerson }}</dd></div><div><dt>電話</dt><dd>{{ prospectDetail.phone || '—' }}</dd></div><div><dt>行動電話</dt><dd>{{ prospectDetail.mobile || '—' }}</dd></div><div><dt>Email</dt><dd>{{ prospectDetail.email || '—' }}</dd></div><div><dt>地址</dt><dd>{{ prospectDetail.address || '—' }}</dd></div><div class="detail-wide"><dt>備註</dt><dd>{{ prospectDetail.note || '—' }}</dd></div><div><dt>建立時間</dt><dd>{{ formatDate(prospectDetail.createdAt) }}</dd></div><div><dt>更新時間</dt><dd>{{ formatDate(prospectDetail.updatedAt) }}</dd></div></dl>
+        <section v-if="prospectDetail.developmentStatus === 'CONVERTED'" class="converted-notice"><strong>已轉正式客戶</strong><span>轉換時間：{{ formatDate(prospectDetail.convertedAt) }}</span><small v-if="prospectDetail.convertedCustomerId">正式客戶參照：{{ prospectDetail.convertedCustomerId }}</small><small v-if="prospectDetail.convertedBusinessCaseId">案件參照：{{ prospectDetail.convertedBusinessCaseId }}</small></section>
+        <div class="deferred-actions"><Button label="轉為正式客戶" disabled aria-disabled="true" title="此功能尚未開放" /><Button label="新增業務案件" disabled aria-disabled="true" title="此功能尚未開放" /></div>
+      </div>
+      <template #footer><Button v-if="prospectDetail && prospectDetail.developmentStatus !== 'CONVERTED'" label="編輯" @click="detailProspectVisible = false; prospectDetail && openEditProspect(prospectDetail.id)" /><Button label="關閉" severity="secondary" outlined @click="detailProspectVisible = false" /></template>
+    </Dialog>
+
+    <Dialog v-model:visible="prospectFormVisible" modal :header="editingProspect ? '編輯開發客戶' : '＋新增開發客戶'" :style="{ width: '48rem', maxWidth: 'calc(100vw - 2rem)' }" :content-style="{ maxHeight: '70vh', overflowY: 'auto' }" @hide="prospectFormError = ''">
+      <form id="prospect-form" class="customer-form" @submit.prevent="submitProspect">
+        <label class="field"><span>類型 *</span><select v-model="prospectForm.prospectType" required aria-required="true" :disabled="editingProspect"><option value="PERSON">個人</option><option value="COMPANY">公司</option></select><small v-if="editingProspect">建立後不可變更</small></label>
+        <label v-if="prospectForm.prospectType === 'PERSON'" class="field"><span>姓名 *</span><input v-model="prospectForm.name" required aria-required="true" autocomplete="name" /></label>
+        <template v-else><label class="field"><span>公司名稱 *</span><input v-model="prospectForm.companyName" required aria-required="true" /></label><label class="field"><span>統一編號</span><input v-model="prospectForm.taxId" inputmode="numeric" /></label><label class="field"><span>負責人</span><input v-model="prospectForm.representative" /></label><label class="field"><span>聯絡人</span><input v-model="prospectForm.contactPerson" autocomplete="name" /></label></template>
+        <label class="field"><span>電話</span><input v-model="prospectForm.phone" type="tel" autocomplete="tel" /></label><label class="field"><span>行動電話</span><input v-model="prospectForm.mobile" type="tel" autocomplete="tel" /></label><label class="field"><span>Email</span><input v-model="prospectForm.email" type="email" autocomplete="email" /></label><label class="field"><span>地址</span><input v-model="prospectForm.address" autocomplete="street-address" /></label>
+        <label class="field"><span>開發等級</span><select v-model="prospectForm.prospectGrade"><option v-for="(item, key) in PROSPECT_GRADE_PRESENTATION" :key="key" :value="key">{{ item.label }}－{{ item.title }}</option></select></label>
+        <label class="field"><span>開發狀態</span><select v-model="prospectForm.developmentStatus"><option v-for="status in activeProspectStatuses" :key="status" :value="status">{{ PROSPECT_STATUS_LABELS[status] }}</option></select></label>
+        <label class="field field-wide"><span>備註</span><textarea v-model="prospectForm.note" maxlength="5000" rows="5" /><small>{{ prospectForm.note.length }} / 5000</small></label>
+        <p v-if="prospectValidation" class="form-error field-wide" role="alert">{{ prospectValidation }}</p><div v-if="prospectFormError" class="conflict-row field-wide" role="alert"><span>{{ prospectFormError }}</span><Button v-if="prospectConflict && prospectDetail" label="重新載入資料" text type="button" @click="openEditProspect(prospectDetail.id)" /></div>
+      </form>
+      <template #footer><Button label="取消" severity="secondary" outlined :disabled="savingProspect" @click="prospectFormVisible = false" /><Button type="submit" form="prospect-form" :label="editingProspect ? '儲存變更' : '建立開發客戶'" :loading="savingProspect" :disabled="Boolean(prospectValidation) || savingProspect" /></template>
+    </Dialog>
   </section>
 </template>
 
 <style scoped lang="scss">
 .my-business{display:grid;max-width:1600px;margin:0 auto;gap:18px;color:var(--text-main)}.page-header,.section-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.page-header h1,.section-header h2{margin:0}.page-header p,.section-header p{margin:5px 0 0;color:var(--text-muted)}.eyebrow{color:var(--accent-active)!important;font-size:.74rem;font-weight:750;letter-spacing:.08em;text-transform:uppercase}.header-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.surface-card{padding:18px;border:1px solid var(--border-grey);border-radius:14px;background:var(--bg-card);box-shadow:var(--shadow-sm)}.agenda-section,.calendar-section,.data-section{display:grid;gap:14px}.section-header>svg{width:28px;height:28px;color:var(--accent-active)}.timeline{display:grid;margin:0;padding:0;list-style:none}.timeline li{display:grid;grid-template-columns:3.5rem 12px 1fr;gap:10px;padding:10px 0}.timeline time{color:var(--accent-active);font-weight:750}.timeline-dot{width:10px;height:10px;margin-top:5px;border:2px solid var(--accent-active);border-radius:50%}.timeline li:not(:last-child) .timeline-dot::after{display:block;width:1px;height:55px;margin:8px 0 0 2.5px;background:var(--border-grey);content:""}.timeline div{display:grid;gap:3px}.timeline small,.timeline p{margin:0;color:var(--text-muted)}.claim-card,.kpi-card{display:flex;align-items:center;gap:13px}.claim-card p{margin:4px 0 0;color:var(--text-muted)}.claim-card strong,.kpi-card strong{display:block;margin-top:3px;font-size:1.3rem}.claim-card small,.kpi-card small{color:var(--text-muted)}.icon-box{display:grid;width:42px;height:42px;flex:0 0 42px;place-items:center;border-radius:10px;background:var(--bg-active);color:var(--accent-active)}.icon-box svg{width:21px;height:21px}.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.calendar-list{display:grid;gap:8px}.calendar-list article{display:grid;grid-template-columns:5rem 8px 1fr;align-items:center;gap:10px;padding:11px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.calendar-list time,.calendar-list article>div{display:grid;gap:2px}.calendar-list time span,.calendar-list article span,.calendar-list article small{color:var(--text-muted)}.activity-mark{width:8px;height:32px;border-radius:999px;background:var(--accent-active)}.desktop-table :deep(td){vertical-align:top}.mobile-cards{display:none}.mobile-cards article{display:grid;gap:8px;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.mobile-cards header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.mobile-cards header div{display:grid}.mobile-cards p{margin:0}.mobile-cards small,.mobile-cards span{color:var(--text-muted)}.skeleton-list{display:grid;gap:8px}.state{display:flex;min-height:7rem;align-items:center;justify-content:center;gap:8px;color:var(--text-muted);text-align:center}.state>svg{width:24px;height:24px}.state.error{min-height:auto;justify-content:flex-start;padding:11px;border:1px solid var(--danger);border-radius:10px;background:var(--danger-bg)}.state.error .p-button{margin-left:auto}
 .customer-cell{display:grid;gap:2px}.customer-cell small{color:var(--text-muted)}.customer-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px;font-weight:650}.field input,.field select,.field textarea{width:100%;padding:.7rem .75rem;border:1px solid var(--border-grey);border-radius:8px;background:var(--bg-main);color:var(--text-main);font:inherit}.field textarea{resize:vertical}.field small{justify-self:end;color:var(--text-muted);font-weight:400}.field-wide{grid-column:1/-1}.form-error{margin:0;color:var(--danger)}.success-message{margin:0;padding:11px 14px;border:1px solid var(--success);border-radius:10px;background:var(--success-bg);color:var(--text-main)}
+.prospect-section{border-color:color-mix(in srgb,var(--accent-active) 28%,var(--border-grey));background:color-mix(in srgb,var(--bg-card) 92%,var(--bg-active))}.prospect-cards article{background:color-mix(in srgb,var(--bg-main) 88%,var(--bg-active))}.card-actions,.deferred-actions{display:flex;flex-wrap:wrap;gap:8px}.prospect-detail{display:grid;gap:16px}.prospect-detail>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.prospect-detail h3{margin:3px 0 0}.prospect-detail small{color:var(--text-muted)}.prospect-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}.prospect-detail dl>div{padding:11px;border:1px solid var(--border-grey);border-radius:9px;background:var(--bg-main)}.prospect-detail dt{color:var(--text-muted);font-size:.82rem}.prospect-detail dd{margin:4px 0 0;overflow-wrap:anywhere}.prospect-detail .detail-wide{grid-column:1/-1}.converted-notice{display:grid;gap:4px;padding:13px;border:1px solid var(--success);border-radius:10px;background:var(--success-bg)}.conflict-row{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--danger)}
 @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.desktop-table{display:block;overflow-x:auto}}
-@media(max-width:767px){.my-business{gap:13px}.page-header{flex-direction:column}.header-actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.header-actions .p-button:last-child{grid-column:1/-1}.surface-card{padding:14px}.kpi-grid,.customer-form{grid-template-columns:1fr}.calendar-list article{grid-template-columns:4.5rem 7px 1fr}.desktop-table{display:none}.mobile-cards{display:grid;gap:9px}.section-header{align-items:center}.timeline li{grid-template-columns:3rem 10px 1fr}}
+@media(max-width:767px){.my-business{gap:13px}.page-header{flex-direction:column}.header-actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.header-actions .p-button:last-child{grid-column:1/-1}.surface-card{padding:14px}.kpi-grid,.customer-form,.prospect-detail dl{grid-template-columns:1fr}.calendar-list article{grid-template-columns:4.5rem 7px 1fr}.desktop-table{display:none}.mobile-cards{display:grid;gap:9px}.section-header{align-items:center;flex-wrap:wrap}.timeline li{grid-template-columns:3rem 10px 1fr}.prospect-detail .detail-wide{grid-column:auto}.conflict-row{align-items:flex-start;flex-direction:column}}
 </style>

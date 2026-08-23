@@ -36,7 +36,10 @@ test('CRM API uses shared portal-aware Axios for approved read and Customer crea
   for (const endpoint of ['/v1/crm/my-business/summary', '/v1/crm/my-business/calendar', '/v1/crm/customers', '/v1/crm/business-cases']) assert.ok(source.includes(endpoint))
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|axios\.create|Authorization|refreshToken/)
   assert.match(source, /createCustomer:.*api\.post<.*>\('\/v1\/crm\/customers', input, adminRequest\)/)
-  assert.doesNotMatch(source, /api\.(patch|put|delete)/)
+  const originalMyBusinessApi = source.slice(source.indexOf('myBusinessSummary:'), source.indexOf('createMyProspect:'))
+  assert.ok(originalMyBusinessApi.includes('myBusinessSummary:'))
+  assert.ok(originalMyBusinessApi.includes('businessCases:'))
+  assert.doesNotMatch(originalMyBusinessApi, /api\.(patch|put|delete)/)
 })
 
 test('DTOs preserve nullable contracts and canonical BusinessCase Customer display fields', () => {

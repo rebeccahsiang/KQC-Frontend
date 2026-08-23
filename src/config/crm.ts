@@ -7,3 +7,13 @@ export const categoryLabel = (value: string) => CATEGORY_LABELS[value] || value
 export const directionLabel = (value: string) => value === 'BUY' ? '買方' : value === 'SELL' ? '賣方' : value
 export const formatCurrency = (value: number) => new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', maximumFractionDigits: 0 }).format(value)
 export const formatDate = (value: string | null, options: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit' }) => value ? new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', ...options }).format(new Date(value)) : '—'
+export const PROSPECT_GRADE_PRESENTATION = {
+  HIGH: { label: '優', title: '高潛力', severity: 'danger' },
+  NORMAL: { label: '普', title: '一般潛力', severity: 'info' },
+  LOW: { label: '劣', title: '低潛力', severity: 'secondary' }
+} as const
+export const PROSPECT_STATUS_LABELS = {
+  NEW_CONTACT: '新接觸', CULTIVATING: '培養中', INTERESTED: '有意願',
+  ON_HOLD: '暫緩', CONVERTED: '已轉正式客戶'
+} as const
+export const prospectStatusLabel = (value: keyof typeof PROSPECT_STATUS_LABELS) => PROSPECT_STATUS_LABELS[value]

@@ -7,6 +7,14 @@ export interface CustomerListItem { id: string; customerNumber: string; customer
 export interface CustomerDetail extends Omit<CustomerListItem, 'hasBusinessCase' | 'latestContactAt' | 'nextPlannedAt'> { name: string | null; companyName: string | null; taxId: string | null; representative: string | null; contactPerson: string | null; address: string | null; status: string }
 export interface CreateCustomerInput { customerType: 'PERSON' | 'COMPANY'; name?: string; companyName?: string; taxId?: string; representative?: string; contactPerson?: string; phone?: string; mobile?: string; email?: string; address?: string; grade: 'A' | 'B' | 'C' | 'D'; note: string | null }
 export interface BusinessCaseListItem { id: string; caseNumber: string | null; customerId: string; customerNumber: string | null; customerDisplayName: string | null; category: string; assetCategory: string; direction: string; caseSource: string; assignedTo: string; expectedAmount: number | null; expectedCloseDate: string | null; status: string }
+export type ProspectType = 'PERSON' | 'COMPANY'
+export type ProspectGrade = 'HIGH' | 'NORMAL' | 'LOW'
+export type ProspectDevelopmentStatus = 'NEW_CONTACT' | 'CULTIVATING' | 'INTERESTED' | 'ON_HOLD' | 'CONVERTED'
+export type ActiveProspectDevelopmentStatus = Exclude<ProspectDevelopmentStatus, 'CONVERTED'>
+export interface ProspectListItem { id: string; prospectType: ProspectType; displayName: string; prospectGrade: ProspectGrade; developmentStatus: ProspectDevelopmentStatus; phone: string | null; mobile: string | null; email: string | null; responsibleSalesId: string; revision: number; createdAt: string; updatedAt: string }
+export interface ProspectDetail extends ProspectListItem { name: string | null; companyName: string | null; taxId: string | null; representative: string | null; contactPerson: string | null; address: string | null; note: string | null; convertedCustomerId: string | null; convertedBusinessCaseId: string | null; convertedAt: string | null }
+export interface CreateProspectInput { prospectType: ProspectType; name?: string; companyName?: string; taxId?: string; representative?: string; contactPerson?: string; phone?: string; mobile?: string; email?: string; address?: string; prospectGrade: ProspectGrade; developmentStatus: ActiveProspectDevelopmentStatus; note: string | null }
+export interface UpdateProspectInput extends Omit<CreateProspectInput, 'prospectType'> { revision: number }
 
 const adminRequest = { authPortal: 'admin' as const }
 export const crmApi = {
@@ -14,5 +22,9 @@ export const crmApi = {
   myBusinessCalendar: (from: string, to: string) => api.get<Envelope<CalendarItem[]>>('/v1/crm/my-business/calendar', { ...adminRequest, params: { from, to } }),
   customers: () => api.get<Envelope<CustomerListItem[]>>('/v1/crm/customers', adminRequest),
   createCustomer: (input: CreateCustomerInput) => api.post<Envelope<CustomerDetail>>('/v1/crm/customers', input, adminRequest),
-  businessCases: () => api.get<Envelope<BusinessCaseListItem[]>>('/v1/crm/business-cases', adminRequest)
+  businessCases: () => api.get<Envelope<BusinessCaseListItem[]>>('/v1/crm/business-cases', adminRequest),
+  createMyProspect: (input: CreateProspectInput) => api.post<Envelope<ProspectDetail>>('/v1/crm/my-prospects', input, adminRequest),
+  listMyProspects: () => api.get<Envelope<ProspectListItem[]>>('/v1/crm/my-prospects', adminRequest),
+  getMyProspect: (prospectId: string) => api.get<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}`, adminRequest),
+  updateMyProspect: (prospectId: string, input: UpdateProspectInput) => api.patch<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}`, input, adminRequest)
 }
