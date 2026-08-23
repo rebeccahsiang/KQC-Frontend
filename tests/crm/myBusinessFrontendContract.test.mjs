@@ -29,13 +29,14 @@ test('My Business route inherits the admin portal boundary and uses exact capabi
   assert.match(router, /path: 'crm\/my-business'.*name: 'CrmMyBusiness'.*MyBusinessView\.vue'.*capabilities: \['SALES', 'SALES_SUPERVISOR'\]/)
 })
 
-test('CRM API uses shared portal-aware Axios for the four approved read endpoints', () => {
+test('CRM API uses shared portal-aware Axios for approved read and Customer create endpoints', () => {
   const source = read('src/api/crm.ts')
   assert.match(source, /^import api from ['"]\.\/axios['"]/m)
   assert.match(source, /authPortal: 'admin'/)
   for (const endpoint of ['/v1/crm/my-business/summary', '/v1/crm/my-business/calendar', '/v1/crm/customers', '/v1/crm/business-cases']) assert.ok(source.includes(endpoint))
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|axios\.create|Authorization|refreshToken/)
-  assert.doesNotMatch(source, /api\.(post|patch|put|delete)/)
+  assert.match(source, /createCustomer:.*api\.post<.*>\('\/v1\/crm\/customers', input, adminRequest\)/)
+  assert.doesNotMatch(source, /api\.(patch|put|delete)/)
 })
 
 test('DTOs preserve nullable claim/calendar/customer contracts and backend-owned Customer Number', () => {
@@ -60,15 +61,16 @@ test('Dashboard consumes real reads with independent loading, empty, error, and 
   assert.match(source, /目前沒有客戶/)
 })
 
-test('Claim gap is neutral, KPIs remain backend-authoritative, and no write UI is invented', () => {
+test('Claim gap and KPIs remain backend-authoritative while only Customer create is enabled', () => {
   const source = read('src/views/admin/crm/MyBusinessView.vue')
   assert.match(source, /claimPendingCount != null/)
   assert.match(source, /資料尚未開放/)
   assert.match(source, /CLAIM_PENDING_READ_GAP/)
   for (const metric of ['operatingCount', 'followUpDueCount', 'monthlyClosedCount', 'monthlyClosedAmount']) assert.match(source, new RegExp(`summary\\.value\\.metrics\\.${metric}`))
-  assert.match(source, /label="新增客戶" outlined disabled/)
+  assert.match(source, /label="新增客戶" outlined @click="openCreateCustomer"/)
   assert.match(source, /label="新增業務" disabled/)
-  assert.doesNotMatch(source, /Dialog|v-model:visible|submitCustomer|createCustomer|patchNote|selfDeveloped/)
+  assert.match(source, /v-model:visible="createCustomerVisible"/)
+  assert.doesNotMatch(source, /patchNote|selfDeveloped|createBusinessCase/)
 })
 
 test('Calendar is lightweight, DateTime-based, non-polling, and localization stays frontend-owned', () => {
@@ -88,7 +90,7 @@ test('Cases avoid invented customer names/detail routes and customers support no
   assert.doesNotMatch(source, /router\.(push|replace)|customerName.*businessCases|caseDetail/i)
   assert.match(source, /item\.hasBusinessCase \? '已有案件' : '尚無案件'/)
   assert.match(source, /data\.note \|\| '—'/)
-  assert.doesNotMatch(source, /InputText.*note|Textarea|PATCH|updateNote/)
+  assert.doesNotMatch(source, /PATCH|updateNote/)
 })
 
 test('My Business follows Admin shell design tokens and responsive table/card conventions', () => {
