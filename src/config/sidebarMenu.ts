@@ -50,6 +50,14 @@ export const sidebarMenu: SidebarMenuItem[] = [
     ]
   },
   {
+    id: 'crm-management', title: 'CRM 業務管理', icon: 'lucide:briefcase-business', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'],
+    children: [
+      { id: 'crm-my-business', title: '我的業務', icon: 'lucide:calendar-check', path: '/admin/crm/my-business', capabilities: ['SALES', 'SALES_SUPERVISOR'] },
+      { id: 'crm-business-management', title: '業務管理', icon: 'lucide:users-round', disabled: true, capabilities: ['SALES_SUPERVISOR', 'ADMIN'] },
+      { id: 'crm-business-reports', title: '業務戰情室', icon: 'lucide:chart-no-axes-combined', disabled: true, capabilities: ['SALES_SUPERVISOR', 'ADMIN'] }
+    ]
+  },
+  {
     id: 'frontend', title: '前台管理', icon: 'lucide:monitor', roles: ['admin'],
     children: [
       { id: 'marquee', title: '跑馬燈', icon: 'lucide:megaphone', path: '/admin/frontend/marquee', roles: ['admin'] },
@@ -57,11 +65,11 @@ export const sidebarMenu: SidebarMenuItem[] = [
     ]
   },
   {
-    id: 'cases', title: '案件管理', icon: 'lucide:gem', roles: ['sales', 'manager', 'admin'],
+    id: 'cases', title: '商品管理', icon: 'lucide:gem', roles: ['sales', 'manager', 'admin'],
     children: [
-      { id: 'case-photos', title: '案件照片管理', icon: 'lucide:image', path: '/admin/cases/photos', roles: ['admin'] },
-      { id: 'case-create', title: '新增案件', icon: 'lucide:layers-plus', path: '/admin/cases/create', roles: ['sales', 'manager', 'admin'] },
-      { id: 'case-list', title: '案件列表', icon: 'lucide:list-check', path: '/admin/cases/list', roles: ['manager', 'admin'] }
+      { id: 'case-photos', title: '商品照片', icon: 'lucide:image', path: '/admin/cases/photos', roles: ['admin'] },
+      { id: 'case-create', title: '商品案件', icon: 'lucide:layers-plus', path: '/admin/cases/create', roles: ['sales', 'manager', 'admin'] },
+      { id: 'case-list', title: '商品列表', icon: 'lucide:list-check', path: '/admin/cases/list', roles: ['manager', 'admin'] }
     ]
   },
   {
