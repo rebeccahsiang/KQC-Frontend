@@ -75,7 +75,7 @@ const activate = () => {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #cbd5e1;
+  color: color-mix(in srgb, var(--bg-thumb) 88%, transparent);
   font-family: var(--kqc-font-family);
   font-size: 0.82rem;
   font-weight: 500;
@@ -88,15 +88,15 @@ const activate = () => {
   &.compact { justify-content: center; padding-inline: 8px; }
   &.reserved, &.reserved:hover {
     background: transparent;
-    color: #64748b;
+    color: color-mix(in srgb, var(--bg-thumb) 64%, transparent);
     cursor: not-allowed;
-    opacity: 0.72;
+    opacity: 0.88;
   }
 }
 .menu-icon { width: 18px; height: 18px; flex: 0 0 18px; color: #facc15; }
 .active .menu-icon { color: #172033; }
 .menu-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.reserved-badge { padding: 2px 6px; border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 999px; color: #94a3b8; font-size: 0.62rem; white-space: nowrap; }
+.reserved-badge { padding: 2px 6px; border: 1px solid color-mix(in srgb, var(--bg-thumb) 32%, transparent); border-radius: 999px; color: color-mix(in srgb, var(--bg-thumb) 70%, transparent); font-size: 0.62rem; white-space: nowrap; }
 .chevron { width: 15px; height: 15px; transition: transform 0.18s ease; }
 .chevron.open { transform: rotate(180deg); }
 .submenu { margin: 4px 0 6px 17px; padding-left: 9px; border-left: 1px solid rgba(148, 163, 184, 0.22); }

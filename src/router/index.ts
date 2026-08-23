@@ -55,6 +55,8 @@ const routes: RouteRecordRaw[] = [
       },
       { path: 'invitations', name: 'AdminInvitations', component: () => import('@/views/admin/invitations/AdminInvitationsView.vue'), meta: { title: '員工邀請', capabilities: ['ADMIN'] } },
       { path: 'organizations', name: 'AdminOrganizations', component: () => import('@/views/admin/organizations/AdminOrganizationsView.vue'), meta: { title: '組織管理', capabilities: ['ADMIN', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER'] } },
+      { path: 'finance', name: 'AdminFinanceCenter', component: () => import('@/views/admin/finance/FinanceCenterView.vue'), meta: { title: '財務中心', capabilities: ['ADMIN'] } },
+      { path: 'finance/:businessCaseId', name: 'AdminFinanceDetail', component: () => import('@/views/admin/finance/FinanceDetailView.vue'), meta: { title: '財務案件詳情', capabilities: ['ADMIN'] } },
       {
         path: 'users',
         name: 'AdminUserManagement',

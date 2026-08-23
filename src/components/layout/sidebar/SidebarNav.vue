@@ -58,10 +58,11 @@ const visibleMenu = computed(() => {
 .sidebar {
   position: sticky;
   top: 0;
+  align-self: flex-start;
   z-index: 20;
   display: flex;
   width: 256px;
-  height: 100vh;
+  height: 100dvh;
   flex: 0 0 256px;
   flex-direction: column;
   overflow: hidden;

@@ -42,6 +42,14 @@ export const sidebarMenu: SidebarMenuItem[] = [
     ]
   },
   {
+    id: 'finance-management', title: '財務管理', icon: 'lucide:wallet-cards', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'],
+    children: [
+      { id: 'my-performance', title: '我的績效', icon: 'lucide:circle-check', disabled: true, capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] },
+      { id: 'team-performance', title: '團隊績效', icon: 'lucide:users-round', disabled: true, capabilities: ['SALES_SUPERVISOR', 'ADMIN'] },
+      { id: 'finance-center', title: '財務中心', icon: 'lucide:hand-coins', path: '/admin/finance', capabilities: ['ADMIN'] }
+    ]
+  },
+  {
     id: 'frontend', title: '前台管理', icon: 'lucide:monitor', roles: ['admin'],
     children: [
       { id: 'marquee', title: '跑馬燈', icon: 'lucide:megaphone', path: '/admin/frontend/marquee', roles: ['admin'] },

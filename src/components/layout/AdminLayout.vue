@@ -18,7 +18,7 @@ import SidebarNav from '@/components/layout/sidebar/SidebarNav.vue'
 <style lang="scss" scoped>
 .admin-layout {
   display: flex;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-main);
   color: var(--text-main);
   font-family: var(--kqc-font-family);
