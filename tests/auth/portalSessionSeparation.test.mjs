@@ -15,6 +15,15 @@ test('member and admin access state are independent inside the existing store', 
   assert.match(store, /clearAuth: \(portal\) => portal === 'admin' \? clearAdminAuth\(\) : clearAuth\(\)/)
 })
 
+test('backend exit revokes and clears only the admin portal state', () => {
+  const store = read('src/stores/authStore.ts')
+  const flow = store.slice(store.indexOf('const exitAdminPortal = async'), store.indexOf('const logoutAll'))
+  assert.match(flow, /await authApi\.logout\('admin'\)/)
+  assert.match(flow, /finally \{\s*clearAdminAuth\(\)/)
+  assert.doesNotMatch(flow, /clearAuth\(|logout\('frontend'\)/)
+  assert.match(store, /exitAdminPortal,/)
+})
+
 test('portal-aware Auth API keeps refresh, logout, elevation, and activity separated', () => {
   const api = read('src/api/auth.ts')
   assert.match(api, /refresh: \(portal: Portal = 'frontend'\)/)
@@ -35,6 +44,16 @@ test('admin routes require an admin portal session, not frontend capability alon
   assert.match(router, /to\.name === 'AdminLanding'[^\n]+adminLandingPath\(authStore\.user\)/)
   assert.match(capabilities, /\['SALES', 'SALES_SUPERVISOR'\][\s\S]{0,80}'\/admin\/crm\/my-business'/)
   assert.match(capabilities, /user\?\.role === 'admin' \|\| user\?\.role === 'manager'[\s\S]{0,80}'\/admin\/dashboard'/)
+})
+
+test('public staff entry is navigation-only and still passes through admin elevation', () => {
+  const header = read('src/components/layout/FrontHeader.vue')
+  const router = read('src/router/index.ts')
+  assert.match(header, /v-if="authStore\.isAdminPortalUser"/)
+  assert.match(header, /to="\/admin"/)
+  assert.match(header, />進入後台</)
+  assert.doesNotMatch(header, /adminAccessToken|adminStatus|adminLandingPath|adminElevation|crm\/my-business/)
+  assert.match(router, /authStore\.ensureAdminSession\(\)/)
 })
 
 test('first elevation is passwordless, re-entry supports password, and failure preserves frontend auth', () => {

@@ -219,6 +219,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const exitAdminPortal = async () => {
+    try {
+      await authApi.logout('admin')
+    } finally {
+      clearAdminAuth()
+    }
+  }
+
   const logoutAll = async () => {
     try {
       await authApi.logoutAll()
@@ -274,6 +282,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     logout,
+    exitAdminPortal,
     logoutAll,
     changePassword,
     recordActivity,

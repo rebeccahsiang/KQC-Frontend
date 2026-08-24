@@ -33,6 +33,9 @@ const handleScroll = (): void => {
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
+  // Public headers wait on the existing session hydrator so capability-based
+  // account actions never render from an unsettled or locally reconstructed identity.
+  void authStore.initialize()
 })
 
 onUnmounted(() => {
@@ -220,7 +223,7 @@ const handleVoiceInput = (): void => {
       
         <!-- 狀態 A：未登入 -> 顯示會員登入按鈕 -->
         <button
-          v-if="!authStore.isAuthenticated"
+          v-if="authStore.initialized && !authStore.isAuthenticated"
           type="button"
           class="control-btn login-btn"
           title="會員登入"
@@ -230,8 +233,18 @@ const handleVoiceInput = (): void => {
         </button>
       
         <!-- 狀態 B：已登入 -> 顯示使用者名稱與登出按鈕 -->
-        <div v-else class="user-profile-menu">
+        <div v-else-if="authStore.initialized" class="user-profile-menu">
           <span class="user-name-badge">{{ authStore.adminName }}</span>
+          <router-link
+            v-if="authStore.isAdminPortalUser"
+            to="/admin"
+            class="control-btn staff-entry-btn"
+            title="進入後台"
+            aria-label="進入後台"
+          >
+            <Icon icon="lucide:layout-dashboard" class="control-icon" />
+            <span>進入後台</span>
+          </router-link>
           <router-link
             v-if="authStore.user?.role === 'user'"
             to="/account/sessions"
@@ -623,6 +636,23 @@ const handleVoiceInput = (): void => {
       height: 0.9375rem;
     }
   }
+}
+
+.user-profile-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-name-badge { white-space: nowrap; }
+.staff-entry-btn { min-height: 2.5rem; text-decoration: none; white-space: nowrap; }
+
+@media (max-width: 720px) {
+  .header-inner-b { flex-wrap: wrap; padding: 0 0.75rem; }
+  .breadcrumbs-container { display: none; }
+  .search-bar-container { order: 2; max-width: none; flex-basis: 100%; margin: 0; }
+  .action-controls { width: 100%; justify-content: flex-end; }
+  .user-name-badge { display: none; }
 }
 
 @keyframes marquee {

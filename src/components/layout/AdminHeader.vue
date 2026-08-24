@@ -1,18 +1,73 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Icon } from '@iconify/vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const pageTitle = computed(() => String(route.meta.title || '後台管理'))
 const roleLabel = computed(() => authStore.user?.role || 'admin')
+const accountMenuOpen = ref(false)
+const accountTrigger = ref<HTMLButtonElement | null>(null)
+const accountMenu = ref<HTMLElement | null>(null)
 
-onMounted(themeStore.initTheme)
+const closeAccountMenu = ({ restoreFocus = false } = {}) => {
+  accountMenuOpen.value = false
+  if (restoreFocus) void nextTick(() => accountTrigger.value?.focus())
+}
+
+const openAccountMenu = async () => {
+  accountMenuOpen.value = true
+  await nextTick()
+  accountMenu.value?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus()
+}
+
+const toggleAccountMenu = () => accountMenuOpen.value ? closeAccountMenu() : void openAccountMenu()
+
+const handleDocumentPointer = (event: PointerEvent) => {
+  const target = event.target as Node
+  if (!accountMenu.value?.contains(target) && !accountTrigger.value?.contains(target)) closeAccountMenu()
+}
+
+const handleDocumentKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && accountMenuOpen.value) closeAccountMenu({ restoreFocus: true })
+}
+
+const handleTriggerKey = (event: KeyboardEvent) => {
+  if (event.key !== 'ArrowDown') return
+  event.preventDefault()
+  void openAccountMenu()
+}
+
+const leaveBackend = async () => {
+  closeAccountMenu()
+  try {
+    await authStore.exitAdminPortal()
+  } finally {
+    await router.replace('/')
+  }
+}
+
+const logoutAccount = async () => {
+  closeAccountMenu()
+  await authStore.logout()
+  await router.replace('/')
+}
+
+onMounted(() => {
+  themeStore.initTheme()
+  document.addEventListener('pointerdown', handleDocumentPointer)
+  document.addEventListener('keydown', handleDocumentKey)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointer)
+  document.removeEventListener('keydown', handleDocumentKey)
+})
 </script>
 
 <template>
@@ -38,12 +93,34 @@ onMounted(themeStore.initTheme)
         <Icon icon="lucide:bell" />
         <span class="notification-dot" aria-hidden="true"></span>
       </button>
-      <div class="admin-identity">
-        <span class="avatar">{{ authStore.adminName.slice(0, 1) }}</span>
-        <span class="identity-copy">
-          <strong>{{ authStore.adminName }}</strong>
-          <small>{{ roleLabel }}</small>
-        </span>
+      <div class="admin-account">
+        <button
+          ref="accountTrigger"
+          class="admin-identity"
+          type="button"
+          aria-haspopup="menu"
+          :aria-expanded="accountMenuOpen"
+          aria-label="帳號選單"
+          @click="toggleAccountMenu"
+          @keydown="handleTriggerKey"
+        >
+          <span class="avatar">{{ authStore.adminName.slice(0, 1) }}</span>
+          <span class="identity-copy">
+            <strong>{{ authStore.adminName }}</strong>
+            <small>{{ roleLabel }}</small>
+          </span>
+          <Icon icon="lucide:chevron-down" class="account-chevron" aria-hidden="true" />
+        </button>
+        <div v-if="accountMenuOpen" ref="accountMenu" class="account-menu" role="menu" aria-label="帳號操作">
+          <button type="button" role="menuitem" @click="leaveBackend">
+            <Icon icon="lucide:door-open" aria-hidden="true" />
+            <span>離開後台</span>
+          </button>
+          <button type="button" role="menuitem" class="danger" @click="logoutAccount">
+            <Icon icon="lucide:log-out" aria-hidden="true" />
+            <span>登出帳號</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -112,10 +189,45 @@ onMounted(themeStore.initTheme)
 }
 
 .admin-identity {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
   gap: 9px;
   padding-left: 10px;
   border-left: 1px solid var(--border-grey);
 }
+
+.admin-account { position: relative; }
+.admin-identity:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.account-chevron { width: 14px; height: 14px; color: var(--text-muted); }
+.account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  min-width: 10rem;
+  padding: 6px;
+  border: 1px solid var(--border-grey);
+  border-radius: 10px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-lg);
+}
+.account-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+}
+.account-menu button:hover, .account-menu button:focus-visible { background: var(--bg-hover); outline: none; }
+.account-menu button.danger { color: var(--danger); }
+.account-menu svg { width: 16px; height: 16px; }
 
 .avatar {
   display: grid;

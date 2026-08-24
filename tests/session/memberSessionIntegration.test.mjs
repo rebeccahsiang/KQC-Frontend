@@ -71,13 +71,23 @@ test('Mounted MemberSessions invalidation alone returns Home and opens the front
 
 test('FrontHeader exposes Session Management only to authenticated user-role members', () => {
   const header = read('src/components/layout/FrontHeader.vue')
-  const authenticatedMenu = header.slice(header.indexOf('<div v-else class="user-profile-menu">'), header.indexOf('</div>', header.indexOf('<div v-else class="user-profile-menu">')))
+  const menuStart = header.indexOf('<div v-else-if="authStore.initialized" class="user-profile-menu">')
+  const authenticatedMenu = header.slice(menuStart, header.indexOf('</div>', menuStart))
 
   assert.match(authenticatedMenu, /authStore\.user\?\.role === 'user'/)
   assert.match(authenticatedMenu, /to="\/account\/sessions"/)
   assert.match(authenticatedMenu, /登入中的裝置/)
   assert.match(authenticatedMenu, /authStore\.logout\(\)/)
-  assert.doesNotMatch(header.slice(0, header.indexOf('<div v-else class="user-profile-menu">')), /account\/sessions/)
+  assert.doesNotMatch(header.slice(0, menuStart), /account\/sessions/)
+})
+
+test('FrontHeader reuses settled Auth Store capability state for backend entry', () => {
+  const header = read('src/components/layout/FrontHeader.vue')
+  assert.match(header, /void authStore\.initialize\(\)/)
+  assert.match(header, /authStore\.initialized && !authStore\.isAuthenticated/)
+  assert.match(header, /v-if="authStore\.isAdminPortalUser"/)
+  assert.match(header, /to="\/admin"/)
+  assert.doesNotMatch(header, /\['SALES'|\['SALES_SUPERVISOR'|capabilities\.includes/)
 })
 
 test('A3-4 adds no return-to, second auth architecture, or credential persistence', () => {

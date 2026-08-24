@@ -100,6 +100,35 @@ test('Logout sends the memory Access Token through the shared interceptor before
   assert.doesNotMatch(client, /localStorage|sessionStorage/)
 })
 
+test('public header hydrates identity before exposing capability-aware staff entry', () => {
+  const header = read('src/components/layout/FrontHeader.vue')
+  assert.match(header, /onMounted\([\s\S]{0,320}void authStore\.initialize\(\)/)
+  assert.match(header, /v-if="authStore\.initialized && !authStore\.isAuthenticated"/)
+  assert.match(header, /v-else-if="authStore\.initialized" class="user-profile-menu"/)
+  assert.match(header, /v-if="authStore\.isAdminPortalUser"/)
+  assert.match(header, /to="\/admin"/)
+  assert.match(header, /aria-label="進入後台"/)
+})
+
+test('AdminHeader account menu separates backend exit from full account logout accessibly', () => {
+  const header = read('src/components/layout/AdminHeader.vue')
+  const menuStart = header.indexOf('<div v-if="accountMenuOpen"')
+  const menuEnd = header.indexOf('</div>', menuStart)
+  assert.ok(menuStart >= 0 && menuEnd > menuStart, 'account menu template slice must be non-empty')
+  const accountMenu = header.slice(menuStart, menuEnd + '</div>'.length)
+  assert.match(header, /aria-haspopup="menu"/)
+  assert.match(header, /:aria-expanded="accountMenuOpen"/)
+  assert.match(accountMenu, /role="menu"/)
+  assert.equal((accountMenu.match(/<button\b[^>]*\brole="menuitem"[^>]*>/g) || []).length, 2)
+  assert.match(accountMenu, />離開後台</)
+  assert.match(accountMenu, />登出帳號</)
+  assert.match(header, /await authStore\.exitAdminPortal\(\)/)
+  assert.match(header, /await authStore\.logout\(\)/)
+  assert.match(header, /event\.key === 'Escape'/)
+  assert.match(header, /document\.addEventListener\('pointerdown'/)
+  assert.match(header, /router\.replace\('\/'\)/)
+})
+
 test('Frontend Auth and routing contain only the four approved roles', () => {
   const source = [
     read('src/api/auth.ts'),
