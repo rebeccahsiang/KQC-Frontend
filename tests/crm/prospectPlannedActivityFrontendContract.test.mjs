@@ -19,7 +19,7 @@ test('Prospect Planned Activity API uses canonical paths and shared Admin portal
   const list = slice(api, 'myProspectPlannedActivities:', 'myProspectPlannedActivity:')
   const detail = slice(api, 'myProspectPlannedActivity:', 'updateMyProspectPlannedActivity:')
   const update = slice(api, 'updateMyProspectPlannedActivity:', 'cancelMyProspectPlannedActivity:')
-  const cancel = slice(api, 'cancelMyProspectPlannedActivity:', '\n}')
+  const cancel = slice(api, 'cancelMyProspectPlannedActivity:', 'completeMyProspectPlannedActivity:')
   const methods = [create, list, detail, update, cancel]
 
   assert.match(create, /api\.post[\s\S]*`\/v1\/crm\/my-prospects\/\$\{prospectId\}\/planned-activities`/)
@@ -32,7 +32,7 @@ test('Prospect Planned Activity API uses canonical paths and shared Admin portal
   for (const method of methods) assert.match(method, /adminRequest/)
   const plannedActivityApi = methods.join('\n')
   assert.doesNotMatch(plannedActivityApi, /localStorage|sessionStorage|Authorization|Bearer|token/i)
-  assert.doesNotMatch(plannedActivityApi, /api\.delete|deleteMyProspectPlannedActivity|completeMyProspectPlannedActivity/i)
+  assert.doesNotMatch(plannedActivityApi, /api\.delete|deleteMyProspectPlannedActivity/i)
 })
 
 test('Detail information architecture and approved labels are present', () => {
@@ -40,7 +40,7 @@ test('Detail information architecture and approved labels are present', () => {
   const basic = detail.indexOf('基本資料'); const planned = detail.indexOf('預定行程'); const followUp = detail.indexOf('聯絡紀錄')
   assert.ok(basic >= 0 && basic < planned && planned < followUp)
   for (const text of ['待執行', '過期未執行', '全部行程', '＋新增行程', '取消原因']) assert.match(detail, new RegExp(text))
-  assert.doesNotMatch(detail, /label="完成|@click="[^\"]*complete/i)
+  assert.match(detail, /label="完成"[\s\S]*@click="openCompleteActivity\(item\)"/)
   for (const text of ['電話', 'LINE', '面談', '報價', '客戶回覆', '需求變化']) assert.match(config, new RegExp(text))
 })
 
@@ -58,7 +58,7 @@ test('Planned Activity read-only time uses one 12-hour 上午／下午 formatter
   assert.match(formatter, /hour12: true/)
   assert.match(formatter, /part\('dayPeriod'\)/)
   assert.match(formatter, /part\('hour'\).*part\('minute'\)/)
-  const detail = slice(view, '<section class="detail-block planned-activity-section"', '<section class="detail-block follow-up-placeholder"')
+  const detail = slice(view, '<section class="detail-block planned-activity-section"', '<section class="detail-block follow-up-section"')
   const cancelDialog = slice(view, '<Dialog v-model:visible="cancelActivityVisible"', '</Dialog>')
   assert.match(detail, /plannedActivityDateTime\(item\.startAt\)/)
   assert.match(cancelDialog, /plannedActivityDateTime\(selectedActivity\.startAt\)/)
@@ -102,21 +102,21 @@ test('Cancel uses a dialog, reason and revision without delete semantics', () =>
 })
 
 test('Converted and terminal activities expose no mutation actions', () => {
-  const detail = slice(view, '<section class="detail-block planned-activity-section"', '<section class="detail-block follow-up-placeholder"')
+  const detail = slice(view, '<section class="detail-block planned-activity-section"', '<section class="detail-block follow-up-section"')
   assert.match(detail, /v-if="prospectDetail\.developmentStatus !== 'CONVERTED'" label="＋新增行程"/)
   assert.match(detail, /v-if="item\.status === 'PENDING' && prospectDetail\.developmentStatus !== 'CONVERTED'"/)
   assert.match(view, /code === 'PROSPECT_CONVERTED_READ_ONLY'/)
 })
 
 test('Planned Activity request failures remain isolated from existing dataset errors', () => {
-  const activity = slice(view, 'const loadPlannedActivities', 'const loadProspectDetail')
+  const activity = slice(view, 'const loadPlannedActivities', 'const resetActivityForm')
   assert.match(activity, /plannedActivityError\.value/)
   for (const state of ['summaryError', 'calendarError', 'customerError', 'caseError', 'prospectError']) assert.doesNotMatch(activity, new RegExp(`${state}\\.value\\s*=`))
   assert.doesNotMatch(activity, /detailProspectVisible\.value\s*=\s*false/)
 })
 
 test('Mutation success reloads only the activity collection', () => {
-  const activity = slice(view, 'const submitActivity', 'const loadProspectDetail')
+  const activity = slice(view, 'const submitActivity', 'const reloadActivityForEdit')
   assert.match(activity, /await loadPlannedActivities/)
   for (const loader of ['loadSummary', 'loadCalendar', 'loadCustomers', 'loadCases', 'loadProspects']) assert.doesNotMatch(activity, new RegExp(`await ${loader}\\(`))
 })

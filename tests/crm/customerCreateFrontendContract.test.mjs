@@ -50,8 +50,16 @@ test('Submit is single-flight, preserves failure input, and refreshes Customers 
 
 test('Create remains Customer-only with no mock, matching, Case, FollowUp, or Finance side effect', () => {
   const view = read('src/views/admin/crm/MyBusinessView.vue')
-  const submit = view.slice(view.indexOf('const submitCustomer'), view.indexOf('onMounted(refresh)'))
-  assert.doesNotMatch(submit, /businessCase|followUp|finance|matchCustomer|duplicate/i)
-  assert.doesNotMatch(view, /mockCustomer|fixtureCustomer|FIN-DEMO|createBusinessCase|createFollowUp|createFinance/i)
-  assert.match(view, /label="新增業務" disabled/)
+  const submitStart = view.indexOf('const submitCustomer = async () => {')
+  const submitEnd = view.indexOf('const prospectContact =', submitStart)
+  const submit = submitStart >= 0 && submitEnd > submitStart ? view.slice(submitStart, submitEnd) : ''
+  assert.ok(submit.length > 0, 'submitCustomer bounded slice must exist')
+  assert.match(submit, /crmApi\.createCustomer\(input\)/)
+  assert.match(submit, /createCustomerVisible\.value = false/)
+  assert.match(submit, /resetCustomerForm\(\)/)
+  assert.match(submit, /await loadCustomers\(\)/)
+  assert.match(submit, /createCustomerSuccess\.value/)
+  assert.doesNotMatch(submit, /prospect|businessCase|followUp|finance|matchCustomer|duplicate|convert/i)
+  assert.doesNotMatch(view, /mockCustomer|fixtureCustomer|FIN-DEMO|createBusinessCase|createFinance|convertProspect/i)
+  assert.match(view, /label="新增業務案件" disabled/)
 })

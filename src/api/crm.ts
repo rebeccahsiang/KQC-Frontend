@@ -23,6 +23,13 @@ export interface ProspectPlannedActivityDetail extends ProspectPlannedActivityLi
 export interface CreateProspectPlannedActivityInput { activityType: PlannedActivityType; title: string; content: string | null; startAt: string }
 export interface UpdateProspectPlannedActivityInput { revision: number; activityType: PlannedActivityType; title: string; content: string | null; startAt: string }
 export interface CancelProspectPlannedActivityInput { revision: number; cancellationReason: string }
+export type ProspectFollowUpOutcome = 'INTERESTED' | 'CONTINUE_FOLLOW_UP' | 'AWAITING_RESPONSE' | 'NOT_INTERESTED_NOW' | 'UNREACHABLE'
+export interface ProspectFollowUpListItem { id: string; occurredAt: string; activityType: PlannedActivityType; content: string; outcome: ProspectFollowUpOutcome; outcomeNote: string | null; plannedActivityId: string | null; responsibleSalesId: string; createdAt: string; updatedAt: string; revision: number }
+export type ProspectFollowUpDetail = ProspectFollowUpListItem
+export interface CreateProspectFollowUpInput { occurredAt: string; activityType: PlannedActivityType; content: string; outcome: ProspectFollowUpOutcome; outcomeNote: string | null }
+export interface UpdateProspectFollowUpInput extends CreateProspectFollowUpInput { revision: number }
+export interface CompleteProspectPlannedActivityInput extends CreateProspectFollowUpInput { revision: number; nextActivity?: CreateProspectPlannedActivityInput }
+export interface CompleteProspectPlannedActivityResult { completedActivity: ProspectPlannedActivityDetail; followUp: ProspectFollowUpDetail; nextActivity: ProspectPlannedActivityDetail | null }
 
 const adminRequest = { authPortal: 'admin' as const }
 export const crmApi = {
@@ -39,5 +46,11 @@ export const crmApi = {
   myProspectPlannedActivities: (prospectId: string) => api.get<Envelope<ProspectPlannedActivityListItem[]>>(`/v1/crm/my-prospects/${prospectId}/planned-activities`, adminRequest),
   myProspectPlannedActivity: (prospectId: string, activityId: string) => api.get<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}`, adminRequest),
   updateMyProspectPlannedActivity: (prospectId: string, activityId: string, input: UpdateProspectPlannedActivityInput) => api.patch<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}`, input, adminRequest),
-  cancelMyProspectPlannedActivity: (prospectId: string, activityId: string, input: CancelProspectPlannedActivityInput) => api.post<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}/cancel`, input, adminRequest)
+  cancelMyProspectPlannedActivity: (prospectId: string, activityId: string, input: CancelProspectPlannedActivityInput) => api.post<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}/cancel`, input, adminRequest),
+  completeMyProspectPlannedActivity: (prospectId: string, activityId: string, input: CompleteProspectPlannedActivityInput) => api.post<Envelope<CompleteProspectPlannedActivityResult>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}/complete`, input, adminRequest),
+  createMyProspectFollowUp: (prospectId: string, input: CreateProspectFollowUpInput) => api.post<Envelope<ProspectFollowUpDetail>>(`/v1/crm/my-prospects/${prospectId}/follow-ups`, input, adminRequest),
+  myProspectFollowUps: (prospectId: string) => api.get<Envelope<ProspectFollowUpListItem[]>>(`/v1/crm/my-prospects/${prospectId}/follow-ups`, adminRequest),
+  myProspectFollowUp: (prospectId: string, followUpId: string) => api.get<Envelope<ProspectFollowUpDetail>>(`/v1/crm/my-prospects/${prospectId}/follow-ups/${followUpId}`, adminRequest),
+  updateMyProspectFollowUp: (prospectId: string, followUpId: string, input: UpdateProspectFollowUpInput) => api.patch<Envelope<ProspectFollowUpDetail>>(`/v1/crm/my-prospects/${prospectId}/follow-ups/${followUpId}`, input, adminRequest),
+  deleteMyProspectFollowUp: (prospectId: string, followUpId: string, revision: number) => api.delete<Envelope<{ deleted: true }>>(`/v1/crm/my-prospects/${prospectId}/follow-ups/${followUpId}`, { ...adminRequest, data: { revision } })
 }

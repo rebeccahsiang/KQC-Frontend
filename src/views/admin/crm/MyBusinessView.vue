@@ -7,8 +7,11 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
-import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type PlannedActivityType, type ProspectDetail, type ProspectGrade, type ProspectListItem, type ProspectPlannedActivityDetail, type ProspectPlannedActivityListItem, type ProspectType, type UpdateProspectInput } from '@/api/crm'
-import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate, PLANNED_ACTIVITY_TYPE_LABELS, PROSPECT_GRADE_PRESENTATION, PROSPECT_STATUS_LABELS, prospectStatusLabel } from '@/config/crm'
+import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type PlannedActivityType, type ProspectDetail, type ProspectFollowUpDetail, type ProspectFollowUpListItem, type ProspectFollowUpOutcome, type ProspectGrade, type ProspectListItem, type ProspectPlannedActivityDetail, type ProspectPlannedActivityListItem, type ProspectType, type UpdateProspectInput } from '@/api/crm'
+import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate, PLANNED_ACTIVITY_TYPE_LABELS, PROSPECT_FOLLOW_UP_OUTCOME_LABELS, PROSPECT_GRADE_PRESENTATION, PROSPECT_STATUS_LABELS, prospectStatusLabel } from '@/config/crm'
+import { useAuthStore } from '@/stores/authStore'
+
+const authStore = useAuthStore()
 
 const summary = ref<MyBusinessSummary | null>(null)
 const calendar = ref<CalendarItem[]>([])
@@ -52,6 +55,24 @@ const cancellingActivity = ref(false)
 const cancelActivityError = ref('')
 const cancelActivityConflict = ref(false)
 const cancellationReason = ref('')
+/* Follow-up request state is intentionally independent from Prospect and Planned Activity loaders. */
+const followUps = ref<ProspectFollowUpListItem[]>([])
+const loadingFollowUps = ref(false)
+const followUpError = ref('')
+const followUpMessage = ref('')
+const followUpFormVisible = ref(false)
+const editingFollowUp = ref(false)
+const savingFollowUp = ref(false)
+const followUpFormError = ref('')
+const followUpConflict = ref(false)
+const selectedFollowUp = ref<ProspectFollowUpDetail | null>(null)
+const deleteFollowUpVisible = ref(false)
+const deletingFollowUp = ref(false)
+const deleteFollowUpError = ref('')
+const completeActivityVisible = ref(false)
+const completingActivity = ref(false)
+const completeActivityError = ref('')
+const completeActivityConflict = ref(false)
 const createCustomerVisible = ref(false)
 const creatingCustomer = ref(false)
 const createCustomerError = ref('')
@@ -142,6 +163,7 @@ const plannedActivityDateTime = (value: string) => {
   const part = (type: 'year' | 'month' | 'day' | 'dayPeriod' | 'hour' | 'minute') => parts.find((item) => item.type === type)?.value || ''
   return `${part('year')}/${part('month')}/${part('day')} ${part('dayPeriod')} ${part('hour')}:${part('minute')}`
 }
+/* One view-local clock drives overdue and edit-window presentation only; it never schedules network work. */
 const stopPlannedActivityClock = () => {
   if (plannedActivityClockTimer !== null) { clearInterval(plannedActivityClockTimer); plannedActivityClockTimer = null }
 }
@@ -154,6 +176,97 @@ const toLocalDateTimeInput = (value: string) => {
   const date = new Date(value)
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 }
+const localNowInput = () => toLocalDateTimeInput(new Date().toISOString())
+const emptyFollowUpForm = () => ({ occurredAt: localNowInput(), activityType: 'PHONE' as PlannedActivityType, content: '', outcome: '' as ProspectFollowUpOutcome | '', outcomeNote: '', revision: 0 })
+const followUpForm = ref(emptyFollowUpForm())
+/* Optional next-activity fields remain dormant until explicitly enabled and are submitted inside completion. */
+const emptyCompletionForm = () => ({ occurredAt: localNowInput(), activityType: 'PHONE' as PlannedActivityType, content: '', outcome: '' as ProspectFollowUpOutcome | '', outcomeNote: '', revision: 0, nextEnabled: false, nextActivityType: 'PHONE' as PlannedActivityType, nextTitle: '', nextStartAt: '', nextContent: '' })
+const completionForm = ref(emptyCompletionForm())
+const followUpValidation = computed(() => {
+  if (!followUpForm.value.content.trim()) return '請輸入聯絡內容。'
+  if (!followUpForm.value.outcome) return '請選擇聯絡結果。'
+  const occurredAt = new Date(followUpForm.value.occurredAt)
+  if (!followUpForm.value.occurredAt || Number.isNaN(occurredAt.getTime()) || occurredAt.getTime() > Date.now()) return '聯絡時間不可晚於現在。'
+  return ''
+})
+const completionValidation = computed(() => {
+  if (!completionForm.value.content.trim()) return '請輸入聯絡內容。'
+  if (!completionForm.value.outcome) return '請選擇聯絡結果。'
+  const occurredAt = new Date(completionForm.value.occurredAt)
+  if (!completionForm.value.occurredAt || Number.isNaN(occurredAt.getTime()) || occurredAt.getTime() > Date.now()) return '聯絡時間不可晚於現在。'
+  if (completionForm.value.nextEnabled && (!completionForm.value.nextTitle.trim() || !completionForm.value.nextStartAt || new Date(completionForm.value.nextStartAt).getTime() < Date.now())) return '請輸入未來的下一步行程時間與標題。'
+  return ''
+})
+/* Eligibility is presentation-only: immutable createdAt, original author DTO, and the shared local clock; Backend remains authoritative. */
+const followUpCanMutate = (item: ProspectFollowUpListItem) => prospectDetail.value?.developmentStatus !== 'CONVERTED'
+  && Boolean(authStore.user?._id)
+  && item.responsibleSalesId === authStore.user?._id
+  && plannedActivityNow.value < new Date(item.createdAt).getTime() + 24 * 60 * 60 * 1000
+const loadFollowUps = async (prospectId: string) => {
+  loadingFollowUps.value = true; followUpError.value = ''; plannedActivityNow.value = Date.now()
+  try { followUps.value = (await crmApi.myProspectFollowUps(prospectId)).data } catch { followUpError.value = '聯絡紀錄載入失敗，請稍後再試。' } finally { loadingFollowUps.value = false }
+}
+const resetFollowUpForm = () => { followUpForm.value = emptyFollowUpForm(); selectedFollowUp.value = null; editingFollowUp.value = false; followUpFormError.value = ''; followUpConflict.value = false }
+const openCreateFollowUp = () => { resetFollowUpForm(); followUpMessage.value = ''; followUpFormVisible.value = true }
+const openEditFollowUp = async (item: ProspectFollowUpListItem) => {
+  if (!prospectDetail.value || !followUpCanMutate(item)) return
+  savingFollowUp.value = true; followUpFormError.value = ''; followUpConflict.value = false
+  try {
+    const detail = (await crmApi.myProspectFollowUp(prospectDetail.value.id, item.id)).data
+    if (!followUpCanMutate(detail)) { followUpMessage.value = '這筆聯絡紀錄屬於歷史紀錄，目前只能查看。'; await loadFollowUps(prospectDetail.value.id); return }
+    selectedFollowUp.value = detail
+    followUpForm.value = { occurredAt: toLocalDateTimeInput(detail.occurredAt), activityType: detail.activityType, content: detail.content, outcome: detail.outcome, outcomeNote: detail.outcomeNote || '', revision: detail.revision }
+    editingFollowUp.value = true; followUpFormVisible.value = true
+  } catch { followUpError.value = '聯絡紀錄載入失敗，請稍後再試。' } finally { savingFollowUp.value = false }
+}
+const submitFollowUp = async () => {
+  if (!prospectDetail.value || savingFollowUp.value || followUpValidation.value || !followUpForm.value.outcome) return
+  const outcome = followUpForm.value.outcome
+  savingFollowUp.value = true; followUpFormError.value = ''; followUpConflict.value = false
+  const input = { occurredAt: new Date(followUpForm.value.occurredAt).toISOString(), activityType: followUpForm.value.activityType, content: followUpForm.value.content.trim(), outcome, outcomeNote: followUpForm.value.outcomeNote.trim() || null }
+  try {
+    if (editingFollowUp.value && selectedFollowUp.value) await crmApi.updateMyProspectFollowUp(prospectDetail.value.id, selectedFollowUp.value.id, { ...input, revision: followUpForm.value.revision })
+    else await crmApi.createMyProspectFollowUp(prospectDetail.value.id, input)
+    const message = editingFollowUp.value ? '聯絡紀錄已更新。' : '聯絡紀錄已新增。'
+    followUpFormVisible.value = false; resetFollowUpForm(); followUpMessage.value = message; await loadFollowUps(prospectDetail.value.id)
+  } catch (error) {
+    const code = backendErrorCode(error)
+    if (code === 'PROSPECT_FOLLOW_UP_REVISION_CONFLICT') { followUpConflict.value = true; followUpFormError.value = '這筆聯絡紀錄已在其他地方更新，請重新載入後再編輯。' }
+    else if (code === 'PROSPECT_FOLLOW_UP_EDIT_WINDOW_EXPIRED') { followUpFormVisible.value = false; followUpMessage.value = '這筆聯絡紀錄已超過 24 小時修改期限，現在只能查看。'; await loadFollowUps(prospectDetail.value.id) }
+    else if (code === 'PROSPECT_FOLLOW_UP_READ_ONLY') { followUpFormVisible.value = false; followUpMessage.value = '這筆聯絡紀錄屬於歷史紀錄，目前只能查看。'; await loadFollowUps(prospectDetail.value.id) }
+    else followUpFormError.value = '聯絡紀錄儲存失敗，請確認資料後再試。'
+  } finally { savingFollowUp.value = false }
+}
+const reloadFollowUpForEdit = async () => { if (selectedFollowUp.value) await openEditFollowUp(selectedFollowUp.value) }
+const openDeleteFollowUp = (item: ProspectFollowUpListItem) => { if (!followUpCanMutate(item)) return; selectedFollowUp.value = item; deleteFollowUpError.value = ''; deleteFollowUpVisible.value = true }
+const submitDeleteFollowUp = async () => {
+  if (!prospectDetail.value || !selectedFollowUp.value || deletingFollowUp.value) return
+  deletingFollowUp.value = true; deleteFollowUpError.value = ''
+  try { await crmApi.deleteMyProspectFollowUp(prospectDetail.value.id, selectedFollowUp.value.id, selectedFollowUp.value.revision); deleteFollowUpVisible.value = false; followUpMessage.value = '聯絡紀錄已刪除。'; await loadFollowUps(prospectDetail.value.id) }
+  catch (error) {
+    const code = backendErrorCode(error)
+    deleteFollowUpError.value = code === 'PROSPECT_FOLLOW_UP_REVISION_CONFLICT' ? '這筆聯絡紀錄已在其他地方更新，請重新載入後再編輯。' : code === 'PROSPECT_FOLLOW_UP_EDIT_WINDOW_EXPIRED' ? '這筆聯絡紀錄已超過 24 小時修改期限，現在只能查看。' : '這筆聯絡紀錄屬於歷史紀錄，目前只能查看。'
+    if (code !== 'PROSPECT_FOLLOW_UP_REVISION_CONFLICT') { deleteFollowUpVisible.value = false; followUpMessage.value = deleteFollowUpError.value; await loadFollowUps(prospectDetail.value.id) }
+  } finally { deletingFollowUp.value = false }
+}
+/* Completion is one atomic API command; optional next activity is nested in that same request. */
+const openCompleteActivity = (item: ProspectPlannedActivityListItem) => { selectedActivity.value = { ...item, completedBy: null, cancelledBy: null }; completionForm.value = { ...emptyCompletionForm(), activityType: item.activityType, revision: item.revision }; completeActivityError.value = ''; completeActivityConflict.value = false; completeActivityVisible.value = true }
+const submitCompleteActivity = async () => {
+  if (!prospectDetail.value || !selectedActivity.value || completingActivity.value || completionValidation.value || !completionForm.value.outcome) return
+  const outcome = completionForm.value.outcome
+  completingActivity.value = true; completeActivityError.value = ''; completeActivityConflict.value = false
+  const nextActivity = completionForm.value.nextEnabled ? { activityType: completionForm.value.nextActivityType, title: completionForm.value.nextTitle.trim(), content: completionForm.value.nextContent.trim() || null, startAt: new Date(completionForm.value.nextStartAt).toISOString() } : undefined
+  try {
+    await crmApi.completeMyProspectPlannedActivity(prospectDetail.value.id, selectedActivity.value.id, { revision: completionForm.value.revision, occurredAt: new Date(completionForm.value.occurredAt).toISOString(), activityType: completionForm.value.activityType, content: completionForm.value.content.trim(), outcome, outcomeNote: completionForm.value.outcomeNote.trim() || null, ...(nextActivity ? { nextActivity } : {}) })
+    completeActivityVisible.value = false; plannedActivityMessage.value = '行程已完成並建立聯絡紀錄。'; await Promise.all([loadPlannedActivities(prospectDetail.value.id), loadFollowUps(prospectDetail.value.id)])
+  } catch (error) {
+    const code = backendErrorCode(error)
+    if (code === 'PLANNED_ACTIVITY_REVISION_CONFLICT') { completeActivityConflict.value = true; completeActivityError.value = '這筆行程已在其他地方更新，請重新載入後再操作。' }
+    else if (code === 'PLANNED_ACTIVITY_READ_ONLY') { completeActivityVisible.value = false; plannedActivityMessage.value = '這筆行程目前已無法完成，資料已重新載入。'; await loadPlannedActivities(prospectDetail.value.id) }
+    else completeActivityError.value = '完成行程失敗，請確認資料後再試。'
+  } finally { completingActivity.value = false }
+}
+const reloadCompletionActivity = async () => { if (!prospectDetail.value) return; completeActivityVisible.value = false; await loadPlannedActivities(prospectDetail.value.id) }
 const loadPlannedActivities = async (prospectId: string) => {
   loadingPlannedActivities.value = true; plannedActivityError.value = ''; plannedActivityNow.value = Date.now()
   try { plannedActivities.value = (await crmApi.myProspectPlannedActivities(prospectId)).data } catch { plannedActivityError.value = '行程資料載入失敗，請稍後再試。' } finally { loadingPlannedActivities.value = false }
@@ -221,7 +334,7 @@ const reloadCancelActivity = async () => {
 }
 const loadProspectDetail = async (prospectId: string) => {
   loadingProspectDetail.value = true; prospectFormError.value = ''; prospectDetail.value = null; detailProspectVisible.value = true
-  try { prospectDetail.value = (await crmApi.getMyProspect(prospectId)).data; void loadPlannedActivities(prospectId) } catch { detailProspectVisible.value = false; prospectError.value = safeError } finally { loadingProspectDetail.value = false }
+  try { prospectDetail.value = (await crmApi.getMyProspect(prospectId)).data; void Promise.all([loadPlannedActivities(prospectId), loadFollowUps(prospectId)]) } catch { detailProspectVisible.value = false; prospectError.value = safeError } finally { loadingProspectDetail.value = false }
 }
 const openEditProspect = async (prospectId: string) => {
   loadingProspectDetail.value = true; prospectFormError.value = ''; prospectConflict.value = false; prospectSuccess.value = ''
@@ -352,7 +465,7 @@ onUnmounted(stopPlannedActivityClock)
       <template #footer><Button label="取消" severity="secondary" outlined :disabled="creatingCustomer" @click="createCustomerVisible = false" /><Button type="submit" form="create-customer-form" label="建立客戶" :loading="creatingCustomer" :disabled="Boolean(customerFormError) || creatingCustomer" /></template>
     </Dialog>
 
-    <Dialog v-model:visible="detailProspectVisible" modal header="開發客戶詳細資料" :style="{ width: 'min(48rem, calc(100vw - 2rem))' }">
+    <Dialog v-model:visible="detailProspectVisible" modal header="開發客戶詳細資料" :style="{ width: 'min(72rem, calc(100vw - 2rem))' }" :content-style="{ maxHeight: '78vh', overflowY: 'auto' }">
       <div v-if="loadingProspectDetail" class="skeleton-list"><Skeleton v-for="i in 5" :key="i" height="2.5rem" /></div>
       <div v-else-if="prospectDetail" class="prospect-detail">
         <h4>基本資料</h4>
@@ -371,11 +484,27 @@ onUnmounted(stopPlannedActivityClock)
             <article v-for="item in filteredPlannedActivities" :key="item.id" :class="['activity-card', { cancelled: item.status === 'CANCELLED' }]">
               <header><div class="activity-when"><strong>{{ plannedActivityDateTime(item.startAt) }}</strong></div><Tag :value="activityStatusLabel(item)" :severity="item.status === 'CANCELLED' ? 'secondary' : activityIsOverdue(item) ? 'warn' : item.status === 'COMPLETED' ? 'success' : 'info'" /></header>
               <div><small>{{ PLANNED_ACTIVITY_TYPE_LABELS[item.activityType] }}</small><h5>{{ item.title }}</h5><p v-if="item.content">{{ item.content }}</p><p v-if="item.status === 'CANCELLED' && item.cancellationReason" class="cancellation-reason">取消原因：{{ item.cancellationReason }}</p></div>
-              <footer v-if="item.status === 'PENDING' && prospectDetail.developmentStatus !== 'CONVERTED'"><Button label="編輯／改期" text size="small" @click="openEditActivity(item)" /><Button label="取消" text size="small" severity="danger" @click="openCancelActivity(item)" /></footer>
+              <footer v-if="item.status === 'PENDING' && prospectDetail.developmentStatus !== 'CONVERTED'"><Button label="完成" size="small" @click="openCompleteActivity(item)" /><Button label="編輯／改期" text size="small" @click="openEditActivity(item)" /><Button label="取消" text size="small" severity="danger" @click="openCancelActivity(item)" /></footer>
             </article>
           </div>
         </section>
-        <section class="detail-block follow-up-placeholder"><h4>聯絡紀錄</h4><p>聯絡紀錄功能尚未開放。</p></section>
+        <section class="detail-block follow-up-section" aria-labelledby="follow-up-title">
+          <header class="activity-heading"><div><h4 id="follow-up-title">聯絡紀錄</h4><small v-if="prospectDetail.developmentStatus === 'CONVERTED'">已轉正式客戶，僅供查看歷史紀錄。</small></div><Button v-if="prospectDetail.developmentStatus !== 'CONVERTED'" label="＋新增聯絡紀錄" size="small" @click="openCreateFollowUp" /></header>
+          <p v-if="followUpMessage" class="success-message" role="status">{{ followUpMessage }}</p>
+          <div v-if="loadingFollowUps" class="skeleton-list"><Skeleton v-for="i in 3" :key="i" height="6rem" /></div>
+          <div v-else-if="followUpError" class="state error" role="alert"><span>{{ followUpError }}</span><Button label="重試" text @click="loadFollowUps(prospectDetail.id)" /></div>
+          <div v-else-if="!followUps.length" class="state">目前沒有聯絡紀錄</div>
+          <ol v-else class="follow-up-timeline">
+            <li v-for="item in followUps" :key="item.id">
+              <span class="follow-up-dot" aria-hidden="true" />
+              <article class="activity-card follow-up-card">
+                <header><div><strong>{{ plannedActivityDateTime(item.occurredAt) }}</strong><small>{{ PLANNED_ACTIVITY_TYPE_LABELS[item.activityType] }}</small></div><div class="follow-up-tags"><Tag :value="PROSPECT_FOLLOW_UP_OUTCOME_LABELS[item.outcome]" /><Tag v-if="item.plannedActivityId" value="由預定行程完成" severity="info" /></div></header>
+                <p>{{ item.content }}</p><small v-if="item.outcomeNote">結果補充：{{ item.outcomeNote }}</small>
+                <footer v-if="followUpCanMutate(item)"><Button label="編輯" text size="small" @click="openEditFollowUp(item)" /><Button label="刪除" text size="small" severity="danger" @click="openDeleteFollowUp(item)" /></footer>
+              </article>
+            </li>
+          </ol>
+        </section>
       </div>
       <template #footer><Button v-if="prospectDetail && prospectDetail.developmentStatus !== 'CONVERTED'" label="編輯" @click="detailProspectVisible = false; prospectDetail && openEditProspect(prospectDetail.id)" /><Button label="關閉" severity="secondary" outlined @click="detailProspectVisible = false" /></template>
     </Dialog>
@@ -414,6 +543,40 @@ onUnmounted(stopPlannedActivityClock)
       </form>
       <template #footer><Button label="返回" severity="secondary" outlined :disabled="cancellingActivity" @click="cancelActivityVisible = false" /><Button type="submit" form="cancel-activity-form" label="確認取消行程" severity="danger" :loading="cancellingActivity" :disabled="!cancellationReason.trim() || cancellingActivity" /></template>
     </Dialog>
+
+    <Dialog v-model:visible="followUpFormVisible" modal :header="editingFollowUp ? '編輯聯絡紀錄' : '新增聯絡紀錄'" :style="{ width: '38rem', maxWidth: 'calc(100vw - 2rem)' }" @hide="followUpFormError = ''">
+      <form id="follow-up-form" class="activity-form" @submit.prevent="submitFollowUp">
+        <label class="field"><span>聯絡時間 *</span><input v-model="followUpForm.occurredAt" type="datetime-local" required /></label>
+        <label class="field"><span>聯絡方式 *</span><select v-model="followUpForm.activityType"><option v-for="(label, key) in PLANNED_ACTIVITY_TYPE_LABELS" :key="key" :value="key">{{ label }}</option></select></label>
+        <label class="field"><span>聯絡結果 *</span><select v-model="followUpForm.outcome" required><option value="" disabled>請選擇</option><option v-for="(label, key) in PROSPECT_FOLLOW_UP_OUTCOME_LABELS" :key="key" :value="key">{{ label }}</option></select></label>
+        <label class="field"><span>聯絡內容 *</span><textarea v-model="followUpForm.content" required maxlength="5000" rows="5" /><small>{{ followUpForm.content.length }} / 5000</small></label>
+        <label class="field"><span>結果補充</span><textarea v-model="followUpForm.outcomeNote" maxlength="5000" rows="3" /><small>{{ followUpForm.outcomeNote.length }} / 5000</small></label>
+        <p v-if="followUpValidation" class="form-error" role="alert">{{ followUpValidation }}</p>
+        <div v-if="followUpFormError" class="conflict-row" role="alert"><span>{{ followUpFormError }}</span><Button v-if="followUpConflict" label="重新載入資料" text type="button" @click="reloadFollowUpForEdit" /></div>
+      </form>
+      <template #footer><Button label="取消" severity="secondary" outlined :disabled="savingFollowUp" @click="followUpFormVisible = false" /><Button type="submit" form="follow-up-form" :label="editingFollowUp ? '儲存變更' : '新增紀錄'" :loading="savingFollowUp" :disabled="Boolean(followUpValidation) || savingFollowUp" /></template>
+    </Dialog>
+
+    <Dialog v-model:visible="deleteFollowUpVisible" modal header="刪除聯絡紀錄" :style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }">
+      <template v-if="selectedFollowUp"><dl class="cancel-summary"><div><dt>方式</dt><dd>{{ PLANNED_ACTIVITY_TYPE_LABELS[selectedFollowUp.activityType] }}</dd></div><div><dt>結果</dt><dd>{{ PROSPECT_FOLLOW_UP_OUTCOME_LABELS[selectedFollowUp.outcome] }}</dd></div><div><dt>時間</dt><dd>{{ plannedActivityDateTime(selectedFollowUp.occurredAt) }}</dd></div><div><dt>內容</dt><dd>{{ selectedFollowUp.content }}</dd></div></dl><p>刪除後將不再顯示於一般聯絡紀錄中。</p></template><p v-if="deleteFollowUpError" class="form-error" role="alert">{{ deleteFollowUpError }}</p>
+      <template #footer><Button label="取消" severity="secondary" outlined :disabled="deletingFollowUp" @click="deleteFollowUpVisible = false" /><Button label="確認刪除" severity="danger" :loading="deletingFollowUp" @click="submitDeleteFollowUp" /></template>
+    </Dialog>
+
+    <Dialog v-model:visible="completeActivityVisible" modal header="完成預定行程" :style="{ width: '42rem', maxWidth: 'calc(100vw - 2rem)' }" :content-style="{ maxHeight: '72vh', overflowY: 'auto' }">
+      <form id="complete-activity-form" class="activity-form" @submit.prevent="submitCompleteActivity">
+        <dl v-if="selectedActivity" class="cancel-summary"><div><dt>行程</dt><dd>{{ selectedActivity.title }}</dd></div><div><dt>時間</dt><dd>{{ plannedActivityDateTime(selectedActivity.startAt) }}</dd></div></dl>
+        <label class="field"><span>實際聯絡時間 *</span><input v-model="completionForm.occurredAt" type="datetime-local" required /></label>
+        <label class="field"><span>實際聯絡方式 *</span><select v-model="completionForm.activityType"><option v-for="(label, key) in PLANNED_ACTIVITY_TYPE_LABELS" :key="key" :value="key">{{ label }}</option></select></label>
+        <label class="field"><span>聯絡結果 *</span><select v-model="completionForm.outcome" required><option value="" disabled>請選擇</option><option v-for="(label, key) in PROSPECT_FOLLOW_UP_OUTCOME_LABELS" :key="key" :value="key">{{ label }}</option></select></label>
+        <label class="field"><span>聯絡內容 *</span><textarea v-model="completionForm.content" required maxlength="5000" rows="4" /></label>
+        <label class="field"><span>結果補充</span><textarea v-model="completionForm.outcomeNote" maxlength="5000" rows="3" /></label>
+        <label class="next-activity-toggle"><input v-model="completionForm.nextEnabled" type="checkbox" /> 建立下一筆預定行程</label>
+        <fieldset v-if="completionForm.nextEnabled" class="next-activity-fields"><legend>下一步行程</legend><label class="field"><span>類型 *</span><select v-model="completionForm.nextActivityType"><option v-for="(label, key) in PLANNED_ACTIVITY_TYPE_LABELS" :key="key" :value="key">{{ label }}</option></select></label><label class="field"><span>標題 *</span><input v-model="completionForm.nextTitle" maxlength="200" required /></label><label class="field"><span>日期與時間 *</span><input v-model="completionForm.nextStartAt" type="datetime-local" required /></label><label class="field"><span>內容</span><textarea v-model="completionForm.nextContent" maxlength="5000" rows="3" /></label></fieldset>
+        <p v-if="completionValidation" class="form-error" role="alert">{{ completionValidation }}</p>
+        <div v-if="completeActivityError" class="conflict-row" role="alert"><span>{{ completeActivityError }}</span><Button v-if="completeActivityConflict" label="重新載入資料" text type="button" @click="reloadCompletionActivity" /></div>
+      </form>
+      <template #footer><Button label="取消" severity="secondary" outlined :disabled="completingActivity" @click="completeActivityVisible = false" /><Button type="submit" form="complete-activity-form" label="完成並儲存" :loading="completingActivity" :disabled="Boolean(completionValidation) || completingActivity" /></template>
+    </Dialog>
   </section>
 </template>
 
@@ -422,6 +585,8 @@ onUnmounted(stopPlannedActivityClock)
 .customer-cell{display:grid;gap:2px}.customer-cell small{color:var(--text-muted)}.customer-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px;font-weight:650}.field input,.field select,.field textarea{width:100%;padding:.7rem .75rem;border:1px solid var(--border-grey);border-radius:8px;background:var(--bg-main);color:var(--text-main);font:inherit}.field textarea{resize:vertical}.field small{justify-self:end;color:var(--text-muted);font-weight:400}.field-wide{grid-column:1/-1}.form-error{margin:0;color:var(--danger)}.success-message{margin:0;padding:11px 14px;border:1px solid var(--success);border-radius:10px;background:var(--success-bg);color:var(--text-main)}
 .prospect-section{border-color:color-mix(in srgb,var(--accent-active) 28%,var(--border-grey));background:color-mix(in srgb,var(--bg-card) 92%,var(--bg-active))}.prospect-cards article{background:color-mix(in srgb,var(--bg-main) 88%,var(--bg-active))}.card-actions,.deferred-actions{display:flex;flex-wrap:wrap;gap:8px}.prospect-detail{display:grid;gap:16px}.prospect-detail>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.prospect-detail h3{margin:3px 0 0}.prospect-detail small{color:var(--text-muted)}.prospect-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}.prospect-detail dl>div{padding:11px;border:1px solid var(--border-grey);border-radius:9px;background:var(--bg-main)}.prospect-detail dt{color:var(--text-muted);font-size:.82rem}.prospect-detail dd{margin:4px 0 0;overflow-wrap:anywhere}.prospect-detail .detail-wide{grid-column:1/-1}.converted-notice{display:grid;gap:4px;padding:13px;border:1px solid var(--success);border-radius:10px;background:var(--success-bg)}.conflict-row{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--danger)}
 .prospect-detail h4{margin:0}.detail-block{display:grid;gap:12px;padding-top:16px;border-top:1px solid var(--border-grey)}.activity-heading,.activity-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.activity-filters{display:flex;flex-wrap:wrap;gap:8px}.activity-list{display:grid;gap:10px}.activity-card{display:grid;gap:9px;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.activity-card.cancelled{opacity:.72}.activity-card h5,.activity-card p{margin:3px 0 0}.activity-card footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}.activity-when{display:flex;flex-wrap:wrap;gap:7px}.activity-when span,.cancellation-reason,.follow-up-placeholder p{color:var(--text-muted)}.activity-form{display:grid;gap:14px}.cancel-summary{display:grid;gap:8px;margin:0}.cancel-summary>div{display:grid;grid-template-columns:4rem 1fr;gap:8px}.cancel-summary dt{color:var(--text-muted)}.cancel-summary dd{margin:0;overflow-wrap:anywhere}
+/* Shared CRM detail grammar: section dividers, record cards, semantic tags, and responsive action rows use theme tokens only. */
+.follow-up-timeline{display:grid;gap:0;margin:0;padding:0;list-style:none}.follow-up-timeline li{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr);gap:9px;padding-bottom:12px}.follow-up-timeline li:not(:last-child)::before{position:absolute;top:18px;bottom:-2px;left:5px;width:1px;background:var(--border-grey);content:""}.follow-up-dot{z-index:1;width:11px;height:11px;margin-top:16px;border:2px solid var(--accent-active);border-radius:50%;background:var(--bg-card)}.follow-up-card>header>div:first-child{display:grid;gap:3px}.follow-up-card>header small,.follow-up-card>small{color:var(--text-muted)}.follow-up-tags{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}.next-activity-toggle{display:flex;align-items:center;gap:8px;font-weight:650}.next-activity-fields{display:grid;gap:12px;margin:0;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.next-activity-fields legend{padding:0 6px;font-weight:750;color:var(--text-main)}
 @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.desktop-table{display:block;overflow-x:auto}}
-@media(max-width:767px){.my-business{gap:13px}.page-header{flex-direction:column}.header-actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.header-actions .p-button:last-child{grid-column:1/-1}.surface-card{padding:14px}.kpi-grid,.customer-form,.prospect-detail dl{grid-template-columns:1fr}.calendar-list article{grid-template-columns:4.5rem 7px 1fr}.desktop-table{display:none}.mobile-cards{display:grid;gap:9px}.section-header{align-items:center;flex-wrap:wrap}.timeline li{grid-template-columns:3rem 10px 1fr}.prospect-detail .detail-wide{grid-column:auto}.conflict-row{align-items:flex-start;flex-direction:column}}
+@media(max-width:767px){.my-business{gap:13px}.page-header{flex-direction:column}.header-actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.header-actions .p-button:last-child{grid-column:1/-1}.surface-card{padding:14px}.kpi-grid,.customer-form,.prospect-detail dl{grid-template-columns:1fr}.calendar-list article{grid-template-columns:4.5rem 7px 1fr}.desktop-table{display:none}.mobile-cards{display:grid;gap:9px}.section-header{align-items:center;flex-wrap:wrap}.timeline li{grid-template-columns:3rem 10px 1fr}.prospect-detail .detail-wide{grid-column:auto}.conflict-row{align-items:flex-start;flex-direction:column}.activity-heading,.activity-card>header{align-items:stretch;flex-direction:column}.follow-up-tags{justify-content:flex-start}.activity-card footer{justify-content:flex-start}}
 </style>

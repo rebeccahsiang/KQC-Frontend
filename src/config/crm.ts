@@ -21,3 +21,7 @@ export const PLANNED_ACTIVITY_TYPE_LABELS = {
   PHONE: '電話', LINE: 'LINE', MEETING: '面談', QUOTATION: '報價',
   CUSTOMER_RESPONSE: '客戶回覆', REQUIREMENT_CHANGE: '需求變化'
 } as const
+export const PROSPECT_FOLLOW_UP_OUTCOME_LABELS = {
+  INTERESTED: '有興趣', CONTINUE_FOLLOW_UP: '持續跟進', AWAITING_RESPONSE: '等待回覆',
+  NOT_INTERESTED_NOW: '暫無興趣', UNREACHABLE: '未聯繫上'
+} as const
