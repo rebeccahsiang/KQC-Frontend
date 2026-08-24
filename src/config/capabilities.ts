@@ -32,3 +32,11 @@ export const canManageAccounts = (user: { role: Role; capabilities?: Capability[
   hasCapability(user, 'ADMIN') || hasCapability(user, 'PLATFORM_MANAGER')
 export const canManageOrganization = (user: { role: Role; capabilities?: Capability[] } | null | undefined) =>
   hasAnyCapability(user, ['ADMIN', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER'])
+
+export const adminLandingPath = (user: { role: Role; capabilities?: Capability[] } | null | undefined) => {
+  if (user?.role === 'admin' || user?.role === 'manager') return '/admin/dashboard'
+  if (hasAnyCapability(user, ['SALES', 'SALES_SUPERVISOR'])) return '/admin/crm/my-business'
+  if (hasCapability(user, 'PLATFORM_MANAGER')) return '/admin/organizations'
+  if (hasCapability(user, 'ADMIN')) return '/admin/users/admins'
+  return '/'
+}

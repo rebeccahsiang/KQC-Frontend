@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import KqcCard from '@/components/ui/KqcCard.vue'
 import KqcButton from '@/components/ui/KqcButton.vue'
 import { useAuthStore } from '@/stores/authStore'
+import { adminLandingPath } from '@/config/capabilities'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,13 +23,13 @@ const handleLogin = async () => {
   if (!result.success) return
   password.value = ''
   if (result.passwordChangeRequired) {
-    await router.push({ name: 'ChangePassword', query: { redirect: '/admin/dashboard' } })
+    await router.push({ name: 'ChangePassword', query: { redirect: adminLandingPath(authStore.user) } })
     return
   }
 
   const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
     ? route.query.redirect
-    : '/admin/dashboard'
+    : adminLandingPath(authStore.user)
   await router.push(redirect)
 }
 </script>

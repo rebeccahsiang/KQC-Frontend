@@ -122,6 +122,22 @@ test('Admin governance routes use authoritative capability metadata', () => {
   assert.match(source, /const requiredCapabilities = to\.meta\.capabilities/)
 })
 
+test('backend landing is capability-aware without weakening child authorization', () => {
+  const capabilities = read('src/config/capabilities.ts')
+  const router = read('src/router/index.ts')
+  const login = read('src/views/LoginView.vue')
+  const password = read('src/views/ChangePasswordView.vue')
+  assert.match(capabilities, /export const adminLandingPath/)
+  assert.match(capabilities, /'\/admin\/crm\/my-business'/)
+  assert.match(capabilities, /'\/admin\/dashboard'/)
+  assert.match(router, /redirect: \{ name: 'AdminLanding' \}/)
+  assert.match(router, /to\.name === 'AdminLanding'[^\n]+adminLandingPath\(authStore\.user\)/)
+  assert.match(login, /adminLandingPath\(authStore\.user\)/)
+  assert.match(password, /adminLandingPath\(authStore\.user\)/)
+  assert.match(router, /path: 'crm\/my-business'[\s\S]{0,180}capabilities: \['SALES', 'SALES_SUPERVISOR'\]/)
+  assert.match(router, /path: 'invitations'[\s\S]{0,180}capabilities: \['ADMIN'\]/)
+})
+
 test('Restored admin shell uses Lucide navigation and the canonical data-theme contract', () => {
   const menu = read('src/config/sidebarMenu.ts')
   const sidebar = read('src/components/layout/sidebar/SidebarNav.vue')
@@ -190,7 +206,7 @@ test('Admin and frontend login flows route forced accounts to Change Password', 
     assert.match(source, /result\.passwordChangeRequired/)
     assert.match(source, /name:\s*['"]ChangePassword['"]/)
   }
-  assert.match(adminLogin, /redirect:\s*['"]\/admin\/dashboard['"]/)
+  assert.match(adminLogin, /redirect:\s*adminLandingPath\(authStore\.user\)/)
   assert.match(frontendLogin, /redirect:\s*['"]\/['"]/)
 })
 

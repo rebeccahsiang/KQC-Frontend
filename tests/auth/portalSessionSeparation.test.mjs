@@ -26,10 +26,15 @@ test('portal-aware Auth API keeps refresh, logout, elevation, and activity separ
 
 test('admin routes require an admin portal session, not frontend capability alone', () => {
   const router = read('src/router/index.ts')
+  const capabilities = read('src/config/capabilities.ts')
   assert.match(router, /authPortal: 'admin'/)
   assert.match(router, /!authStore\.isAuthenticated \|\| !authStore\.isAdminPortalUser/)
   assert.match(router, /authStore\.ensureAdminSession\(\)/)
   assert.match(router, /setRuntimeAuthPortal\(portal\)/)
+  assert.match(router, /redirect: \{ name: 'AdminLanding' \}/)
+  assert.match(router, /to\.name === 'AdminLanding'[^\n]+adminLandingPath\(authStore\.user\)/)
+  assert.match(capabilities, /\['SALES', 'SALES_SUPERVISOR'\][\s\S]{0,80}'\/admin\/crm\/my-business'/)
+  assert.match(capabilities, /user\?\.role === 'admin' \|\| user\?\.role === 'manager'[\s\S]{0,80}'\/admin\/dashboard'/)
 })
 
 test('first elevation is passwordless, re-entry supports password, and failure preserves frontend auth', () => {

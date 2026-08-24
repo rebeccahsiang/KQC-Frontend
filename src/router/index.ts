@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import { useAuthStore } from '@/stores/authStore'
-import { hasAnyCapability, type Capability } from '@/config/capabilities'
+import { adminLandingPath, hasAnyCapability, type Capability } from '@/config/capabilities'
 import { setRuntimeAuthPortal } from '@/auth/authRuntime'
 
 const routes: RouteRecordRaw[] = [
@@ -44,9 +44,15 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin',
     component: () => import('@/components/layout/AdminLayout.vue'),
-    redirect: '/admin/dashboard',
+    redirect: { name: 'AdminLanding' },
     meta: { requiresAuth: true, authPortal: 'admin', title: '後台管理戰情室', capabilities: ['SALES', 'SALES_SUPERVISOR', 'PLATFORM_MANAGER', 'ADMIN'] },
     children: [
+      {
+        path: 'landing',
+        name: 'AdminLanding',
+        component: () => import('@/views/admin/DashboardView.vue'),
+        meta: { title: '後台入口' }
+      },
       {
         path: 'dashboard',
         name: 'AdminDashboard',
@@ -127,6 +133,7 @@ router.beforeEach(async (to) => {
   if (portal === 'admin') {
     if (!authStore.isAuthenticated || !authStore.isAdminPortalUser) return { name: 'Home' }
     if (!await authStore.ensureAdminSession()) return { name: 'Login', query: { redirect: to.fullPath } }
+    if (to.name === 'AdminLanding') return adminLandingPath(authStore.user)
   }
   setRuntimeAuthPortal(portal)
 

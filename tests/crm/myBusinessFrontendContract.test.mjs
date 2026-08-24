@@ -25,8 +25,11 @@ test('Marketplace navigation is display-renamed to Product without changing path
 
 test('My Business route inherits the admin portal boundary and uses exact capabilities', () => {
   const router = read('src/router/index.ts')
+  const capabilities = read('src/config/capabilities.ts')
   assert.match(router, /path: '\/admin'[\s\S]*authPortal: 'admin'/)
   assert.match(router, /path: 'crm\/my-business'.*name: 'CrmMyBusiness'.*MyBusinessView\.vue'.*capabilities: \['SALES', 'SALES_SUPERVISOR'\]/)
+  assert.match(capabilities, /hasAnyCapability\(user, \['SALES', 'SALES_SUPERVISOR'\]\)[\s\S]{0,80}return '\/admin\/crm\/my-business'/)
+  assert.match(router, /path: 'finance'.*capabilities: \['ADMIN'\]/)
 })
 
 test('CRM API uses shared portal-aware Axios for approved read and Customer create endpoints', () => {

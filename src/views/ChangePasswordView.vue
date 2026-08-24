@@ -8,6 +8,7 @@ import Password from 'primevue/password'
 
 import KqcCard from '@/components/ui/KqcCard.vue'
 import { useAuthStore } from '@/stores/authStore'
+import { adminLandingPath } from '@/config/capabilities'
 
 interface AuthErrorPayload {
   error?: {
@@ -44,7 +45,7 @@ const destinationAfterChange = () => {
   ) {
     return requested
   }
-  return authStore.isAdminPortalUser ? '/admin/dashboard' : '/'
+  return authStore.isAdminPortalUser ? adminLandingPath(authStore.user) : '/'
 }
 
 const messageForError = (error: unknown): string => {
