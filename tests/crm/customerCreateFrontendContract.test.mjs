@@ -17,10 +17,12 @@ test('Customer Number and ownership remain exclusively backend-owned', () => {
   const api = read('src/api/crm.ts')
   const view = read('src/views/admin/crm/MyBusinessView.vue')
   const input = api.slice(api.indexOf('export interface CreateCustomerInput'), api.indexOf('export interface BusinessCaseListItem'))
+  const submitCustomer = view.slice(view.indexOf('const submitCustomer = async'), view.indexOf('const prospectContact'))
   for (const field of ['customerNumber', 'primarySalesId', 'createdBy', 'updatedBy']) assert.doesNotMatch(input, new RegExp(`${field}[?]?:`))
-  assert.doesNotMatch(view, /Date\.now|Math\.random|generateCustomer|YYMMDD|localSequence/i)
+  assert.doesNotMatch(submitCustomer, /Date\.now|Math\.random|generateCustomer|YYMMDD|localSequence/i)
   assert.doesNotMatch(view, /v-model="customerForm\.(customerNumber|primarySalesId|createdBy|updatedBy)"/)
-  assert.match(view, /created\.customerNumber/)
+  assert.match(submitCustomer, /const created = \(await crmApi\.createCustomer\(input\)\)\.data/)
+  assert.match(submitCustomer, /created\.customerNumber/)
 })
 
 test('Create form dynamically enforces canonical PERSON and COMPANY fields', () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
@@ -7,8 +7,8 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
-import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type ProspectDetail, type ProspectGrade, type ProspectListItem, type ProspectType, type UpdateProspectInput } from '@/api/crm'
-import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate, PROSPECT_GRADE_PRESENTATION, PROSPECT_STATUS_LABELS, prospectStatusLabel } from '@/config/crm'
+import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type PlannedActivityType, type ProspectDetail, type ProspectGrade, type ProspectListItem, type ProspectPlannedActivityDetail, type ProspectPlannedActivityListItem, type ProspectType, type UpdateProspectInput } from '@/api/crm'
+import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate, PLANNED_ACTIVITY_TYPE_LABELS, PROSPECT_GRADE_PRESENTATION, PROSPECT_STATUS_LABELS, prospectStatusLabel } from '@/config/crm'
 
 const summary = ref<MyBusinessSummary | null>(null)
 const calendar = ref<CalendarItem[]>([])
@@ -34,6 +34,24 @@ const editingProspect = ref(false)
 const savingProspect = ref(false)
 const prospectFormError = ref('')
 const prospectConflict = ref(false)
+const plannedActivities = ref<ProspectPlannedActivityListItem[]>([])
+const loadingPlannedActivities = ref(false)
+const plannedActivityError = ref('')
+const plannedActivityMessage = ref('')
+const plannedActivityFilter = ref<'upcoming' | 'overdue' | 'all'>('upcoming')
+const plannedActivityNow = ref(Date.now())
+let plannedActivityClockTimer: ReturnType<typeof setInterval> | null = null
+const activityFormVisible = ref(false)
+const editingActivity = ref(false)
+const savingActivity = ref(false)
+const activityFormError = ref('')
+const activityConflict = ref(false)
+const selectedActivity = ref<ProspectPlannedActivityDetail | null>(null)
+const cancelActivityVisible = ref(false)
+const cancellingActivity = ref(false)
+const cancelActivityError = ref('')
+const cancelActivityConflict = ref(false)
+const cancellationReason = ref('')
 const createCustomerVisible = ref(false)
 const creatingCustomer = ref(false)
 const createCustomerError = ref('')
@@ -112,9 +130,98 @@ const fillProspectForm = (detail: ProspectDetail) => {
     note: detail.note || '', revision: detail.revision
   }
 }
+const emptyActivityForm = () => ({ activityType: 'PHONE' as PlannedActivityType, title: '', startAt: '', content: '', revision: 0 })
+const activityForm = ref(emptyActivityForm())
+const activityIsOverdue = (item: ProspectPlannedActivityListItem) => item.status === 'PENDING' && new Date(item.startAt).getTime() < plannedActivityNow.value
+const activityStatusLabel = (item: ProspectPlannedActivityListItem) => item.status === 'COMPLETED' ? '已完成' : item.status === 'CANCELLED' ? '已取消' : activityIsOverdue(item) ? '過期未執行' : '待執行'
+const filteredPlannedActivities = computed(() => plannedActivities.value.filter((item) => plannedActivityFilter.value === 'all' || (plannedActivityFilter.value === 'overdue' ? activityIsOverdue(item) : item.status === 'PENDING' && !activityIsOverdue(item))))
+const activityCounts = computed(() => ({ upcoming: plannedActivities.value.filter((item) => item.status === 'PENDING' && !activityIsOverdue(item)).length, overdue: plannedActivities.value.filter(activityIsOverdue).length, all: plannedActivities.value.length }))
+const activityEmptyMessage = computed(() => plannedActivityFilter.value === 'upcoming' ? '目前沒有待執行行程' : plannedActivityFilter.value === 'overdue' ? '目前沒有過期未執行行程' : '目前沒有行程紀錄')
+const plannedActivityDateTime = (value: string) => {
+  const parts = new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }).formatToParts(new Date(value))
+  const part = (type: 'year' | 'month' | 'day' | 'dayPeriod' | 'hour' | 'minute') => parts.find((item) => item.type === type)?.value || ''
+  return `${part('year')}/${part('month')}/${part('day')} ${part('dayPeriod')} ${part('hour')}:${part('minute')}`
+}
+const stopPlannedActivityClock = () => {
+  if (plannedActivityClockTimer !== null) { clearInterval(plannedActivityClockTimer); plannedActivityClockTimer = null }
+}
+const startPlannedActivityClock = () => {
+  stopPlannedActivityClock()
+  plannedActivityNow.value = Date.now()
+  plannedActivityClockTimer = setInterval(() => { plannedActivityNow.value = Date.now() }, 30000)
+}
+const toLocalDateTimeInput = (value: string) => {
+  const date = new Date(value)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+const loadPlannedActivities = async (prospectId: string) => {
+  loadingPlannedActivities.value = true; plannedActivityError.value = ''; plannedActivityNow.value = Date.now()
+  try { plannedActivities.value = (await crmApi.myProspectPlannedActivities(prospectId)).data } catch { plannedActivityError.value = '行程資料載入失敗，請稍後再試。' } finally { loadingPlannedActivities.value = false }
+}
+const resetActivityForm = () => { activityForm.value = emptyActivityForm(); activityFormError.value = ''; activityConflict.value = false; editingActivity.value = false; selectedActivity.value = null }
+const openCreateActivity = () => { resetActivityForm(); plannedActivityMessage.value = ''; activityFormVisible.value = true }
+const openEditActivity = async (item: ProspectPlannedActivityListItem) => {
+  if (!prospectDetail.value || item.status !== 'PENDING') return
+  savingActivity.value = true; activityFormError.value = ''; activityConflict.value = false; plannedActivityMessage.value = ''
+  try {
+    const detail = (await crmApi.myProspectPlannedActivity(prospectDetail.value.id, item.id)).data
+    if (detail.status !== 'PENDING') { activityFormVisible.value = false; plannedActivityMessage.value = '這筆行程目前已無法編輯，資料已重新載入。'; await loadPlannedActivities(prospectDetail.value.id); return }
+    selectedActivity.value = detail
+    activityForm.value = { activityType: detail.activityType, title: detail.title, startAt: toLocalDateTimeInput(detail.startAt), content: detail.content || '', revision: detail.revision }
+    editingActivity.value = true; activityFormVisible.value = true
+  } catch { plannedActivityError.value = '行程資料載入失敗，請稍後再試。' } finally { savingActivity.value = false }
+}
+const activityValidation = computed(() => {
+  if (!activityForm.value.title.trim()) return '請輸入行程標題。'
+  const startAt = new Date(activityForm.value.startAt)
+  if (!activityForm.value.startAt || Number.isNaN(startAt.getTime())) return '請選擇有效的行程時間。'
+  if (startAt.getTime() < Date.now()) return '行程時間不可早於目前時間。'
+  return ''
+})
+const submitActivity = async () => {
+  if (!prospectDetail.value || savingActivity.value || activityValidation.value) return
+  savingActivity.value = true; activityFormError.value = ''; activityConflict.value = false
+  const input = { activityType: activityForm.value.activityType, title: activityForm.value.title.trim(), content: activityForm.value.content.trim() || null, startAt: new Date(activityForm.value.startAt).toISOString() }
+  try {
+    if (editingActivity.value && selectedActivity.value) await crmApi.updateMyProspectPlannedActivity(prospectDetail.value.id, selectedActivity.value.id, { ...input, revision: activityForm.value.revision })
+    else await crmApi.createMyProspectPlannedActivity(prospectDetail.value.id, input)
+    const successMessage = editingActivity.value ? '行程已更新。' : '行程已新增。'
+    activityFormVisible.value = false; resetActivityForm(); plannedActivityMessage.value = successMessage; await loadPlannedActivities(prospectDetail.value.id)
+  } catch (error) {
+    const code = backendErrorCode(error)
+    if (code === 'PLANNED_ACTIVITY_REVISION_CONFLICT') { activityConflict.value = true; activityFormError.value = '這筆行程已在其他地方更新，請重新載入後再編輯。' }
+    else if (code === 'PLANNED_ACTIVITY_READ_ONLY') { activityFormVisible.value = false; plannedActivityMessage.value = '這筆行程目前已無法編輯，資料已重新載入。'; await loadPlannedActivities(prospectDetail.value.id) }
+    else if (code === 'PROSPECT_CONVERTED_READ_ONLY') { activityFormVisible.value = false; await loadProspectDetail(prospectDetail.value.id) }
+    else activityFormError.value = '行程儲存失敗，請檢查資料後再試。'
+  } finally { savingActivity.value = false }
+}
+const reloadActivityForEdit = async () => { if (selectedActivity.value) await openEditActivity(selectedActivity.value) }
+const openCancelActivity = (item: ProspectPlannedActivityListItem) => { selectedActivity.value = { ...item, completedBy: null, cancelledBy: null }; cancellationReason.value = ''; cancelActivityError.value = ''; cancelActivityConflict.value = false; cancelActivityVisible.value = true }
+const submitCancelActivity = async () => {
+  if (!prospectDetail.value || !selectedActivity.value || cancellingActivity.value || !cancellationReason.value.trim()) return
+  cancellingActivity.value = true; cancelActivityError.value = ''; cancelActivityConflict.value = false
+  try {
+    await crmApi.cancelMyProspectPlannedActivity(prospectDetail.value.id, selectedActivity.value.id, { revision: selectedActivity.value.revision, cancellationReason: cancellationReason.value.trim() })
+    cancelActivityVisible.value = false; plannedActivityMessage.value = '行程已取消。'; await loadPlannedActivities(prospectDetail.value.id)
+  } catch (error) {
+    const code = backendErrorCode(error)
+    if (code === 'PLANNED_ACTIVITY_REVISION_CONFLICT') { cancelActivityConflict.value = true; cancelActivityError.value = '這筆行程已在其他地方更新，請重新載入後再操作。' }
+    else if (code === 'PLANNED_ACTIVITY_READ_ONLY') { cancelActivityVisible.value = false; plannedActivityMessage.value = '這筆行程目前已無法編輯，資料已重新載入。'; await loadPlannedActivities(prospectDetail.value.id) }
+    else if (code === 'PROSPECT_CONVERTED_READ_ONLY') { cancelActivityVisible.value = false; await loadProspectDetail(prospectDetail.value.id) }
+    else cancelActivityError.value = '取消行程失敗，請稍後再試。'
+  } finally { cancellingActivity.value = false }
+}
+const reloadCancelActivity = async () => {
+  if (!prospectDetail.value || !selectedActivity.value) return
+  try {
+    const detail = (await crmApi.myProspectPlannedActivity(prospectDetail.value.id, selectedActivity.value.id)).data
+    if (detail.status !== 'PENDING') { cancelActivityVisible.value = false; plannedActivityMessage.value = '這筆行程目前已無法編輯，資料已重新載入。' } else selectedActivity.value = detail
+    cancelActivityError.value = ''; cancelActivityConflict.value = false; await loadPlannedActivities(prospectDetail.value.id)
+  } catch { cancelActivityError.value = '行程資料載入失敗，請稍後再試。' }
+}
 const loadProspectDetail = async (prospectId: string) => {
   loadingProspectDetail.value = true; prospectFormError.value = ''; prospectDetail.value = null; detailProspectVisible.value = true
-  try { prospectDetail.value = (await crmApi.getMyProspect(prospectId)).data } catch { detailProspectVisible.value = false; prospectError.value = safeError } finally { loadingProspectDetail.value = false }
+  try { prospectDetail.value = (await crmApi.getMyProspect(prospectId)).data; void loadPlannedActivities(prospectId) } catch { detailProspectVisible.value = false; prospectError.value = safeError } finally { loadingProspectDetail.value = false }
 }
 const openEditProspect = async (prospectId: string) => {
   loadingProspectDetail.value = true; prospectFormError.value = ''; prospectConflict.value = false; prospectSuccess.value = ''
@@ -161,6 +268,8 @@ const submitProspect = async () => {
 }
 
 onMounted(refresh)
+watch(detailProspectVisible, (visible) => { if (visible) startPlannedActivityClock(); else stopPlannedActivityClock() })
+onUnmounted(stopPlannedActivityClock)
 </script>
 
 <template>
@@ -246,10 +355,27 @@ onMounted(refresh)
     <Dialog v-model:visible="detailProspectVisible" modal header="開發客戶詳細資料" :style="{ width: 'min(48rem, calc(100vw - 2rem))' }">
       <div v-if="loadingProspectDetail" class="skeleton-list"><Skeleton v-for="i in 5" :key="i" height="2.5rem" /></div>
       <div v-else-if="prospectDetail" class="prospect-detail">
+        <h4>基本資料</h4>
         <header><div><small>{{ prospectTypeLabel(prospectDetail.prospectType) }}</small><h3>{{ prospectDetail.displayName }}</h3></div><Tag :value="prospectStatusLabel(prospectDetail.developmentStatus)" :severity="prospectDetail.developmentStatus === 'CONVERTED' ? 'success' : 'secondary'" /></header>
         <dl><div><dt>等級</dt><dd><Tag :value="prospectGrade(prospectDetail.prospectGrade).label" :title="prospectGrade(prospectDetail.prospectGrade).title" /></dd></div><div v-if="prospectDetail.companyName"><dt>公司名稱</dt><dd>{{ prospectDetail.companyName }}</dd></div><div v-if="prospectDetail.taxId"><dt>統一編號</dt><dd>{{ prospectDetail.taxId }}</dd></div><div v-if="prospectDetail.representative"><dt>負責人</dt><dd>{{ prospectDetail.representative }}</dd></div><div v-if="prospectDetail.contactPerson"><dt>聯絡人</dt><dd>{{ prospectDetail.contactPerson }}</dd></div><div><dt>電話</dt><dd>{{ prospectDetail.phone || '—' }}</dd></div><div><dt>行動電話</dt><dd>{{ prospectDetail.mobile || '—' }}</dd></div><div><dt>Email</dt><dd>{{ prospectDetail.email || '—' }}</dd></div><div><dt>地址</dt><dd>{{ prospectDetail.address || '—' }}</dd></div><div class="detail-wide"><dt>備註</dt><dd>{{ prospectDetail.note || '—' }}</dd></div><div><dt>建立時間</dt><dd>{{ formatDate(prospectDetail.createdAt) }}</dd></div><div><dt>更新時間</dt><dd>{{ formatDate(prospectDetail.updatedAt) }}</dd></div></dl>
         <section v-if="prospectDetail.developmentStatus === 'CONVERTED'" class="converted-notice"><strong>已轉正式客戶</strong><span>轉換時間：{{ formatDate(prospectDetail.convertedAt) }}</span><small v-if="prospectDetail.convertedCustomerId">正式客戶參照：{{ prospectDetail.convertedCustomerId }}</small><small v-if="prospectDetail.convertedBusinessCaseId">案件參照：{{ prospectDetail.convertedBusinessCaseId }}</small></section>
         <div class="deferred-actions"><Button label="轉為正式客戶" disabled aria-disabled="true" title="此功能尚未開放" /><Button label="新增業務案件" disabled aria-disabled="true" title="此功能尚未開放" /></div>
+        <section class="detail-block planned-activity-section" aria-labelledby="planned-activity-title">
+          <header class="activity-heading"><div><h4 id="planned-activity-title">預定行程</h4><small v-if="prospectDetail.developmentStatus === 'CONVERTED'">已轉正式客戶，僅供查看歷史行程。</small></div><Button v-if="prospectDetail.developmentStatus !== 'CONVERTED'" label="＋新增行程" size="small" @click="openCreateActivity" /></header>
+          <p v-if="plannedActivityMessage" class="success-message" role="status">{{ plannedActivityMessage }}</p>
+          <nav class="activity-filters" aria-label="行程篩選"><Button :label="`待執行 (${activityCounts.upcoming})`" size="small" :outlined="plannedActivityFilter !== 'upcoming'" @click="plannedActivityFilter = 'upcoming'" /><Button :label="`過期未執行 (${activityCounts.overdue})`" size="small" :outlined="plannedActivityFilter !== 'overdue'" @click="plannedActivityFilter = 'overdue'" /><Button :label="`全部行程 (${activityCounts.all})`" size="small" :outlined="plannedActivityFilter !== 'all'" @click="plannedActivityFilter = 'all'" /></nav>
+          <div v-if="loadingPlannedActivities" class="skeleton-list"><Skeleton v-for="i in 3" :key="i" height="5rem" /></div>
+          <div v-else-if="plannedActivityError" class="state error" role="alert"><span>{{ plannedActivityError }}</span><Button label="重試" text @click="loadPlannedActivities(prospectDetail.id)" /></div>
+          <div v-else-if="!filteredPlannedActivities.length" class="state">{{ activityEmptyMessage }}</div>
+          <div v-else class="activity-list">
+            <article v-for="item in filteredPlannedActivities" :key="item.id" :class="['activity-card', { cancelled: item.status === 'CANCELLED' }]">
+              <header><div class="activity-when"><strong>{{ plannedActivityDateTime(item.startAt) }}</strong></div><Tag :value="activityStatusLabel(item)" :severity="item.status === 'CANCELLED' ? 'secondary' : activityIsOverdue(item) ? 'warn' : item.status === 'COMPLETED' ? 'success' : 'info'" /></header>
+              <div><small>{{ PLANNED_ACTIVITY_TYPE_LABELS[item.activityType] }}</small><h5>{{ item.title }}</h5><p v-if="item.content">{{ item.content }}</p><p v-if="item.status === 'CANCELLED' && item.cancellationReason" class="cancellation-reason">取消原因：{{ item.cancellationReason }}</p></div>
+              <footer v-if="item.status === 'PENDING' && prospectDetail.developmentStatus !== 'CONVERTED'"><Button label="編輯／改期" text size="small" @click="openEditActivity(item)" /><Button label="取消" text size="small" severity="danger" @click="openCancelActivity(item)" /></footer>
+            </article>
+          </div>
+        </section>
+        <section class="detail-block follow-up-placeholder"><h4>聯絡紀錄</h4><p>聯絡紀錄功能尚未開放。</p></section>
       </div>
       <template #footer><Button v-if="prospectDetail && prospectDetail.developmentStatus !== 'CONVERTED'" label="編輯" @click="detailProspectVisible = false; prospectDetail && openEditProspect(prospectDetail.id)" /><Button label="關閉" severity="secondary" outlined @click="detailProspectVisible = false" /></template>
     </Dialog>
@@ -267,6 +393,27 @@ onMounted(refresh)
       </form>
       <template #footer><Button label="取消" severity="secondary" outlined :disabled="savingProspect" @click="prospectFormVisible = false" /><Button type="submit" form="prospect-form" :label="editingProspect ? '儲存變更' : '建立開發客戶'" :loading="savingProspect" :disabled="Boolean(prospectValidation) || savingProspect" /></template>
     </Dialog>
+
+    <Dialog v-model:visible="activityFormVisible" modal :header="editingActivity ? '編輯／改期行程' : '＋新增行程'" :style="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }" :content-style="{ maxHeight: '70vh', overflowY: 'auto' }" @hide="activityFormError = ''">
+      <form id="planned-activity-form" class="activity-form" @submit.prevent="submitActivity">
+        <label class="field"><span>行程類型 *</span><select v-model="activityForm.activityType" required><option v-for="(label, key) in PLANNED_ACTIVITY_TYPE_LABELS" :key="key" :value="key">{{ label }}</option></select></label>
+        <label class="field"><span>標題 *</span><input v-model="activityForm.title" required maxlength="200" /></label>
+        <label class="field"><span>日期與時間 *</span><input v-model="activityForm.startAt" type="datetime-local" required /></label>
+        <label class="field"><span>內容</span><textarea v-model="activityForm.content" maxlength="5000" rows="4" /><small>{{ activityForm.content.length }} / 5000</small></label>
+        <p v-if="activityValidation && activityForm.startAt" class="form-error" role="alert">{{ activityValidation }}</p>
+        <div v-if="activityFormError" class="conflict-row" role="alert"><span>{{ activityFormError }}</span><Button v-if="activityConflict" label="重新載入資料" text type="button" @click="reloadActivityForEdit" /></div>
+      </form>
+      <template #footer><Button label="取消" severity="secondary" outlined :disabled="savingActivity" @click="activityFormVisible = false" /><Button type="submit" form="planned-activity-form" :label="editingActivity ? '儲存變更' : '新增行程'" :loading="savingActivity" :disabled="Boolean(activityValidation) || savingActivity" /></template>
+    </Dialog>
+
+    <Dialog v-model:visible="cancelActivityVisible" modal header="取消預定行程" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }" @hide="cancelActivityError = ''">
+      <form v-if="selectedActivity" id="cancel-activity-form" class="activity-form" @submit.prevent="submitCancelActivity">
+        <dl class="cancel-summary"><div><dt>類型</dt><dd>{{ PLANNED_ACTIVITY_TYPE_LABELS[selectedActivity.activityType] }}</dd></div><div><dt>標題</dt><dd>{{ selectedActivity.title }}</dd></div><div><dt>時間</dt><dd>{{ plannedActivityDateTime(selectedActivity.startAt) }}</dd></div></dl>
+        <label class="field"><span>取消原因 *</span><textarea v-model="cancellationReason" required maxlength="1000" rows="4" /><small>{{ cancellationReason.length }} / 1000</small></label>
+        <div v-if="cancelActivityError" class="conflict-row" role="alert"><span>{{ cancelActivityError }}</span><Button v-if="cancelActivityConflict" label="重新載入資料" text type="button" @click="reloadCancelActivity" /></div>
+      </form>
+      <template #footer><Button label="返回" severity="secondary" outlined :disabled="cancellingActivity" @click="cancelActivityVisible = false" /><Button type="submit" form="cancel-activity-form" label="確認取消行程" severity="danger" :loading="cancellingActivity" :disabled="!cancellationReason.trim() || cancellingActivity" /></template>
+    </Dialog>
   </section>
 </template>
 
@@ -274,6 +421,7 @@ onMounted(refresh)
 .my-business{display:grid;max-width:1600px;margin:0 auto;gap:18px;color:var(--text-main)}.page-header,.section-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.page-header h1,.section-header h2{margin:0}.page-header p,.section-header p{margin:5px 0 0;color:var(--text-muted)}.eyebrow{color:var(--accent-active)!important;font-size:.74rem;font-weight:750;letter-spacing:.08em;text-transform:uppercase}.header-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.surface-card{padding:18px;border:1px solid var(--border-grey);border-radius:14px;background:var(--bg-card);box-shadow:var(--shadow-sm)}.agenda-section,.calendar-section,.data-section{display:grid;gap:14px}.section-header>svg{width:28px;height:28px;color:var(--accent-active)}.timeline{display:grid;margin:0;padding:0;list-style:none}.timeline li{display:grid;grid-template-columns:3.5rem 12px 1fr;gap:10px;padding:10px 0}.timeline time{color:var(--accent-active);font-weight:750}.timeline-dot{width:10px;height:10px;margin-top:5px;border:2px solid var(--accent-active);border-radius:50%}.timeline li:not(:last-child) .timeline-dot::after{display:block;width:1px;height:55px;margin:8px 0 0 2.5px;background:var(--border-grey);content:""}.timeline div{display:grid;gap:3px}.timeline small,.timeline p{margin:0;color:var(--text-muted)}.claim-card,.kpi-card{display:flex;align-items:center;gap:13px}.claim-card p{margin:4px 0 0;color:var(--text-muted)}.claim-card strong,.kpi-card strong{display:block;margin-top:3px;font-size:1.3rem}.claim-card small,.kpi-card small{color:var(--text-muted)}.icon-box{display:grid;width:42px;height:42px;flex:0 0 42px;place-items:center;border-radius:10px;background:var(--bg-active);color:var(--accent-active)}.icon-box svg{width:21px;height:21px}.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.calendar-list{display:grid;gap:8px}.calendar-list article{display:grid;grid-template-columns:5rem 8px 1fr;align-items:center;gap:10px;padding:11px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.calendar-list time,.calendar-list article>div{display:grid;gap:2px}.calendar-list time span,.calendar-list article span,.calendar-list article small{color:var(--text-muted)}.activity-mark{width:8px;height:32px;border-radius:999px;background:var(--accent-active)}.desktop-table :deep(td){vertical-align:top}.mobile-cards{display:none}.mobile-cards article{display:grid;gap:8px;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.mobile-cards header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.mobile-cards header div{display:grid}.mobile-cards p{margin:0}.mobile-cards small,.mobile-cards span{color:var(--text-muted)}.skeleton-list{display:grid;gap:8px}.state{display:flex;min-height:7rem;align-items:center;justify-content:center;gap:8px;color:var(--text-muted);text-align:center}.state>svg{width:24px;height:24px}.state.error{min-height:auto;justify-content:flex-start;padding:11px;border:1px solid var(--danger);border-radius:10px;background:var(--danger-bg)}.state.error .p-button{margin-left:auto}
 .customer-cell{display:grid;gap:2px}.customer-cell small{color:var(--text-muted)}.customer-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px;font-weight:650}.field input,.field select,.field textarea{width:100%;padding:.7rem .75rem;border:1px solid var(--border-grey);border-radius:8px;background:var(--bg-main);color:var(--text-main);font:inherit}.field textarea{resize:vertical}.field small{justify-self:end;color:var(--text-muted);font-weight:400}.field-wide{grid-column:1/-1}.form-error{margin:0;color:var(--danger)}.success-message{margin:0;padding:11px 14px;border:1px solid var(--success);border-radius:10px;background:var(--success-bg);color:var(--text-main)}
 .prospect-section{border-color:color-mix(in srgb,var(--accent-active) 28%,var(--border-grey));background:color-mix(in srgb,var(--bg-card) 92%,var(--bg-active))}.prospect-cards article{background:color-mix(in srgb,var(--bg-main) 88%,var(--bg-active))}.card-actions,.deferred-actions{display:flex;flex-wrap:wrap;gap:8px}.prospect-detail{display:grid;gap:16px}.prospect-detail>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.prospect-detail h3{margin:3px 0 0}.prospect-detail small{color:var(--text-muted)}.prospect-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}.prospect-detail dl>div{padding:11px;border:1px solid var(--border-grey);border-radius:9px;background:var(--bg-main)}.prospect-detail dt{color:var(--text-muted);font-size:.82rem}.prospect-detail dd{margin:4px 0 0;overflow-wrap:anywhere}.prospect-detail .detail-wide{grid-column:1/-1}.converted-notice{display:grid;gap:4px;padding:13px;border:1px solid var(--success);border-radius:10px;background:var(--success-bg)}.conflict-row{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--danger)}
+.prospect-detail h4{margin:0}.detail-block{display:grid;gap:12px;padding-top:16px;border-top:1px solid var(--border-grey)}.activity-heading,.activity-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.activity-filters{display:flex;flex-wrap:wrap;gap:8px}.activity-list{display:grid;gap:10px}.activity-card{display:grid;gap:9px;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.activity-card.cancelled{opacity:.72}.activity-card h5,.activity-card p{margin:3px 0 0}.activity-card footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}.activity-when{display:flex;flex-wrap:wrap;gap:7px}.activity-when span,.cancellation-reason,.follow-up-placeholder p{color:var(--text-muted)}.activity-form{display:grid;gap:14px}.cancel-summary{display:grid;gap:8px;margin:0}.cancel-summary>div{display:grid;grid-template-columns:4rem 1fr;gap:8px}.cancel-summary dt{color:var(--text-muted)}.cancel-summary dd{margin:0;overflow-wrap:anywhere}
 @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.desktop-table{display:block;overflow-x:auto}}
 @media(max-width:767px){.my-business{gap:13px}.page-header{flex-direction:column}.header-actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.header-actions .p-button:last-child{grid-column:1/-1}.surface-card{padding:14px}.kpi-grid,.customer-form,.prospect-detail dl{grid-template-columns:1fr}.calendar-list article{grid-template-columns:4.5rem 7px 1fr}.desktop-table{display:none}.mobile-cards{display:grid;gap:9px}.section-header{align-items:center;flex-wrap:wrap}.timeline li{grid-template-columns:3rem 10px 1fr}.prospect-detail .detail-wide{grid-column:auto}.conflict-row{align-items:flex-start;flex-direction:column}}
 </style>

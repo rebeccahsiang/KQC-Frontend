@@ -28,9 +28,10 @@ test('Prospect types match Backend DTOs without Customer, Case, or activity inve
   assert.match(source, /ProspectType = 'PERSON' \| 'COMPANY'/)
   assert.match(source, /ProspectGrade = 'HIGH' \| 'NORMAL' \| 'LOW'/)
   assert.match(source, /ProspectDevelopmentStatus = 'NEW_CONTACT' \| 'CULTIVATING' \| 'INTERESTED' \| 'ON_HOLD' \| 'CONVERTED'/)
-  const prospectTypes = source.slice(source.indexOf('export type ProspectType'), source.indexOf('const adminRequest'))
-  for (const field of ['customerNumber', 'customerId', 'businessCaseId', 'latestContactAt', 'nextPlannedAt']) assert.doesNotMatch(prospectTypes, new RegExp(`${field}[?]?:`))
-  for (const field of ['responsibleSalesId', 'createdBy', 'updatedBy', 'convertedCustomerId', 'convertedAt']) assert.doesNotMatch(source.slice(source.indexOf('export interface CreateProspectInput'), source.indexOf('const adminRequest')), new RegExp(`${field}[?]?:`))
+  const prospectDtos = source.slice(source.indexOf('export type ProspectType'), source.indexOf('export interface CreateProspectInput'))
+  const prospectInputs = source.slice(source.indexOf('export interface CreateProspectInput'), source.indexOf('export type PlannedActivitySubjectType'))
+  for (const field of ['customerNumber', 'customerId', 'businessCaseId', 'latestContactAt', 'nextPlannedAt']) assert.doesNotMatch(prospectDtos, new RegExp(`${field}[?]?:`))
+  for (const field of ['responsibleSalesId', 'createdBy', 'updatedBy', 'convertedCustomerId', 'convertedAt', 'customerNumber', 'customerId', 'businessCaseId', 'activityType', 'startAt', 'status']) assert.doesNotMatch(prospectInputs, new RegExp(`${field}[?]?:`))
 })
 
 test('presentation maps canonical grades and statuses to approved user-facing wording', () => {

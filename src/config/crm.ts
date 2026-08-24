@@ -17,3 +17,7 @@ export const PROSPECT_STATUS_LABELS = {
   ON_HOLD: '暫緩', CONVERTED: '已轉正式客戶'
 } as const
 export const prospectStatusLabel = (value: keyof typeof PROSPECT_STATUS_LABELS) => PROSPECT_STATUS_LABELS[value]
+export const PLANNED_ACTIVITY_TYPE_LABELS = {
+  PHONE: '電話', LINE: 'LINE', MEETING: '面談', QUOTATION: '報價',
+  CUSTOMER_RESPONSE: '客戶回覆', REQUIREMENT_CHANGE: '需求變化'
+} as const

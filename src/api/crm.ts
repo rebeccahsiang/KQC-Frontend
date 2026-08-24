@@ -15,6 +15,14 @@ export interface ProspectListItem { id: string; prospectType: ProspectType; disp
 export interface ProspectDetail extends ProspectListItem { name: string | null; companyName: string | null; taxId: string | null; representative: string | null; contactPerson: string | null; address: string | null; note: string | null; convertedCustomerId: string | null; convertedBusinessCaseId: string | null; convertedAt: string | null }
 export interface CreateProspectInput { prospectType: ProspectType; name?: string; companyName?: string; taxId?: string; representative?: string; contactPerson?: string; phone?: string; mobile?: string; email?: string; address?: string; prospectGrade: ProspectGrade; developmentStatus: ActiveProspectDevelopmentStatus; note: string | null }
 export interface UpdateProspectInput extends Omit<CreateProspectInput, 'prospectType'> { revision: number }
+export type PlannedActivitySubjectType = 'PROSPECT' | 'CUSTOMER' | 'BUSINESS_CASE'
+export type PlannedActivityType = 'PHONE' | 'LINE' | 'MEETING' | 'QUOTATION' | 'CUSTOMER_RESPONSE' | 'REQUIREMENT_CHANGE'
+export type PlannedActivityStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED'
+export interface ProspectPlannedActivityListItem { id: string; subjectType: PlannedActivitySubjectType; subjectId: string; activityType: PlannedActivityType; title: string; content: string | null; startAt: string; status: PlannedActivityStatus; responsibleSalesId: string; revision: number; completedAt: string | null; cancelledAt: string | null; cancellationReason: string | null; createdAt: string; updatedAt: string }
+export interface ProspectPlannedActivityDetail extends ProspectPlannedActivityListItem { completedBy: string | null; cancelledBy: string | null }
+export interface CreateProspectPlannedActivityInput { activityType: PlannedActivityType; title: string; content: string | null; startAt: string }
+export interface UpdateProspectPlannedActivityInput { revision: number; activityType: PlannedActivityType; title: string; content: string | null; startAt: string }
+export interface CancelProspectPlannedActivityInput { revision: number; cancellationReason: string }
 
 const adminRequest = { authPortal: 'admin' as const }
 export const crmApi = {
@@ -26,5 +34,10 @@ export const crmApi = {
   createMyProspect: (input: CreateProspectInput) => api.post<Envelope<ProspectDetail>>('/v1/crm/my-prospects', input, adminRequest),
   listMyProspects: () => api.get<Envelope<ProspectListItem[]>>('/v1/crm/my-prospects', adminRequest),
   getMyProspect: (prospectId: string) => api.get<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}`, adminRequest),
-  updateMyProspect: (prospectId: string, input: UpdateProspectInput) => api.patch<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}`, input, adminRequest)
+  updateMyProspect: (prospectId: string, input: UpdateProspectInput) => api.patch<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}`, input, adminRequest),
+  createMyProspectPlannedActivity: (prospectId: string, input: CreateProspectPlannedActivityInput) => api.post<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities`, input, adminRequest),
+  myProspectPlannedActivities: (prospectId: string) => api.get<Envelope<ProspectPlannedActivityListItem[]>>(`/v1/crm/my-prospects/${prospectId}/planned-activities`, adminRequest),
+  myProspectPlannedActivity: (prospectId: string, activityId: string) => api.get<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}`, adminRequest),
+  updateMyProspectPlannedActivity: (prospectId: string, activityId: string, input: UpdateProspectPlannedActivityInput) => api.patch<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}`, input, adminRequest),
+  cancelMyProspectPlannedActivity: (prospectId: string, activityId: string, input: CancelProspectPlannedActivityInput) => api.post<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}/cancel`, input, adminRequest)
 }
