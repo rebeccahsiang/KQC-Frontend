@@ -7,7 +7,7 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
-import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type PlannedActivityType, type ProspectDetail, type ProspectFollowUpDetail, type ProspectFollowUpListItem, type ProspectFollowUpOutcome, type ProspectGrade, type ProspectListItem, type ProspectPlannedActivityDetail, type ProspectPlannedActivityListItem, type ProspectTransferCandidate, type ProspectType, type UpdateProspectInput } from '@/api/crm'
+import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type OutgoingProspectTransferReceipt, type PlannedActivityType, type ProspectDetail, type ProspectFollowUpDetail, type ProspectFollowUpListItem, type ProspectFollowUpOutcome, type ProspectGrade, type ProspectListItem, type ProspectPlannedActivityDetail, type ProspectPlannedActivityListItem, type ProspectTransferCandidate, type ProspectTransferHistoryItem, type ProspectType, type UpdateProspectInput } from '@/api/crm'
 import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate, PLANNED_ACTIVITY_TYPE_LABELS, PROSPECT_FOLLOW_UP_OUTCOME_LABELS, PROSPECT_GRADE_PRESENTATION, PROSPECT_SOURCE_LABELS, PROSPECT_STATUS_LABELS, prospectStatusLabel } from '@/config/crm'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -46,6 +46,13 @@ const transferCandidates = ref<ProspectTransferCandidate[]>([])
 const transferCandidateLoading = ref(false)
 const transferCandidateError = ref('')
 let transferCandidateRequestId = 0
+/* Handoff history and outgoing receipts use isolated reads; receipts never imply current Prospect access. */
+const prospectTransferHistory = ref<ProspectTransferHistoryItem[]>([])
+const loadingProspectTransferHistory = ref(false)
+const prospectTransferHistoryError = ref('')
+const outgoingProspectTransfers = ref<OutgoingProspectTransferReceipt[]>([])
+const loadingOutgoingProspectTransfers = ref(true)
+const outgoingProspectTransfersError = ref('')
 const plannedActivities = ref<ProspectPlannedActivityListItem[]>([])
 const loadingPlannedActivities = ref(false)
 const plannedActivityError = ref('')
@@ -110,7 +117,8 @@ const loadCalendar = async () => { loadingCalendar.value = true; calendarError.v
 const loadCustomers = async () => { loadingCustomers.value = true; customerError.value = ''; try { customers.value = (await crmApi.customers()).data } catch { customerError.value = safeError } finally { loadingCustomers.value = false } }
 const loadCases = async () => { loadingCases.value = true; caseError.value = ''; try { businessCases.value = (await crmApi.businessCases()).data } catch { caseError.value = safeError } finally { loadingCases.value = false } }
 const loadProspects = async () => { loadingProspects.value = true; prospectError.value = ''; try { prospects.value = (await crmApi.listMyProspects()).data } catch { prospectError.value = safeError } finally { loadingProspects.value = false } }
-const refresh = () => { void Promise.all([loadSummary(), loadCalendar(), loadCustomers(), loadCases(), loadProspects()]) }
+const loadOutgoingProspectTransfers = async () => { loadingOutgoingProspectTransfers.value = true; outgoingProspectTransfersError.value = ''; try { outgoingProspectTransfers.value = (await crmApi.getOutgoingProspectTransfers()).data } catch { outgoingProspectTransfersError.value = '轉出紀錄載入失敗，請稍後再試。' } finally { loadingOutgoingProspectTransfers.value = false } }
+const refresh = () => { void Promise.all([loadSummary(), loadCalendar(), loadCustomers(), loadCases(), loadProspects(), loadOutgoingProspectTransfers()]) }
 const kpis = computed(() => summary.value ? [
   { label: '進行中', value: summary.value.metrics.operatingCount.toLocaleString('zh-TW'), icon: 'lucide:briefcase-business' },
   { label: '待跟進', value: summary.value.metrics.followUpDueCount.toLocaleString('zh-TW'), icon: 'lucide:clock-3' },
@@ -350,9 +358,13 @@ const reloadCancelActivity = async () => {
     cancelActivityError.value = ''; cancelActivityConflict.value = false; await loadPlannedActivities(prospectDetail.value.id)
   } catch { cancelActivityError.value = '行程資料載入失敗，請稍後再試。' }
 }
+const loadProspectTransferHistory = async (prospectId: string) => {
+  loadingProspectTransferHistory.value = true; prospectTransferHistoryError.value = ''; prospectTransferHistory.value = []
+  try { prospectTransferHistory.value = (await crmApi.getProspectTransferHistory(prospectId)).data } catch { prospectTransferHistoryError.value = '轉交紀錄載入失敗，請稍後再試。' } finally { loadingProspectTransferHistory.value = false }
+}
 const loadProspectDetail = async (prospectId: string) => {
   loadingProspectDetail.value = true; prospectFormError.value = ''; prospectDetail.value = null; detailProspectVisible.value = true
-  try { prospectDetail.value = (await crmApi.getMyProspect(prospectId)).data; void Promise.all([loadPlannedActivities(prospectId), loadFollowUps(prospectId)]) } catch { detailProspectVisible.value = false; prospectError.value = safeError } finally { loadingProspectDetail.value = false }
+  try { prospectDetail.value = (await crmApi.getMyProspect(prospectId)).data; void Promise.all([loadPlannedActivities(prospectId), loadFollowUps(prospectId), loadProspectTransferHistory(prospectId)]) } catch { detailProspectVisible.value = false; prospectError.value = safeError } finally { loadingProspectDetail.value = false }
 }
 const openEditProspect = async (prospectId: string) => {
   loadingProspectDetail.value = true; prospectFormError.value = ''; prospectConflict.value = false; prospectSuccess.value = ''
@@ -412,7 +424,7 @@ const submitProspectTransfer = async () => {
     // refresh the list instead of locally rewriting any ownership or history.
     // -------------------------------------------------------------------------
     transferDialogVisible.value = false; detailProspectVisible.value = false; prospectDetail.value = null; resetProspectTransfer()
-    prospectSuccess.value = '潛在客戶已成功轉交。'; await loadProspects()
+    prospectSuccess.value = '潛在客戶已成功轉交。'; await Promise.all([loadProspects(), loadOutgoingProspectTransfers()])
   } catch (error) {
     const code = backendErrorCode(error)
     if (code === 'PROSPECT_TRANSFER_RECIPIENT_INVALID') transferError.value = '所選業務目前無法接手此潛在客戶，請重新選擇。'
@@ -501,6 +513,14 @@ onUnmounted(stopPlannedActivityClock)
       <div v-if="!loadingProspects && prospects.length" class="mobile-cards prospect-cards"><article v-for="item in prospects" :key="item.id"><header><div><strong>{{ item.displayName }}</strong><small>{{ prospectTypeLabel(item.prospectType) }}</small></div><Tag :value="prospectGrade(item.prospectGrade).label" :severity="prospectGrade(item.prospectGrade).severity" :title="prospectGrade(item.prospectGrade).title" /></header><p>{{ prospectContact(item) }}</p><span>{{ prospectStatusLabel(item.developmentStatus) }} · 更新於 {{ formatDate(item.updatedAt) }}</span><div class="card-actions"><Button label="查看" text @click="loadProspectDetail(item.id)" /><Button label="編輯" text :disabled="item.developmentStatus === 'CONVERTED'" :aria-disabled="item.developmentStatus === 'CONVERTED'" :title="item.developmentStatus === 'CONVERTED' ? '已轉正式客戶，無法編輯' : '編輯開發客戶'" @click="openEditProspect(item.id)" /></div></article></div>
     </article>
 
+    <article class="surface-card data-section outgoing-transfer-section">
+      <header class="section-header"><div><h2>最近轉出</h2><p>僅顯示由我完成的開發客戶轉交紀錄</p></div></header>
+      <div v-if="loadingOutgoingProspectTransfers" class="skeleton-list"><Skeleton v-for="i in 3" :key="i" height="4rem" /></div>
+      <div v-else-if="outgoingProspectTransfersError" class="state error" role="alert"><span>{{ outgoingProspectTransfersError }}</span><Button label="重試" text @click="loadOutgoingProspectTransfers" /></div>
+      <div v-else-if="!outgoingProspectTransfers.length" class="state">尚無轉出紀錄</div>
+      <ol v-else class="handoff-list outgoing-receipts"><li v-for="item in outgoingProspectTransfers" :key="item.id"><div><strong>{{ item.prospect.displayName }}</strong><span>已轉交給 {{ item.toResponsibleSales.displayName }}</span></div><time>{{ formatDate(item.occurredAt, { hour: '2-digit', minute: '2-digit' }) }}</time></li></ol>
+    </article>
+
     <article class="surface-card data-section">
       <header class="section-header"><div><h2>我的案件</h2><p>查看目前由我負責的業務案件與進度</p></div></header>
       <div v-if="loadingCases" class="skeleton-list"><Skeleton v-for="i in 4" :key="i" height="3rem" /></div><div v-else-if="caseError" class="state error" role="alert"><span>{{ caseError }}</span><Button label="重試" text @click="loadCases" /></div><div v-else-if="!businessCases.length" class="state"><Icon icon="lucide:briefcase" /><strong>目前沒有案件</strong></div>
@@ -545,6 +565,13 @@ onUnmounted(stopPlannedActivityClock)
         <dl><div><dt>等級</dt><dd><Tag :value="prospectGrade(prospectDetail.prospectGrade).label" :title="prospectGrade(prospectDetail.prospectGrade).title" /></dd></div><div v-if="prospectDetail.companyName"><dt>公司名稱</dt><dd>{{ prospectDetail.companyName }}</dd></div><div v-if="prospectDetail.taxId"><dt>統一編號</dt><dd>{{ prospectDetail.taxId }}</dd></div><div v-if="prospectDetail.representative"><dt>負責人</dt><dd>{{ prospectDetail.representative }}</dd></div><div v-if="prospectDetail.contactPerson"><dt>聯絡人</dt><dd>{{ prospectDetail.contactPerson }}</dd></div><div><dt>電話</dt><dd>{{ prospectDetail.phone || '—' }}</dd></div><div><dt>行動電話</dt><dd>{{ prospectDetail.mobile || '—' }}</dd></div><div><dt>Email</dt><dd>{{ prospectDetail.email || '—' }}</dd></div><div><dt>地址</dt><dd>{{ prospectDetail.address || '—' }}</dd></div><div class="detail-wide"><dt>備註</dt><dd>{{ prospectDetail.note || '—' }}</dd></div><div><dt>建立時間</dt><dd>{{ formatDate(prospectDetail.createdAt) }}</dd></div><div><dt>更新時間</dt><dd>{{ formatDate(prospectDetail.updatedAt) }}</dd></div></dl>
         <section v-if="prospectDetail.developmentStatus === 'CONVERTED'" class="converted-notice"><strong>已轉正式客戶</strong><span>轉換時間：{{ formatDate(prospectDetail.convertedAt) }}</span><small v-if="prospectDetail.convertedCustomerId">正式客戶參照：{{ prospectDetail.convertedCustomerId }}</small><small v-if="prospectDetail.convertedBusinessCaseId">案件參照：{{ prospectDetail.convertedBusinessCaseId }}</small></section>
         <div class="deferred-actions"><Button label="轉為正式客戶" disabled aria-disabled="true" title="此功能尚未開放" /><Button label="新增業務案件" disabled aria-disabled="true" title="此功能尚未開放" /></div>
+        <section class="detail-block transfer-history-section" aria-labelledby="transfer-history-title">
+          <header class="activity-heading"><div><h4 id="transfer-history-title">轉交紀錄</h4><small>依轉交時間由舊至新排列</small></div></header>
+          <div v-if="loadingProspectTransferHistory" class="skeleton-list"><Skeleton v-for="i in 2" :key="i" height="4rem" /></div>
+          <div v-else-if="prospectTransferHistoryError" class="state error" role="alert"><span>{{ prospectTransferHistoryError }}</span><Button label="重試" text @click="loadProspectTransferHistory(prospectDetail.id)" /></div>
+          <div v-else-if="!prospectTransferHistory.length" class="state">尚無轉交紀錄</div>
+          <ol v-else class="handoff-list"><li v-for="item in prospectTransferHistory" :key="item.id"><time>{{ formatDate(item.occurredAt, { hour: '2-digit', minute: '2-digit' }) }}</time><strong>{{ item.fromResponsibleSales.displayName }} → {{ item.toResponsibleSales.displayName }}</strong><span>自行轉交</span></li></ol>
+        </section>
         <section class="detail-block planned-activity-section" aria-labelledby="planned-activity-title">
           <header class="activity-heading"><div><h4 id="planned-activity-title">預定行程</h4><small v-if="prospectDetail.developmentStatus === 'CONVERTED'">已轉正式客戶，僅供查看歷史行程。</small></div><Button v-if="prospectDetail.developmentStatus !== 'CONVERTED'" label="＋新增行程" size="small" @click="openCreateActivity" /></header>
           <p v-if="plannedActivityMessage" class="success-message" role="status">{{ plannedActivityMessage }}</p>
@@ -673,6 +700,7 @@ onUnmounted(stopPlannedActivityClock)
 /* Shared CRM detail grammar: section dividers, record cards, semantic tags, and responsive action rows use theme tokens only. */
 .follow-up-timeline{display:grid;gap:0;margin:0;padding:0;list-style:none}.follow-up-timeline li{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr);gap:9px;padding-bottom:12px}.follow-up-timeline li:not(:last-child)::before{position:absolute;top:18px;bottom:-2px;left:5px;width:1px;background:var(--border-grey);content:""}.follow-up-dot{z-index:1;width:11px;height:11px;margin-top:16px;border:2px solid var(--accent-active);border-radius:50%;background:var(--bg-card)}.follow-up-card>header>div:first-child{display:grid;gap:3px}.follow-up-card>header small,.follow-up-card>small{color:var(--text-muted)}.follow-up-tags{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}.next-activity-toggle{display:flex;align-items:center;gap:8px;font-weight:650}.next-activity-fields{display:grid;gap:12px;margin:0;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.next-activity-fields legend{padding:0 6px;font-weight:750;color:var(--text-main)}
 .transfer-explanation{margin:0;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main);color:var(--text-muted);line-height:1.6}
+.handoff-list{display:grid;gap:9px;margin:0;padding:0;list-style:none}.handoff-list li{display:grid;grid-template-columns:minmax(8rem,auto) minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.handoff-list time,.handoff-list span{color:var(--text-muted)}.outgoing-receipts li{grid-template-columns:minmax(0,1fr) auto}.outgoing-receipts li>div{display:grid;gap:3px}
 @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.desktop-table{display:block;overflow-x:auto}}
-@media(max-width:767px){.my-business{gap:13px}.page-header{flex-direction:column}.header-actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.header-actions .p-button:last-child{grid-column:1/-1}.surface-card{padding:14px}.kpi-grid,.customer-form,.prospect-detail dl{grid-template-columns:1fr}.calendar-list article{grid-template-columns:4.5rem 7px 1fr}.desktop-table{display:none}.mobile-cards{display:grid;gap:9px}.section-header{align-items:center;flex-wrap:wrap}.timeline li{grid-template-columns:3rem 10px 1fr}.prospect-detail .detail-wide{grid-column:auto}.conflict-row{align-items:flex-start;flex-direction:column}.activity-heading,.activity-card>header{align-items:stretch;flex-direction:column}.follow-up-tags{justify-content:flex-start}.activity-card footer{justify-content:flex-start}}
+@media(max-width:767px){.my-business{gap:13px}.page-header{flex-direction:column}.header-actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.header-actions .p-button:last-child{grid-column:1/-1}.surface-card{padding:14px}.kpi-grid,.customer-form,.prospect-detail dl{grid-template-columns:1fr}.calendar-list article{grid-template-columns:4.5rem 7px 1fr}.desktop-table{display:none}.mobile-cards{display:grid;gap:9px}.section-header{align-items:center;flex-wrap:wrap}.timeline li{grid-template-columns:3rem 10px 1fr}.prospect-detail .detail-wide{grid-column:auto}.conflict-row{align-items:flex-start;flex-direction:column}.activity-heading,.activity-card>header{align-items:stretch;flex-direction:column}.follow-up-tags{justify-content:flex-start}.activity-card footer{justify-content:flex-start}.handoff-list li,.outgoing-receipts li{grid-template-columns:1fr;align-items:start}}
 </style>

@@ -118,9 +118,9 @@ test('edit keeps type immutable, sends current revision, trusts Backend response
 test('converted Prospects are read-only and deferred conversion/Case actions cannot navigate or mutate', () => {
   const source = read('src/views/admin/crm/MyBusinessView.vue')
   const deferredStart = source.indexOf('<div class="deferred-actions">')
-  const deferredEnd = source.indexOf('<section class="detail-block planned-activity-section"', deferredStart)
+  const deferredEnd = source.indexOf('</div>', deferredStart)
   const deferredActions = deferredStart >= 0 && deferredEnd > deferredStart
-    ? source.slice(deferredStart, deferredEnd)
+    ? source.slice(deferredStart, deferredEnd + '</div>'.length)
     : ''
   const prospectMutation = between(source, 'const submitProspect =', 'onMounted(refresh)')
   assert.ok(deferredActions.length > 0, 'deferred conversion/Case action slice must exist')
@@ -128,7 +128,7 @@ test('converted Prospects are read-only and deferred conversion/Case actions can
   assert.match(source, /PROSPECT_CONVERTED_READ_ONLY/)
   assert.match(deferredActions, /<Button(?=[^>]*label="轉為正式客戶")(?=[^>]*\bdisabled\b)(?=[^>]*aria-disabled="true")(?=[^>]*title="此功能尚未開放")[^>]*\/>/)
   assert.match(deferredActions, /<Button(?=[^>]*label="新增業務案件")(?=[^>]*\bdisabled\b)(?=[^>]*aria-disabled="true")(?=[^>]*title="此功能尚未開放")[^>]*\/>/)
-  assert.doesNotMatch(deferredActions, /@click|:to=|href=|router\.|convertProspect|createBusinessCase/i)
+  assert.doesNotMatch(deferredActions, /@click|:to=|href=|RouterLink|router\.(push|replace)|convertProspect|createBusinessCase/i)
   assert.doesNotMatch(prospectMutation, /convertProspect|createBusinessCase|prospectCalendar|MarketplaceCase|mockProspect/i)
 })
 

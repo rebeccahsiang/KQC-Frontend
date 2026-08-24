@@ -33,6 +33,9 @@ export interface CompleteProspectPlannedActivityInput extends CreateProspectFoll
 export interface CompleteProspectPlannedActivityResult { completedActivity: ProspectPlannedActivityDetail; followUp: ProspectFollowUpDetail; nextActivity: ProspectPlannedActivityDetail | null }
 export interface ProspectTransferCandidate { id: string; displayName: string }
 export interface ProspectTransferInput { recipientSalesId: string; revision: number }
+export interface ProspectTransferIdentity { id: string; displayName: string }
+export interface ProspectTransferHistoryItem { id: string; eventType: 'VOLUNTARY_TRANSFER'; fromResponsibleSales: ProspectTransferIdentity; toResponsibleSales: ProspectTransferIdentity; transferredBy: ProspectTransferIdentity; occurredAt: string; previousRevision: number; newRevision: number }
+export interface OutgoingProspectTransferReceipt { id: string; prospect: ProspectTransferIdentity; toResponsibleSales: ProspectTransferIdentity; occurredAt: string; previousRevision: number; newRevision: number }
 
 const adminRequest = { authPortal: 'admin' as const }
 export const crmApi = {
@@ -47,6 +50,8 @@ export const crmApi = {
   updateMyProspect: (prospectId: string, input: UpdateProspectInput) => api.patch<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}`, input, adminRequest),
   getProspectTransferCandidates: (prospectId: string) => api.get<Envelope<ProspectTransferCandidate[]>>(`/v1/crm/my-prospects/${prospectId}/transfer-candidates`, adminRequest),
   transferProspect: (prospectId: string, input: ProspectTransferInput) => api.post<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}/transfer`, input, adminRequest),
+  getProspectTransferHistory: (prospectId: string) => api.get<Envelope<ProspectTransferHistoryItem[]>>(`/v1/crm/my-prospects/${prospectId}/transfer-history`, adminRequest),
+  getOutgoingProspectTransfers: () => api.get<Envelope<OutgoingProspectTransferReceipt[]>>('/v1/crm/my-prospects/transfers/outgoing', adminRequest),
   createMyProspectPlannedActivity: (prospectId: string, input: CreateProspectPlannedActivityInput) => api.post<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities`, input, adminRequest),
   myProspectPlannedActivities: (prospectId: string) => api.get<Envelope<ProspectPlannedActivityListItem[]>>(`/v1/crm/my-prospects/${prospectId}/planned-activities`, adminRequest),
   myProspectPlannedActivity: (prospectId: string, activityId: string) => api.get<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}`, adminRequest),
