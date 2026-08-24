@@ -7,8 +7,8 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
-import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type PlannedActivityType, type ProspectDetail, type ProspectFollowUpDetail, type ProspectFollowUpListItem, type ProspectFollowUpOutcome, type ProspectGrade, type ProspectListItem, type ProspectPlannedActivityDetail, type ProspectPlannedActivityListItem, type ProspectType, type UpdateProspectInput } from '@/api/crm'
-import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate, PLANNED_ACTIVITY_TYPE_LABELS, PROSPECT_FOLLOW_UP_OUTCOME_LABELS, PROSPECT_GRADE_PRESENTATION, PROSPECT_STATUS_LABELS, prospectStatusLabel } from '@/config/crm'
+import { crmApi, type ActiveProspectDevelopmentStatus, type BusinessCaseListItem, type CalendarItem, type CreateCustomerInput, type CreateProspectInput, type CustomerListItem, type MyBusinessSummary, type PlannedActivityType, type ProspectDetail, type ProspectFollowUpDetail, type ProspectFollowUpListItem, type ProspectFollowUpOutcome, type ProspectGrade, type ProspectListItem, type ProspectPlannedActivityDetail, type ProspectPlannedActivityListItem, type ProspectTransferCandidate, type ProspectType, type UpdateProspectInput } from '@/api/crm'
+import { activityLabel, caseStatusLabel, categoryLabel, directionLabel, formatCurrency, formatDate, PLANNED_ACTIVITY_TYPE_LABELS, PROSPECT_FOLLOW_UP_OUTCOME_LABELS, PROSPECT_GRADE_PRESENTATION, PROSPECT_SOURCE_LABELS, PROSPECT_STATUS_LABELS, prospectStatusLabel } from '@/config/crm'
 import { useAuthStore } from '@/stores/authStore'
 
 const authStore = useAuthStore()
@@ -37,6 +37,15 @@ const editingProspect = ref(false)
 const savingProspect = ref(false)
 const prospectFormError = ref('')
 const prospectConflict = ref(false)
+/* Prospect transfer request state remains isolated from Detail, Planned Activity, and Follow-up loaders. */
+const transferDialogVisible = ref(false)
+const transferSubmitting = ref(false)
+const transferError = ref('')
+const transferRecipientId = ref('')
+const transferCandidates = ref<ProspectTransferCandidate[]>([])
+const transferCandidateLoading = ref(false)
+const transferCandidateError = ref('')
+let transferCandidateRequestId = 0
 const plannedActivities = ref<ProspectPlannedActivityListItem[]>([])
 const loadingPlannedActivities = ref(false)
 const plannedActivityError = ref('')
@@ -133,6 +142,15 @@ const submitCustomer = async () => {
 const prospectContact = (prospect: ProspectListItem) => prospect.mobile || prospect.phone || prospect.email || '—'
 const prospectGrade = (grade: ProspectGrade) => PROSPECT_GRADE_PRESENTATION[grade]
 const prospectTypeLabel = (type: ProspectType) => type === 'PERSON' ? '個人' : '公司'
+// -----------------------------------------------------------------------------
+// Prospect voluntary transfer presentation
+// Visibility is only a convenience boundary. Backend remains authoritative for
+// source, ownership, recipient eligibility, organization scope, and revision.
+// -----------------------------------------------------------------------------
+const canPresentProspectTransfer = computed(() => prospectDetail.value?.source === 'SELF_DEVELOPED'
+  && prospectDetail.value.developmentStatus !== 'CONVERTED'
+  && Boolean(authStore.user?._id)
+  && prospectDetail.value.responsibleSalesId === authStore.user?._id)
 const prospectValidation = computed(() => {
   if (prospectForm.value.prospectType === 'PERSON' && !prospectForm.value.name.trim()) return '請填寫開發客戶姓名。'
   if (prospectForm.value.prospectType === 'COMPANY' && !prospectForm.value.companyName.trim()) return '請填寫公司名稱。'
@@ -352,6 +370,60 @@ const prospectPayload = (): CreateProspectInput => {
     : { prospectType: 'COMPANY', companyName: prospectForm.value.companyName.trim(), taxId: optional(prospectForm.value.taxId), representative: optional(prospectForm.value.representative), contactPerson: optional(prospectForm.value.contactPerson), ...shared }
 }
 const backendErrorCode = (error: unknown) => (error as { response?: { data?: { error?: { code?: string } } } })?.response?.data?.error?.code
+const resetProspectTransfer = () => {
+  transferCandidateRequestId += 1; transferRecipientId.value = ''; transferError.value = ''; transferCandidateError.value = ''; transferCandidates.value = []; transferCandidateLoading.value = false
+}
+// -----------------------------------------------------------------------------
+// Recipient discovery request isolation
+// The bounded Prospect endpoint returns safe identities. Frontend does not use
+// Admin/Organization directories or reconstruct recipient eligibility.
+// -----------------------------------------------------------------------------
+const loadProspectTransferCandidates = async () => {
+  if (!prospectDetail.value) return
+  const prospectId = prospectDetail.value.id
+  const requestId = ++transferCandidateRequestId
+  transferCandidateLoading.value = true; transferCandidateError.value = ''; transferCandidates.value = []
+  try {
+    const result = (await crmApi.getProspectTransferCandidates(prospectId)).data
+    if (requestId === transferCandidateRequestId && transferDialogVisible.value && prospectDetail.value?.id === prospectId) transferCandidates.value = result.filter((candidate) => candidate.id !== authStore.user?._id)
+  } catch { if (requestId === transferCandidateRequestId) transferCandidateError.value = '可轉交業務載入失敗，請稍後再試。' } finally { if (requestId === transferCandidateRequestId) transferCandidateLoading.value = false }
+}
+const openProspectTransfer = () => {
+  if (!canPresentProspectTransfer.value || !prospectDetail.value) return
+  resetProspectTransfer(); transferDialogVisible.value = true; void loadProspectTransferCandidates()
+}
+const closeProspectTransfer = () => { if (transferSubmitting.value) return; transferDialogVisible.value = false; resetProspectTransfer() }
+const refreshProspectAfterTransferError = async () => {
+  if (!prospectDetail.value) return
+  const prospectId = prospectDetail.value.id
+  try { prospectDetail.value = (await crmApi.getMyProspect(prospectId)).data } catch { detailProspectVisible.value = false; prospectDetail.value = null }
+  await loadProspects()
+}
+const submitProspectTransfer = async () => {
+  if (!prospectDetail.value || !transferRecipientId.value || transferSubmitting.value) return
+  const prospectId = prospectDetail.value.id
+  const revision = prospectDetail.value.revision
+  transferSubmitting.value = true; transferError.value = ''
+  try {
+    await crmApi.transferProspect(prospectId, { recipientSalesId: transferRecipientId.value, revision })
+    // -------------------------------------------------------------------------
+    // Owner-scoped transfer success
+    // The Prospect leaves the initiating owner's scope. Close stale Detail and
+    // refresh the list instead of locally rewriting any ownership or history.
+    // -------------------------------------------------------------------------
+    transferDialogVisible.value = false; detailProspectVisible.value = false; prospectDetail.value = null; resetProspectTransfer()
+    prospectSuccess.value = '潛在客戶已成功轉交。'; await loadProspects()
+  } catch (error) {
+    const code = backendErrorCode(error)
+    if (code === 'PROSPECT_TRANSFER_RECIPIENT_INVALID') transferError.value = '所選業務目前無法接手此潛在客戶，請重新選擇。'
+    else if (code === 'PROSPECT_TRANSFER_ORGANIZATION_SCOPE_FORBIDDEN') transferError.value = '所選業務不在目前可轉交的組織範圍內。'
+    else if (code === 'PROSPECT_REVISION_CONFLICT') { transferError.value = '此潛在客戶資料已更新，請重新整理後再試。'; await refreshProspectAfterTransferError() }
+    else if (code === 'PROSPECT_NOT_FOUND') { const message = '此潛在客戶已不在目前可操作範圍，請重新整理。'; transferDialogVisible.value = false; detailProspectVisible.value = false; prospectDetail.value = null; await loadProspects(); prospectError.value = message }
+    else if (code === 'PROSPECT_TRANSFER_SOURCE_FORBIDDEN') { transferError.value = '此潛在客戶不適用自行轉交流程。'; await refreshProspectAfterTransferError() }
+    else if (code === 'PROSPECT_CONVERTED_READ_ONLY') { transferError.value = '此開發客戶已轉正式客戶，無法再轉交。'; await refreshProspectAfterTransferError() }
+    else transferError.value = '轉交失敗，請稍後再試。'
+  } finally { transferSubmitting.value = false }
+}
 const submitProspect = async () => {
   if (savingProspect.value || prospectValidation.value) return
   savingProspect.value = true; prospectFormError.value = ''
@@ -381,7 +453,7 @@ const submitProspect = async () => {
 }
 
 onMounted(refresh)
-watch(detailProspectVisible, (visible) => { if (visible) startPlannedActivityClock(); else stopPlannedActivityClock() })
+watch(detailProspectVisible, (visible) => { if (visible) startPlannedActivityClock(); else { stopPlannedActivityClock(); transferDialogVisible.value = false; resetProspectTransfer() } })
 onUnmounted(stopPlannedActivityClock)
 </script>
 
@@ -506,7 +578,20 @@ onUnmounted(stopPlannedActivityClock)
           </ol>
         </section>
       </div>
-      <template #footer><Button v-if="prospectDetail && prospectDetail.developmentStatus !== 'CONVERTED'" label="編輯" @click="detailProspectVisible = false; prospectDetail && openEditProspect(prospectDetail.id)" /><Button label="關閉" severity="secondary" outlined @click="detailProspectVisible = false" /></template>
+      <template #footer><Button v-if="canPresentProspectTransfer" label="轉交" severity="secondary" outlined @click="openProspectTransfer" /><Button v-if="prospectDetail && prospectDetail.developmentStatus !== 'CONVERTED'" label="編輯" @click="detailProspectVisible = false; prospectDetail && openEditProspect(prospectDetail.id)" /><Button label="關閉" severity="secondary" outlined @click="detailProspectVisible = false" /></template>
+    </Dialog>
+
+    <Dialog v-model:visible="transferDialogVisible" modal header="轉交潛在客戶" :style="{ width: '36rem', maxWidth: 'calc(100vw - 2rem)' }" :closable="!transferSubmitting" @hide="resetProspectTransfer">
+      <form id="prospect-transfer-form" class="activity-form" @submit.prevent="submitProspectTransfer">
+        <dl v-if="prospectDetail" class="cancel-summary"><div><dt>開發客戶</dt><dd>{{ prospectDetail.displayName }}</dd></div><div><dt>案源</dt><dd>{{ PROSPECT_SOURCE_LABELS[prospectDetail.source] }}</dd></div></dl>
+        <p class="transfer-explanation">轉交後，此潛在客戶將由新的負責業務接手。尚未完成的預定行程會一併移交；既有跟進紀錄與已完成／已取消行程仍保留原歷史。</p>
+        <div v-if="transferCandidateLoading" class="skeleton-list" aria-live="polite"><Skeleton height="2.75rem" /><span>正在載入可轉交業務…</span></div>
+        <div v-else-if="transferCandidateError" class="state error" role="alert"><span>{{ transferCandidateError }}</span><Button label="重試" text type="button" @click="loadProspectTransferCandidates" /></div>
+        <div v-else-if="!transferCandidates.length" class="state"><span>目前沒有可轉交的業務。</span></div>
+        <label v-else class="field"><span>轉交給 *</span><select v-model="transferRecipientId" required aria-required="true"><option value="" disabled>請選擇業務</option><option v-for="candidate in transferCandidates" :key="candidate.id" :value="candidate.id">{{ candidate.displayName }}</option></select></label>
+        <p v-if="transferError" class="form-error" role="alert">{{ transferError }}</p>
+      </form>
+      <template #footer><Button label="取消" severity="secondary" outlined :disabled="transferSubmitting" @click="closeProspectTransfer" /><Button type="submit" form="prospect-transfer-form" label="確認轉交" :loading="transferSubmitting" :disabled="!transferRecipientId || transferCandidateLoading || Boolean(transferCandidateError) || transferSubmitting" /></template>
     </Dialog>
 
     <Dialog v-model:visible="prospectFormVisible" modal :header="editingProspect ? '編輯開發客戶' : '＋新增開發客戶'" :style="{ width: '48rem', maxWidth: 'calc(100vw - 2rem)' }" :content-style="{ maxHeight: '70vh', overflowY: 'auto' }" @hide="prospectFormError = ''">
@@ -587,6 +672,7 @@ onUnmounted(stopPlannedActivityClock)
 .prospect-detail h4{margin:0}.detail-block{display:grid;gap:12px;padding-top:16px;border-top:1px solid var(--border-grey)}.activity-heading,.activity-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.activity-filters{display:flex;flex-wrap:wrap;gap:8px}.activity-list{display:grid;gap:10px}.activity-card{display:grid;gap:9px;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.activity-card.cancelled{opacity:.72}.activity-card h5,.activity-card p{margin:3px 0 0}.activity-card footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}.activity-when{display:flex;flex-wrap:wrap;gap:7px}.activity-when span,.cancellation-reason,.follow-up-placeholder p{color:var(--text-muted)}.activity-form{display:grid;gap:14px}.cancel-summary{display:grid;gap:8px;margin:0}.cancel-summary>div{display:grid;grid-template-columns:4rem 1fr;gap:8px}.cancel-summary dt{color:var(--text-muted)}.cancel-summary dd{margin:0;overflow-wrap:anywhere}
 /* Shared CRM detail grammar: section dividers, record cards, semantic tags, and responsive action rows use theme tokens only. */
 .follow-up-timeline{display:grid;gap:0;margin:0;padding:0;list-style:none}.follow-up-timeline li{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr);gap:9px;padding-bottom:12px}.follow-up-timeline li:not(:last-child)::before{position:absolute;top:18px;bottom:-2px;left:5px;width:1px;background:var(--border-grey);content:""}.follow-up-dot{z-index:1;width:11px;height:11px;margin-top:16px;border:2px solid var(--accent-active);border-radius:50%;background:var(--bg-card)}.follow-up-card>header>div:first-child{display:grid;gap:3px}.follow-up-card>header small,.follow-up-card>small{color:var(--text-muted)}.follow-up-tags{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}.next-activity-toggle{display:flex;align-items:center;gap:8px;font-weight:650}.next-activity-fields{display:grid;gap:12px;margin:0;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main)}.next-activity-fields legend{padding:0 6px;font-weight:750;color:var(--text-main)}
+.transfer-explanation{margin:0;padding:13px;border:1px solid var(--border-grey);border-radius:10px;background:var(--bg-main);color:var(--text-muted);line-height:1.6}
 @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.desktop-table{display:block;overflow-x:auto}}
 @media(max-width:767px){.my-business{gap:13px}.page-header{flex-direction:column}.header-actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.header-actions .p-button:last-child{grid-column:1/-1}.surface-card{padding:14px}.kpi-grid,.customer-form,.prospect-detail dl{grid-template-columns:1fr}.calendar-list article{grid-template-columns:4.5rem 7px 1fr}.desktop-table{display:none}.mobile-cards{display:grid;gap:9px}.section-header{align-items:center;flex-wrap:wrap}.timeline li{grid-template-columns:3rem 10px 1fr}.prospect-detail .detail-wide{grid-column:auto}.conflict-row{align-items:flex-start;flex-direction:column}.activity-heading,.activity-card>header{align-items:stretch;flex-direction:column}.follow-up-tags{justify-content:flex-start}.activity-card footer{justify-content:flex-start}}
 </style>

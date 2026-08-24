@@ -16,6 +16,7 @@ export const PROSPECT_STATUS_LABELS = {
   NEW_CONTACT: '新接觸', CULTIVATING: '培養中', INTERESTED: '有意願',
   ON_HOLD: '暫緩', CONVERTED: '已轉正式客戶'
 } as const
+export const PROSPECT_SOURCE_LABELS = { SELF_DEVELOPED: '自行開發', INBOUND: '主動案源' } as const
 export const prospectStatusLabel = (value: keyof typeof PROSPECT_STATUS_LABELS) => PROSPECT_STATUS_LABELS[value]
 export const PLANNED_ACTIVITY_TYPE_LABELS = {
   PHONE: '電話', LINE: 'LINE', MEETING: '面談', QUOTATION: '報價',

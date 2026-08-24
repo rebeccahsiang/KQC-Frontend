@@ -10,8 +10,9 @@ export interface BusinessCaseListItem { id: string; caseNumber: string | null; c
 export type ProspectType = 'PERSON' | 'COMPANY'
 export type ProspectGrade = 'HIGH' | 'NORMAL' | 'LOW'
 export type ProspectDevelopmentStatus = 'NEW_CONTACT' | 'CULTIVATING' | 'INTERESTED' | 'ON_HOLD' | 'CONVERTED'
+export type ProspectSource = 'SELF_DEVELOPED' | 'INBOUND'
 export type ActiveProspectDevelopmentStatus = Exclude<ProspectDevelopmentStatus, 'CONVERTED'>
-export interface ProspectListItem { id: string; prospectType: ProspectType; displayName: string; prospectGrade: ProspectGrade; developmentStatus: ProspectDevelopmentStatus; phone: string | null; mobile: string | null; email: string | null; responsibleSalesId: string; revision: number; createdAt: string; updatedAt: string }
+export interface ProspectListItem { id: string; source: ProspectSource; prospectType: ProspectType; displayName: string; prospectGrade: ProspectGrade; developmentStatus: ProspectDevelopmentStatus; phone: string | null; mobile: string | null; email: string | null; responsibleSalesId: string; revision: number; createdAt: string; updatedAt: string }
 export interface ProspectDetail extends ProspectListItem { name: string | null; companyName: string | null; taxId: string | null; representative: string | null; contactPerson: string | null; address: string | null; note: string | null; convertedCustomerId: string | null; convertedBusinessCaseId: string | null; convertedAt: string | null }
 export interface CreateProspectInput { prospectType: ProspectType; name?: string; companyName?: string; taxId?: string; representative?: string; contactPerson?: string; phone?: string; mobile?: string; email?: string; address?: string; prospectGrade: ProspectGrade; developmentStatus: ActiveProspectDevelopmentStatus; note: string | null }
 export interface UpdateProspectInput extends Omit<CreateProspectInput, 'prospectType'> { revision: number }
@@ -30,6 +31,8 @@ export interface CreateProspectFollowUpInput { occurredAt: string; activityType:
 export interface UpdateProspectFollowUpInput extends CreateProspectFollowUpInput { revision: number }
 export interface CompleteProspectPlannedActivityInput extends CreateProspectFollowUpInput { revision: number; nextActivity?: CreateProspectPlannedActivityInput }
 export interface CompleteProspectPlannedActivityResult { completedActivity: ProspectPlannedActivityDetail; followUp: ProspectFollowUpDetail; nextActivity: ProspectPlannedActivityDetail | null }
+export interface ProspectTransferCandidate { id: string; displayName: string }
+export interface ProspectTransferInput { recipientSalesId: string; revision: number }
 
 const adminRequest = { authPortal: 'admin' as const }
 export const crmApi = {
@@ -42,6 +45,8 @@ export const crmApi = {
   listMyProspects: () => api.get<Envelope<ProspectListItem[]>>('/v1/crm/my-prospects', adminRequest),
   getMyProspect: (prospectId: string) => api.get<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}`, adminRequest),
   updateMyProspect: (prospectId: string, input: UpdateProspectInput) => api.patch<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}`, input, adminRequest),
+  getProspectTransferCandidates: (prospectId: string) => api.get<Envelope<ProspectTransferCandidate[]>>(`/v1/crm/my-prospects/${prospectId}/transfer-candidates`, adminRequest),
+  transferProspect: (prospectId: string, input: ProspectTransferInput) => api.post<Envelope<ProspectDetail>>(`/v1/crm/my-prospects/${prospectId}/transfer`, input, adminRequest),
   createMyProspectPlannedActivity: (prospectId: string, input: CreateProspectPlannedActivityInput) => api.post<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities`, input, adminRequest),
   myProspectPlannedActivities: (prospectId: string) => api.get<Envelope<ProspectPlannedActivityListItem[]>>(`/v1/crm/my-prospects/${prospectId}/planned-activities`, adminRequest),
   myProspectPlannedActivity: (prospectId: string, activityId: string) => api.get<Envelope<ProspectPlannedActivityDetail>>(`/v1/crm/my-prospects/${prospectId}/planned-activities/${activityId}`, adminRequest),
