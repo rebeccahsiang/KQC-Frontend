@@ -11,7 +11,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const pageTitle = computed(() => String(route.meta.title || '後台管理'))
-const roleLabel = computed(() => authStore.user?.role || 'admin')
 const accountMenuOpen = ref(false)
 const accountTrigger = ref<HTMLButtonElement | null>(null)
 const accountMenu = ref<HTMLElement | null>(null)
@@ -107,7 +106,7 @@ onBeforeUnmount(() => {
           <span class="avatar">{{ authStore.adminName.slice(0, 1) }}</span>
           <span class="identity-copy">
             <strong>{{ authStore.adminName }}</strong>
-            <small>{{ roleLabel }}</small>
+            <small>{{ authStore.adminRoleLabel }}</small>
           </span>
           <Icon icon="lucide:chevron-down" class="account-chevron" aria-hidden="true" />
         </button>

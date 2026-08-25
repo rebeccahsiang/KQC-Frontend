@@ -5,7 +5,13 @@ import { isAxiosError } from 'axios'
 import { authApi, type AuthUser, type LoginInput, type Portal } from '@/api/auth'
 import { configureAuthRuntime } from '@/auth/authRuntime'
 import { getRuntimeAuthPortal } from '@/auth/authRuntime'
-import { canManageAccounts, canManageOrganization, hasAnyCapability, hasCapability } from '@/config/capabilities'
+import {
+  adminCapabilityPresentationLabel,
+  canManageAccounts,
+  canManageOrganization,
+  hasAnyCapability,
+  hasCapability
+} from '@/config/capabilities'
 
 export type AuthMode = 'login' | 'register' | 'forgot'
 export type AuthStatus = 'unknown' | 'authenticated' | 'unauthenticated'
@@ -49,7 +55,9 @@ export const useAuthStore = defineStore('auth', () => {
   )
   const canAccessAccountManagement = computed(() => canManageAccounts(user.value))
   const canAccessOrganizationManagement = computed(() => canManageOrganization(user.value))
-  const adminName = computed(() => user.value?.name || '未登入使用者')
+  const memberName = computed(() => user.value?.name || '未登入使用者')
+  const adminName = computed(() => user.value?.staffIdentity?.displayName || '後台使用者')
+  const adminRoleLabel = computed(() => adminCapabilityPresentationLabel(user.value))
 
   const openAuthModal = (mode: AuthMode = 'login', message = '') => {
     authMode.value = mode
@@ -123,6 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.adminElevation(password)
       adminAccessToken.value = response.data.accessToken
       adminStatus.value = 'authenticated'
+      user.value = response.data.user
       return { success: true, message: '後台驗證成功' }
     } catch (error) {
       clearAdminAuth()
@@ -165,7 +174,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (portal === 'admin') {
         adminAccessToken.value = response.data.accessToken
         adminStatus.value = 'authenticated'
-        user.value ||= response.data.user
+        user.value = response.data.user
       } else {
         accessToken.value = response.data.accessToken
         authStatus.value = 'authenticated'
@@ -273,7 +282,9 @@ export const useAuthStore = defineStore('auth', () => {
     isAdminPortalUser,
     canAccessAccountManagement,
     canAccessOrganizationManagement,
+    memberName,
     adminName,
+    adminRoleLabel,
     openAuthModal,
     closeAuthModal,
     clearAuth,

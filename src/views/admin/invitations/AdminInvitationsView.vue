@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { isAxiosError } from 'axios'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -23,7 +23,40 @@ const feedback = ref('')
 const errorMessage = ref('')
 const form = reactive<{ email: string; name: string; capabilities: Capability[]; organizationUnitId: string; assignmentRole: AssignmentRole }>({ email: '', name: '', capabilities: [], organizationUnitId: '', assignmentRole: 'member' })
 const staffOptions = (Object.keys(CAPABILITY_LABELS) as Capability[]).filter((item) => item !== 'MEMBER').map((value) => ({ value, label: CAPABILITY_LABELS[value] }))
-const organizationOptions = computed(() => organizations.value.filter((item) => item.status === 'active').map((item) => ({ value: item.id, label: `${item.name}（${item.domain}）`, domain: item.domain })))
+const supportsSales = computed(() => form.capabilities.includes('SALES') || form.capabilities.includes('SALES_SUPERVISOR'))
+const organizationOptions = computed(() => organizations.value
+  .filter((item) => item.status === 'active' && (
+    (item.domain === 'platform' && form.capabilities.includes('PLATFORM_MANAGER')) ||
+    (item.domain === 'sales' && supportsSales.value)
+  ))
+  .map((item) => ({ value: item.id, label: `${item.name}（${item.domain}）`, domain: item.domain })))
+const selectedOrganization = computed(() => organizations.value.find((item) => item.id === form.organizationUnitId) || null)
+const assignmentRoleOptions = computed(() => {
+  if (selectedOrganization.value?.domain === 'platform') return [{ label: '主管', value: 'supervisor' as const }]
+  if (selectedOrganization.value?.domain !== 'sales') return []
+  return [
+    ...(supportsSales.value ? [{ label: '成員', value: 'member' as const }] : []),
+    ...(form.capabilities.includes('SALES_SUPERVISOR') ? [{ label: '主管', value: 'supervisor' as const }] : [])
+  ]
+})
+
+const resetForm = () => {
+  form.email = ''; form.name = ''; form.capabilities = []
+  form.organizationUnitId = ''; form.assignmentRole = 'member'
+}
+const reconcileOrganizationSelection = () => {
+  if (!form.organizationUnitId) { form.assignmentRole = 'member'; return }
+  if (!organizationOptions.value.some((option) => option.value === form.organizationUnitId)) {
+    form.organizationUnitId = ''; form.assignmentRole = 'member'; return
+  }
+  const roles = assignmentRoleOptions.value.map((option) => option.value)
+  if (!roles.includes(form.assignmentRole)) form.assignmentRole = roles[0] || 'member'
+}
+const openInvitationDialog = () => { resetForm(); dialogVisible.value = true }
+const closeInvitationDialog = () => { dialogVisible.value = false }
+
+watch(() => [...form.capabilities], reconcileOrganizationSelection)
+watch(() => form.organizationUnitId, reconcileOrganizationSelection)
 
 const backendMessage = (error: unknown) => isAxiosError(error)
   ? (error.response?.data as { error?: { message?: string } })?.error?.message || '邀請操作失敗。'
@@ -45,6 +78,7 @@ const createInvitation = async () => {
     const response = await adminInvitationsApi.create({ email: form.email, name: form.name,
       capabilities: form.capabilities, ...(form.organizationUnitId ? { organizationUnitId: form.organizationUnitId, assignmentRole: form.assignmentRole } : {}) })
     feedback.value = response.data.mailDelivered ? '邀請已建立並完成寄送。' : '邀請已建立，但郵件未送達；請勿重複建立。'
+    resetForm()
     dialogVisible.value = false
     await load()
   } catch (error) { errorMessage.value = backendMessage(error) } finally { submitting.value = false }
@@ -57,7 +91,7 @@ onMounted(load)
 
 <template>
   <section class="management-view">
-    <header><div><p class="eyebrow">帳號治理</p><h1>員工邀請</h1></div><Button label="建立邀請" icon="pi pi-plus" @click="dialogVisible = true" /></header>
+    <header><div><p class="eyebrow">帳號治理</p><h1>員工邀請</h1></div><Button label="建立邀請" icon="pi pi-plus" @click="openInvitationDialog" /></header>
     <Message v-if="feedback" severity="success" :closable="false">{{ feedback }}</Message>
     <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
     <p class="safe-note">同一 Email 若已是會員，接受邀請時會沿用既有帳號並增加 Staff Capability，不會建立重複 User。</p>
@@ -67,13 +101,13 @@ onMounted(load)
       <Column field="status" header="狀態" /><Column field="expiresAt" header="到期時間" />
       <Column header="操作"><template #body="{ data }"><Button label="重寄" text :disabled="!['pending', 'expired'].includes(data.status)" @click="resend(data.id)" /><Button label="撤銷" text severity="danger" :disabled="data.status !== 'pending'" @click="revoke(data.id)" /></template></Column>
     </DataTable>
-    <Dialog v-model:visible="dialogVisible" modal header="建立 Staff Invitation" :style="{ width: 'min(38rem, calc(100vw - 2rem))' }">
+    <Dialog v-model:visible="dialogVisible" modal header="建立 Staff Invitation" :style="{ width: 'min(38rem, calc(100vw - 2rem))' }" @hide="resetForm">
       <div class="form-grid"><label>姓名<InputText v-model="form.name" /></label><label>Email<InputText v-model="form.email" type="email" /></label>
         <fieldset><legend>Staff Capabilities</legend><label v-for="option in staffOptions" :key="option.value"><input v-model="form.capabilities" type="checkbox" :value="option.value" />{{ option.label }}</label></fieldset>
         <label>組織（選填）<Select v-model="form.organizationUnitId" :options="organizationOptions" option-label="label" option-value="value" show-clear /></label>
-        <label v-if="form.organizationUnitId">組織角色<Select v-model="form.assignmentRole" :options="[{ label: '成員', value: 'member' }, { label: '主管', value: 'supervisor' }]" option-label="label" option-value="value" /></label>
+        <label v-if="form.organizationUnitId">組織角色<Select v-model="form.assignmentRole" :options="assignmentRoleOptions" option-label="label" option-value="value" /></label>
         <small>主管指派所需 Capability 由 Backend 依組織 domain 驗證。</small></div>
-      <template #footer><Button label="取消" severity="secondary" @click="dialogVisible = false" /><Button label="建立並寄送" :loading="submitting" :disabled="!form.capabilities.length" @click="createInvitation" /></template>
+      <template #footer><Button label="取消" severity="secondary" @click="closeInvitationDialog" /><Button label="建立並寄送" :loading="submitting" :disabled="!form.capabilities.length" @click="createInvitation" /></template>
     </Dialog>
   </section>
 </template>

@@ -13,6 +13,7 @@ export interface AuthUser {
   accountStatus: 'pending' | 'active' | 'suspended' | 'disabled'
   emailVerifiedAt: string | null
   mustChangePassword: boolean
+  staffIdentity: { displayName: string } | null
 }
 
 export interface AuthSession {

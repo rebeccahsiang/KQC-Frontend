@@ -234,7 +234,7 @@ const handleVoiceInput = (): void => {
       
         <!-- 狀態 B：已登入 -> 顯示使用者名稱與登出按鈕 -->
         <div v-else-if="authStore.initialized" class="user-profile-menu">
-          <span class="user-name-badge">{{ authStore.adminName }}</span>
+          <span class="user-name-badge">{{ authStore.memberName }}</span>
           <router-link
             v-if="authStore.isAdminPortalUser"
             to="/admin"
