@@ -11,6 +11,10 @@ import Aura from '@primevue/themes/aura'
 
 // 全域 SCSS / Tailwind 樣式
 // 核心修正：統一由 assets/styles/main.scss 載入全域樣式，移除單獨引入 _theme.scss 的舊路徑
+// Tailwind CSS v4 核心入口
+import '@/assets/styles/tailwind.css'
+
+// KQC 全域 SCSS / Design Tokens / Theme
 import '@/assets/styles/main.scss'
 
 const app = createApp(App)

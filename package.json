@@ -23,6 +23,7 @@
     "@tailwindcss/vite": "^4.3.2",
     "@types/node": "^26.1.0",
     "@vitejs/plugin-vue": "^6.0.7",
+    "sass": "^1.103.1",
     "sass-embedded": "^1.100.0",
     "typescript": "^6.0.3",
     "unplugin-icons": "^23.0.1",
