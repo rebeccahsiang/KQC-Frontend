@@ -5,7 +5,6 @@ import { useThemeStore } from '@/stores/themeStore'
 import HomeHeroSection from '@/components/home/HomeHeroSection.vue'
 import HomeIndustryWeatherSection from '@/components/home/HomeIndustryWeatherSection.vue'
 import HomePromoCarouselSection from '@/components/home/HomePromoCarouselSection.vue'
-import HomeServicesSection from '@/components/home/HomeServicesSection.vue'
 import HomeServiceGuideSection from '@/components/home/HomeServiceGuideSection.vue'
 import HomePersonasSection from '@/components/home/HomePersonasSection.vue'
 import HomeInsightsSection from '@/components/home/HomeInsightsSection.vue'
@@ -55,7 +54,6 @@ onMounted(async () => {
       <HomeIndustryWeatherSection />
       <div class="system-status-pill"><span class="pulse-dot"></span><span class="status-msg">系統全端狀態：{{ backendMessage }}</span></div>
       <HomePromoCarouselSection />
-      <HomeServicesSection />
       <HomeServiceGuideSection />
       <HomePersonasSection />
       <HomeInsightsSection />

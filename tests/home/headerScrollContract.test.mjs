@@ -37,8 +37,27 @@ test('compact header remains navigable and the mobile header stays usable', () =
   assert.doesNotMatch(compactPosition, /display:\s*none|visibility:\s*hidden|opacity:\s*0|translateY/)
   assert.match(header, /\.is-compact[\s\S]*\.compact-brand-link[\s\S]*display: inline-flex/)
   assert.match(header, /\.compact-nav-links[\s\S]*display: flex/)
-  assert.match(header, /@media \(max-width: 720px\)[\s\S]*\.header-section-a\.is-collapsed[\s\S]*visibility: visible/)
+  assert.match(header, /@media \(max-width: 768px\)[\s\S]*\.header-section-a\.is-collapsed[\s\S]*visibility: visible/)
   assert.match(header, /active-class="nav-item--active"/)
+})
+
+test('mobile navigation stays in flow above the utility and search surface', () => {
+  const header = read('src/components/layout/FrontHeader.vue')
+  const mobileStart = header.indexOf('@media (max-width: 768px)')
+  const mobileEnd = header.indexOf('@media (prefers-reduced-motion: reduce)', mobileStart)
+  const mobile = header.slice(mobileStart, mobileEnd)
+
+  assert.ok(mobileStart >= 0 && mobileEnd > mobileStart)
+  assert.equal((header.match(/v-for="item in navItems"/g) ?? []).length, 2)
+  for (const path of ['/products', '/company', '/insights', '/contact']) assert.ok(header.includes(`path: '${path}'`))
+  assert.match(header, /:aria-expanded="mobileNavigationOpen"/)
+  assert.match(header, /mobileNavigationOpen \? 'lucide:x' : 'lucide:menu'/)
+  assert.match(header, /@click="mobileNavigationOpen = false"/)
+  assert.ok(header.indexOf('id="public-navigation"') < header.indexOf('class="header-section-b"'))
+  assert.match(mobile, /\.header-section-a, \.header-section-a\.is-collapsed \{ max-height: none !important; overflow: visible; \}/)
+  assert.match(mobile, /\.main-nav-links--open \{ display: flex; \}/)
+  assert.doesNotMatch(mobile, /\.main-nav-links(?:--open)?\s*\{[^}]*position:\s*(?:absolute|fixed)/s)
+  assert.doesNotMatch(mobile, /\.main-nav-links \.nav-item\s*\{[^}]*display:\s*none/s)
 })
 
 test('search is navigation assistance and announcement remains separate', () => {

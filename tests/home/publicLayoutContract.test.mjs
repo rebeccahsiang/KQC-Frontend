@@ -36,11 +36,17 @@ test('header exposes responsive navigation and neutral utility foundations', () 
 
 test('breadcrumb is route-derived, omitted on home, and ready for deeper routes', () => {
   const breadcrumb = read('src/components/layout/PublicBreadcrumb.vue')
+  const layout = read('src/components/layout/PublicLayout.vue')
   assert.match(breadcrumb, /useRoute/)
   assert.match(breadcrumb, /v-if="currentLabel"/)
   assert.match(breadcrumb, /aria-label="麵包屑導覽"/)
   assert.match(breadcrumb, /aria-current="page"/)
   assert.doesNotMatch(breadcrumb, /Home:/)
+  for (const routeName of ['Products', 'Company', 'Insights', 'Contact']) {
+    assert.match(breadcrumb, new RegExp(`${routeName}:`))
+  }
+  assert.match(layout, /\.public-layout \{[^}]*padding-top: 1rem;/)
+  assert.doesNotMatch(`${layout}\n${breadcrumb}`, /\/products[^'"\n]*\{[^}]*margin|products-(?:breadcrumb|clearance)/i)
 })
 
 test('first visit remains light while saved valid preferences and switching are preserved', () => {

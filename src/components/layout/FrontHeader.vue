@@ -577,9 +577,10 @@ const handleSearch = (): void => {
 .user-name-badge { white-space: nowrap; }
 .staff-entry-btn { min-height: 2.5rem; text-decoration: none; white-space: nowrap; }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .kqc-sticky-header.is-compact { position: sticky; top: 1rem; left: auto; margin: 0 auto; transform: none; }
-  .header-section-a.is-collapsed { max-height: 200px !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; border-bottom-color: var(--border-line, var(--border-grey)) !important; }
+  .header-section-a, .header-section-a.is-collapsed { max-height: none !important; overflow: visible; }
+  .header-section-a.is-collapsed { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; border-bottom-color: var(--border-line, var(--border-grey)) !important; }
   .is-compact .compact-brand-link, .is-compact .compact-nav-links { display: none; }
   .is-compact .search-bar-container { display: block; }
   .header-inner-a { position: relative; flex-wrap: wrap; padding: 0.625rem 0.75rem; }

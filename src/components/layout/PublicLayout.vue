@@ -17,6 +17,6 @@ import BackToTop from '@/components/layout/BackToTop.vue'
 </template>
 
 <style scoped lang="scss">
-.public-layout { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg-main); color: var(--text-main); }
+.public-layout { min-height: 100vh; padding-top: 1rem; display: flex; flex-direction: column; background: var(--bg-main); color: var(--text-main); }
 .public-layout__content { flex: 1; min-width: 0; }
 </style>
