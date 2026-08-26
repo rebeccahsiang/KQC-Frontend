@@ -67,6 +67,29 @@ onMounted(() => {
     </header>
 
     <main class="main-content">
+      <section class="section-card typography-demo" aria-labelledby="typography-demo-title">
+        <h2 id="typography-demo-title" class="section-title">Typography</h2>
+        <h3>Primitive scale</h3>
+        <div class="type-sample-grid">
+          <span class="type-caption">xs · 12px</span>
+          <span class="type-metadata">sm · 14px</span>
+          <span class="type-body">md · 16px</span>
+          <span class="type-body-emphasis">lg · 18px</span>
+          <span class="type-card-title">xl · 20px</span>
+          <span class="type-section-title">2xl · 24px</span>
+        </div>
+        <h3>Semantic roles</h3>
+        <div class="type-sample-grid">
+          <span class="type-caption">Caption</span>
+          <span class="type-metadata">Metadata</span>
+          <span class="type-label">Label</span>
+          <span class="type-body-small">Body small</span>
+          <span class="type-body">Body</span>
+          <span class="type-body-emphasis">Body emphasis</span>
+          <span class="type-card-title">Card title</span>
+          <span class="type-section-title">Section title</span>
+        </div>
+      </section>
       <!-- 0. 色彩系統 Color Palette -->
       <section class="section-card">
         <h2 class="section-title">色彩系統調色盤 (70 / 25 / 5 金比)</h2>
@@ -209,13 +232,12 @@ onMounted(() => {
 }
 
 .page-title {
-  font-size: 28px;
   font-weight: 700;
   color: var(--kqc-text-main);
 }
 
 .page-subtitle {
-  font-size: 14px;
+  font-size: $kqc-type-body-small;
   color: var(--kqc-text-muted);
   margin-top: 4px;
 }
@@ -231,7 +253,7 @@ onMounted(() => {
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: $kqc-type-section-title;
   font-weight: 700;
   margin-bottom: 20px;
   padding-left: 12px;
@@ -277,8 +299,12 @@ onMounted(() => {
   }
 }
 
-.color-name { font-size: 13px; font-weight: 600; }
-.color-hex { font-size: 12px; opacity: 0.85; }
+.color-name { font-size: $kqc-type-label; font-weight: 600; }
+.color-hex { font-size: $kqc-type-caption; opacity: 0.85; }
+
+.typography-demo h3 { margin: 1.5rem 0 0.75rem; font-size: $kqc-type-card-title; }
+.type-sample-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; align-items: baseline; }
+.type-sample-grid span { margin: 0; }
 
 .demo-flex-wrap {
   display: flex;
@@ -320,16 +346,16 @@ onMounted(() => {
     font-weight: 700;
     padding: 2px 8px;
     border-radius: var(--kqc-radius-sm);
-    font-size: 12px;
+    font-size: $kqc-type-caption;
   }
-  .case-no { font-size: 12px; color: var(--kqc-text-muted); }
-  .case-title { font-size: 16px; font-weight: 700; color: var(--kqc-text-main); margin: 0; }
-  .case-info { font-size: 13px; color: var(--kqc-text-muted); p { margin: 2px 0; } }
-  .case-desc { font-size: 13px; color: var(--kqc-text-main); line-height: 1.5; margin: 0; }
-  .case-footer { font-size: 12px; color: var(--kqc-success); font-weight: 600; }
+  .case-no { font-size: $kqc-type-caption; color: var(--kqc-text-muted); }
+  .case-title { font-size: $kqc-type-body; font-weight: 700; color: var(--kqc-text-main); margin: 0; }
+  .case-info { font-size: $kqc-type-body-small; color: var(--kqc-text-muted); p { margin: 2px 0; } }
+  .case-desc { font-size: $kqc-type-body-small; color: var(--kqc-text-main); line-height: 1.5; margin: 0; }
+  .case-footer { font-size: $kqc-type-caption; color: var(--kqc-success); font-weight: 600; }
 }
 
 .text-accent { color: var(--kqc-accent); font-weight: 700; }
-.card-desc { font-size: 14px; color: var(--kqc-text-muted); line-height: 1.6; }
+.card-desc { font-size: $kqc-type-body-small; color: var(--kqc-text-muted); line-height: 1.6; }
 .mt-4 { margin-top: 16px; }
 </style>

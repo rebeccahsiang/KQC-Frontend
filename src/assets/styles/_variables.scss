@@ -34,6 +34,17 @@ $kqc-font-size-lg: 1.125rem; // 18px
 $kqc-font-size-xl: 1.25rem;  // 20px
 $kqc-font-size-2xl: 1.5rem; // 24px
 
+// Semantic typography roles. These aliases keep the primitive scale as the
+// single source of truth while giving component text an explicit purpose.
+$kqc-type-caption: $kqc-font-size-xs;
+$kqc-type-metadata: $kqc-font-size-sm;
+$kqc-type-label: $kqc-font-size-sm;
+$kqc-type-body-small: $kqc-font-size-sm;
+$kqc-type-body: $kqc-font-size-md;
+$kqc-type-body-emphasis: $kqc-font-size-lg;
+$kqc-type-card-title: $kqc-font-size-xl;
+$kqc-type-section-title: $kqc-font-size-2xl;
+
 // 4. 圓角規格 (Radius)
 $kqc-radius-sm: 0.25rem;   // 4px
 $kqc-radius-md: 0.375rem;  // 6px

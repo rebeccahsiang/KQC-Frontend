@@ -4,6 +4,7 @@
 
 // 🎯 關鍵修復：必須在此檔案頂層明確引入 Tokens，否則 Dart Sass 無法識別變數
 @use "./tokens" as *;
+@use "./variables" as *;
 
 // ==========================================================================
 // 🖋️ 三爵資訊 (KQC) 排版與字型系統 (Typography System)
@@ -46,6 +47,17 @@ p, span, li {
 .text-muted { color: var(--text-muted) !important; }
 .text-brand { color: var(--brand-primary) !important; }
 .text-danger { color: var(--status-alert) !important; }
+
+// Semantic size utilities. Components may use these classes directly or use
+// the matching $kqc-type-* aliases when typography is owned by scoped styles.
+.type-caption { font-size: $kqc-type-caption; }
+.type-metadata { font-size: $kqc-type-metadata; }
+.type-label { font-size: $kqc-type-label; }
+.type-body-small { font-size: $kqc-type-body-small; }
+.type-body { font-size: $kqc-type-body; }
+.type-body-emphasis { font-size: $kqc-type-body-emphasis; }
+.type-card-title { font-size: $kqc-type-card-title; }
+.type-section-title { font-size: $kqc-type-section-title; }
 
 // B2B 數據標籤微調
 .text-price {
