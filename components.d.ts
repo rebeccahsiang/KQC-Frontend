@@ -25,6 +25,7 @@ declare module 'vue' {
     CaseShowcase: typeof import('./src/components/showcase/CaseShowcase.vue')['default']
     CaseTableSection: typeof import('./src/components/admin/CaseTableSection.vue')['default']
     FrontHeader: typeof import('./src/components/layout/FrontHeader.vue')['default']
+    IndustryWeatherCard: typeof import('./src/components/home/IndustryWeatherCard.vue')['default']
     KqcBadge: typeof import('./src/components/ui/KqcBadge.vue')['default']
     KqcBreadcrumb: typeof import('./src/components/ui/KqcBreadcrumb.vue')['default']
     KqcButton: typeof import('./src/components/ui/KqcButton.vue')['default']

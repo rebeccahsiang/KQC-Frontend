@@ -5,6 +5,7 @@ import axios from 'axios'
 import CaseShowcase from '@/components/showcase/CaseShowcase.vue'
 import FrontHeader from '@/components/layout/FrontHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import IndustryWeatherCard from '@/components/home/IndustryWeatherCard.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
@@ -24,7 +25,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000
 const casesData = ref<any[]>([])
 const textInput = ref<string>('')
 const isLoading = ref<boolean>(false)
-const marketScore = ref<number>(71)
 
 // UI 狀態控制 
 const isHeaderCompact = ref<boolean>(false)
@@ -206,20 +206,7 @@ onUnmounted(() => {
         </div>
 
         <div class="hero-gauge-right">
-          <div class="gauge-card-header">
-            <h3>供需晴雨窗</h3>
-            <span class="source-lbl">資料來源：政府公開網站</span>
-          </div>
-          <div class="gauge-card-body">
-            <div class="gauge-circle-outer">
-              <span class="gauge-num">{{ marketScore }}%</span>
-              <span class="gauge-txt">熱絡分數</span>
-            </div>
-            <div class="gauge-status-info">
-              <p class="status-active">🟢 當前市場需求強勁</p>
-              <p class="status-advice">建議買家提早布局，賣家即刻掛牌諮詢</p>
-            </div>
-          </div>
+          <IndustryWeatherCard />
         </div>
       </section>
 
