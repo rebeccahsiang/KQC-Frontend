@@ -20,9 +20,11 @@ test('the five primary public routes share one layout shell', () => {
 
 test('header exposes responsive navigation and neutral utility foundations', () => {
   const header = read('src/components/layout/FrontHeader.vue')
-  for (const path of ['/', '/products', '/company', '/insights', '/contact']) {
+  for (const path of ['/products', '/company', '/insights', '/contact']) {
     assert.ok(header.includes(`path: '${path}'`))
   }
+  assert.doesNotMatch(header, /\{ name: '首頁', path: '\/' \}/)
+  assert.match(header, /<router-link to="\/" class="brand-link" aria-label="回首頁">/)
   assert.match(header, /active-class="nav-item--active"/)
   assert.match(header, /mobileNavigationOpen/)
   assert.match(header, /aria-controls="public-navigation"/)

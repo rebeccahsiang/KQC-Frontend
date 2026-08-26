@@ -20,14 +20,18 @@ const mobileNavigationOpen = ref(false)
 const authStore = useAuthStore() // 2. 實例化 authStore (徹底修復 Template 紅字)
 
 // 頁面滾動監聽：超過 50px 觸發 A 區塊平滑折疊收合
-const isScrolled = ref<boolean>(false)
+const isCompact = ref(false)
+const COMPACT_ENTER_Y = 140
+const FULL_RETURN_Y = 32
 
 const handleScroll = (): void => {
   const scrollTop = window.scrollY || document.documentElement.scrollTop
-  isScrolled.value = scrollTop > 50
+  if (!isCompact.value && scrollTop > COMPACT_ENTER_Y) isCompact.value = true
+  else if (isCompact.value && scrollTop < FULL_RETURN_Y) isCompact.value = false
 }
 
 onMounted(() => {
+  handleScroll()
   window.addEventListener('scroll', handleScroll, { passive: true })
   // Public headers wait on the existing session hydrator so capability-based
   // account actions never render from an unsettled or locally reconstructed identity.
@@ -40,7 +44,6 @@ onUnmounted(() => {
 
 // 導覽選單定義
 const navItems: NavItem[] = [
-  { name: '首頁', path: '/' },
   { name: '產品櫥窗', path: '/products' },
   { name: '我們公司', path: '/company' },
   { name: '產業洞察', path: '/insights' },
@@ -60,44 +63,17 @@ const handleSearch = (): void => {
   }
 }
 
-// 語音輸入邏輯 (Web Speech API)
-const handleVoiceInput = (): void => {
-  const globalWindow = window as any
-  const SpeechRecognition = globalWindow.SpeechRecognition || globalWindow.webkitSpeechRecognition
-
-  if (!SpeechRecognition) {
-    alert('您的瀏覽器暫時不支援語音辨識，請直接輸入關鍵字。')
-    return
-  }
-
-  const recognition = new SpeechRecognition()
-  recognition.lang = 'zh-TW'
-  recognition.continuous = false
-  recognition.interimResults = false
-
-  recognition.onresult = (event: any): void => {
-    const transcript = event.results[0][0].transcript
-    searchQuery.value = transcript
-    handleSearch()
-  }
-
-  recognition.onerror = (event: any): void => {
-    console.error('語音辨識失敗:', event.error)
-  }
-
-  recognition.start()
-}
 </script>
 
 <template>
-  <header class="kqc-sticky-header">
+  <header class="kqc-sticky-header" :class="{ 'is-compact': isCompact }">
     <!-- ========================================================================= -->
     <!-- 🟥 【全域區 A 主導覽列】：向下滾動時滑順折疊收合 -->
     <!-- ========================================================================= -->
-    <div class="header-section-a" :class="{ 'is-collapsed': isScrolled }">
+    <div class="header-section-a" :class="{ 'is-collapsed': isCompact }">
       <div class="header-inner-a">
         <!-- 1. 左側 Logo 品牌區 -->
-        <router-link to="/" class="brand-link">
+        <router-link to="/" class="brand-link" aria-label="回首頁">
           <div class="brand-logo-badge">KQC</div>
           <div class="brand-info">
             <h1 class="brand-title">三爵資訊</h1>
@@ -113,7 +89,7 @@ const handleVoiceInput = (): void => {
           </span>
           <div class="ticker-content">
             <span class="ticker-text">
-              ⚡ 恭喜【甲種運輸業牌照 #KQC-2026-0814】成功完成誠意撮合！目前線上優質待售車隊資產 12 筆，歡迎車行老闆免費預約諮詢...
+              平台公告、產業提醒與新服務資訊將顯示於此。
             </span>
           </div>
         </div>
@@ -142,6 +118,13 @@ const handleVoiceInput = (): void => {
     <!-- ========================================================================= -->
     <div class="header-section-b">
       <div class="header-inner-b">
+        <router-link to="/" class="compact-brand-link" aria-label="回首頁">
+          <span class="compact-brand-mark">KQC</span>
+          <span>三爵資訊</span>
+        </router-link>
+        <nav class="compact-nav-links" aria-label="精簡主要導覽">
+          <router-link v-for="item in navItems" :key="item.path" :to="item.path" active-class="is-active">{{ item.name }}</router-link>
+        </nav>
         <!-- 1. 左側：動態麵包屑 -->
         <!-- 2. 中央：語意搜尋框 -->
       <div class="search-bar-container">
@@ -150,19 +133,10 @@ const handleVoiceInput = (): void => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="全域搜尋：例如「甲種運輸」、「北部計程車牌」..."
+            placeholder="輸入需求，快速找到適合的服務"
             class="search-input"
             @keyup.enter="handleSearch"
           />
-          <button
-            type="button"
-            class="mic-btn"
-            title="語音輸入語意需求"
-            aria-label="語音輸入"
-            @click="handleVoiceInput"
-          >
-            <Icon icon="lucide:mic" class="mic-icon" />
-          </button>
         </div>
       </div>
 
@@ -259,6 +233,15 @@ const handleVoiceInput = (): void => {
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
+}
+
+.kqc-sticky-header.is-compact {
+  position: fixed;
+  top: 0.5rem;
+  left: 50%;
+  z-index: 100;
+  margin: 0;
+  transform: translateX(-50%);
 }
 
 .header-section-a {
@@ -419,6 +402,11 @@ const handleVoiceInput = (): void => {
 
 .header-section-b {
   padding: 0.625rem 0;
+  border: 1px solid var(--border-line, var(--border-grey));
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
 }
 
 .header-inner-b {
@@ -429,6 +417,34 @@ const handleVoiceInput = (): void => {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.compact-brand-link,
+.compact-nav-links { display: none; }
+
+.is-compact {
+  .header-section-b { padding-block: 0.45rem; }
+  .header-inner-b { max-width: 1340px; }
+  .compact-brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary, var(--text-main));
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .compact-brand-mark { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 0.45rem; background: var(--accent-gold, var(--accent)); color: #1e293b; font-size: 0.72rem; }
+  .compact-nav-links {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.65rem, 1.5vw, 1.25rem);
+
+    a { color: var(--text-primary, var(--text-main)); font-size: 0.78rem; font-weight: 650; text-decoration: none; white-space: nowrap; }
+    a:hover, a.is-active { color: var(--accent-gold, var(--accent)); }
+  }
+  .search-bar-container { display: none; }
 }
 
 .search-bar-container {
@@ -481,23 +497,6 @@ const handleVoiceInput = (): void => {
       }
     }
 
-    .mic-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.2rem;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      color: var(--text-muted, #64748b);
-      flex-shrink: 0;
-      transition: color 0.15s ease, transform 0.15s ease;
-
-      &:hover {
-        color: var(--accent-gold, #eab308);
-        transform: scale(1.1);
-      }
-    }
   }
 }
 
@@ -579,6 +578,10 @@ const handleVoiceInput = (): void => {
 .staff-entry-btn { min-height: 2.5rem; text-decoration: none; white-space: nowrap; }
 
 @media (max-width: 720px) {
+  .kqc-sticky-header.is-compact { position: sticky; top: 1rem; left: auto; margin: 0 auto; transform: none; }
+  .header-section-a.is-collapsed { max-height: 200px !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; border-bottom-color: var(--border-line, var(--border-grey)) !important; }
+  .is-compact .compact-brand-link, .is-compact .compact-nav-links { display: none; }
+  .is-compact .search-bar-container { display: block; }
   .header-inner-a { position: relative; flex-wrap: wrap; padding: 0.625rem 0.75rem; }
   .brand-logo-badge { width: 2.5rem !important; height: 2.5rem !important; font-size: 1rem !important; }
   .brand-info, .market-ticker-wrapper { display: none; }
