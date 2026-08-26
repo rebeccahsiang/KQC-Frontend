@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useThemeStore } from '@/stores/themeStore'
@@ -12,15 +12,11 @@ interface NavItem {
   path: string
 }
 
-interface BreadcrumbItem {
-  name: string
-  path: string
-}
-
 const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
 const caseStore = useCaseStore()
+const mobileNavigationOpen = ref(false)
 const authStore = useAuthStore() // 2. 實例化 authStore (徹底修復 Template 紅字)
 
 // 頁面滾動監聽：超過 50px 觸發 A 區塊平滑折疊收合
@@ -44,26 +40,12 @@ onUnmounted(() => {
 
 // 導覽選單定義
 const navItems: NavItem[] = [
+  { name: '首頁', path: '/' },
   { name: '產品櫥窗', path: '/products' },
   { name: '我們公司', path: '/company' },
   { name: '產業洞察', path: '/insights' },
   { name: '聯絡我們', path: '/contact' },
 ]
-
-// 動態麵包屑 (Breadcrumbs) 計算
-const breadcrumbs = computed<BreadcrumbItem[]>(() => {
-  const matchedRoutes = route.matched.filter((item) => item.meta && item.meta.title)
-  if (matchedRoutes.length > 0) {
-    return matchedRoutes.map((item) => ({
-      name: item.meta.title as string,
-      path: item.path || '/',
-    }))
-  }
-  return [
-    { name: '首頁', path: '/' },
-    { name: '業務櫥窗', path: '/products' },
-  ]
-})
 
 // 全域語意搜尋邏輯
 const searchQuery = ref<string>('')
@@ -137,13 +119,17 @@ const handleVoiceInput = (): void => {
         </div>
 
         <!-- 3. A 區主選單連結 (明確導向 /products, /company, /insights, /contact) -->
-        <nav class="main-nav-links">
+        <button type="button" class="mobile-nav-toggle" :aria-expanded="mobileNavigationOpen" aria-controls="public-navigation" aria-label="切換主要導覽" @click="mobileNavigationOpen = !mobileNavigationOpen">
+          <Icon :icon="mobileNavigationOpen ? 'lucide:x' : 'lucide:menu'" />
+        </button>
+        <nav id="public-navigation" class="main-nav-links" :class="{ 'main-nav-links--open': mobileNavigationOpen }" aria-label="主要導覽">
           <router-link
             v-for="item in navItems"
             :key="item.path"
             :to="item.path"
             class="nav-item"
             active-class="nav-item--active"
+            @click="mobileNavigationOpen = false"
           >
             {{ item.name }}
           </router-link>
@@ -157,20 +143,6 @@ const handleVoiceInput = (): void => {
     <div class="header-section-b">
       <div class="header-inner-b">
         <!-- 1. 左側：動態麵包屑 -->
-        <div class="breadcrumbs-container">
-          <Icon icon="lucide:home" class="home-icon" />
-          <template v-for="(crumb, index) in breadcrumbs" :key="index">
-            <Icon icon="lucide:chevron-right" class="chevron-icon" />
-            <router-link
-              :to="crumb.path"
-              class="crumb-item"
-              :class="{ 'is-active': index === breadcrumbs.length - 1 }"
-            >
-              {{ crumb.name }}
-            </router-link>
-          </template>
-        </div>
-
         <!-- 2. 中央：語意搜尋框 -->
       <div class="search-bar-container">
         <div class="search-input-group">
@@ -200,6 +172,7 @@ const handleVoiceInput = (): void => {
         <button
           type="button"
           class="control-btn theme-btn"
+          :aria-label="themeStore.isDark ? '切換至淺色模式' : '切換至深色模式'"
           :title="themeStore.isDark ? '切換為雲霧極光白亮色主題' : '切換為黑曜石暗黑戰情室'"
           @click="themeStore.toggleTheme"
         >
@@ -210,15 +183,13 @@ const handleVoiceInput = (): void => {
         </button>
       
         <!-- FAQ 按鈕 -->
-        <button type="button" class="control-btn faq-btn" title="常見問題 FAQ">
+        <button type="button" class="control-btn faq-btn" title="常見問題 FAQ" aria-label="常見問題 FAQ">
           <Icon icon="lucide:book-open" class="control-icon" />
         </button>
       
         <!-- 系統提醒 -->
-        <button type="button" class="control-btn bell-btn" title="即時系統訊息提醒">
+        <button type="button" class="control-btn bell-btn" title="通知（目前沒有新通知）" aria-label="通知（目前沒有新通知）">
           <Icon icon="lucide:bell" class="control-icon" />
-          <span class="pulse-ring"></span>
-          <span class="pulse-dot"></span>
         </button>
       
         <!-- 狀態 A：未登入 -> 顯示會員登入按鈕 -->
@@ -226,6 +197,7 @@ const handleVoiceInput = (): void => {
           v-if="authStore.initialized && !authStore.isAuthenticated"
           type="button"
           class="control-btn login-btn"
+          aria-label="會員登入"
           title="會員登入"
           @click="authStore.openAuthModal('login')"
         >
@@ -257,6 +229,7 @@ const handleVoiceInput = (): void => {
           <button
             type="button"
             class="control-btn logout-btn"
+            aria-label="安全登出"
             title="安全登出"
             @click="authStore.logout()"
           >
@@ -358,7 +331,7 @@ const handleVoiceInput = (): void => {
   flex: 1;
   max-width: 45rem;
   background-color: var(--bg-main);
-  border: 1px solid var(--border-line);
+  border: 1px solid var(--border-line, var(--border-grey));
   border-radius: 9999px;
   padding: 0.375rem 0.875rem;
   display: flex;
@@ -432,6 +405,18 @@ const handleVoiceInput = (): void => {
   }
 }
 
+.mobile-nav-toggle {
+  display: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 1px solid var(--border-line);
+  border-radius: 0.5rem;
+  background: var(--bg-card);
+  color: var(--text-primary, var(--text-main));
+  cursor: pointer;
+}
+
 .header-section-b {
   padding: 0.625rem 0;
 }
@@ -444,37 +429,6 @@ const handleVoiceInput = (): void => {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-}
-
-.breadcrumbs-container {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  flex-shrink: 0;
-
-  .home-icon {
-    width: 0.9375rem;
-    height: 0.9375rem;
-    color: var(--accent-gold, #eab308);
-  }
-
-  .chevron-icon {
-    width: 0.8125rem;
-    height: 0.8125rem;
-    opacity: 0.5;
-  }
-
-  .crumb-item {
-    color: var(--text-muted);
-    text-decoration: none;
-
-    &.is-active {
-      color: var(--text-primary);
-      font-weight: 600;
-    }
-  }
 }
 
 .search-bar-container {
@@ -585,29 +539,6 @@ const handleVoiceInput = (): void => {
     }
   }
 
-  .bell-btn {
-    position: relative;
-    .pulse-ring {
-      position: absolute;
-      top: 0.25rem;
-      right: 0.25rem;
-      width: 0.4375rem;
-      height: 0.4375rem;
-      background-color: #ef4444;
-      border-radius: 50%;
-      animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
-    .pulse-dot {
-      position: absolute;
-      top: 0.25rem;
-      right: 0.25rem;
-      width: 0.4375rem;
-      height: 0.4375rem;
-      background-color: #ef4444;
-      border-radius: 50%;
-    }
-  }
-
   .divider-line {
     width: 1px;
     height: 0.875rem;
@@ -648,11 +579,28 @@ const handleVoiceInput = (): void => {
 .staff-entry-btn { min-height: 2.5rem; text-decoration: none; white-space: nowrap; }
 
 @media (max-width: 720px) {
+  .header-inner-a { position: relative; flex-wrap: wrap; padding: 0.625rem 0.75rem; }
+  .brand-logo-badge { width: 2.5rem !important; height: 2.5rem !important; font-size: 1rem !important; }
+  .brand-info, .market-ticker-wrapper { display: none; }
+  .mobile-nav-toggle { display: grid; margin-left: auto; }
+  .main-nav-links {
+    display: none;
+    flex-basis: 100%;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.5rem 0;
+  }
+  .main-nav-links--open { display: flex; }
+  .main-nav-links .nav-item { padding: 0.7rem 0.25rem; }
   .header-inner-b { flex-wrap: wrap; padding: 0 0.75rem; }
-  .breadcrumbs-container { display: none; }
   .search-bar-container { order: 2; max-width: none; flex-basis: 100%; margin: 0; }
   .action-controls { width: 100%; justify-content: flex-end; }
   .user-name-badge { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-section-a, .ticker-text { transition: none; animation: none !important; }
 }
 
 @keyframes marquee {
@@ -660,10 +608,4 @@ const handleVoiceInput = (): void => {
   100% { transform: translateX(-100%); }
 }
 
-@keyframes ping {
-  75%, 100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
 </style>

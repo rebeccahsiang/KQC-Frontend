@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import CaseShowcase from '@/components/showcase/CaseShowcase.vue'
-import FrontHeader from '@/components/layout/FrontHeader.vue'
-import AppFooter from '@/components/layout/AppFooter.vue'
 import IndustryWeatherCard from '@/components/home/IndustryWeatherCard.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -27,9 +25,6 @@ const textInput = ref<string>('')
 const isLoading = ref<boolean>(false)
 
 // UI 狀態控制 
-const isHeaderCompact = ref<boolean>(false)
-const isFooterExpanded = ref<boolean>(false)
-const lastScrollTop = ref<number>(0)
 const activeWidgetDrawer = ref<'ai' | 'chat' | 'contact' | null>(null)
 
 // 工具函式：取得圖片資源 URL
@@ -130,33 +125,11 @@ const handleAiMatch = async () => {
   }
 }
 
-const handleScroll = () => {
-  const st = window.pageYOffset || document.documentElement.scrollTop
-  const windowHeight = window.innerHeight
-  const fullHeight = document.documentElement.scrollHeight
-
-  if (st > 100 && st > lastScrollTop.value) {
-    isHeaderCompact.value = true
-  } else if (st < lastScrollTop.value) {
-    isHeaderCompact.value = false
-  }
-  lastScrollTop.value = st <= 0 ? 0 : st
-
-  if (st + windowHeight >= fullHeight - 60) {
-    isFooterExpanded.value = true
-  }
-}
-
 const toggleWidgetDrawer = (type: 'ai' | 'chat' | 'contact') => {
   activeWidgetDrawer.value = activeWidgetDrawer.value === type ? null : type
 }
 
-const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
 onMounted(async () => {
-  window.addEventListener('scroll', handleScroll)
   try {
     const healthRes = await axios.get(`${API_BASE_URL}/api/health`)
     backendMessage.value = healthRes.data.message
@@ -167,17 +140,12 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-})
 </script>
 
 <template>
   <div class="kqc-home-wrapper" :class="{ 'dark-mode': themeStore.isDark }">
     
     <!-- 全域雙層 Header 導覽列 -->
-    <FrontHeader :is-compact="isHeaderCompact" />
-
     <!-- 主內容容器：對齊 1280px -->
     <main class="kqc-main-container">
       
@@ -350,7 +318,6 @@ onUnmounted(() => {
         <button class="btn-reserve-gold-cta" @click="router.push('/contact')">預約展示 ❯</button>
       </section>
 
-      <button class="btn-scroll-to-top" @click="scrollToTop" title="回到頁首">▲</button>
     </main>
 
     <!-- 右側懸浮 Widget 面板 -->
@@ -400,7 +367,6 @@ onUnmounted(() => {
     </div>
 
     <!-- 全域 Footer (1280px 對齊) -->
-    <AppFooter :is-expanded="isFooterExpanded" @toggle="isFooterExpanded = !isFooterExpanded" />
   </div>
 </template>
 
@@ -708,7 +674,4 @@ onUnmounted(() => {
   }
 }
 
-.btn-scroll-to-top {
-  position: fixed; bottom: 24px; right: 24px; width: 36px; height: 36px; border-radius: 50%; background: #1e293b; color: #ffffff; border: none; cursor: pointer; z-index: 900;
-}
 </style>

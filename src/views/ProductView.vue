@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import FrontHeader from '@/components/layout/FrontHeader.vue'
 import CaseShowcase from '@/components/showcase/CaseShowcase.vue'
 import { useCaseStore } from '@/stores/useCaseStore'
 
@@ -32,8 +31,6 @@ onMounted(async () => {
 <template>
   <div class="product-view">
     <!-- 全域頂部導覽列 -->
-    <FrontHeader />
-
     <main class="product-main" id="main-content">
 
       <!-- ============================================
