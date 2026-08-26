@@ -5,8 +5,19 @@ const root = new URL('../../', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
 
 test('homepage uses the bounded backend DTO instead of a direct government request', () => {
-  const api = read('src/api/industryWeather.ts'); const card = read('src/components/home/IndustryWeatherCard.vue'); const home = read('src/views/HomeView.vue')
-  assert.match(api, /'\/public\/industry-weather'/); assert.doesNotMatch(card, /data\.gov\.tw|thb\.gov\.tw|fetch\(/); assert.match(home, /<IndustryWeatherCard/); assert.doesNotMatch(home, /marketScore\s*=|\{\{ marketScore \}\}/)
+  const api = read('src/api/industryWeather.ts')
+  const card = read('src/components/home/IndustryWeatherCard.vue')
+  const section = read('src/components/home/HomeIndustryWeatherSection.vue')
+  const home = read('src/views/HomeView.vue')
+
+  assert.match(home, /import HomeIndustryWeatherSection from ['"]@\/components\/home\/HomeIndustryWeatherSection\.vue['"]/)
+  assert.match(home, /<HomeIndustryWeatherSection\s*\/>/)
+  assert.match(section, /import IndustryWeatherCard from ['"]@\/components\/home\/IndustryWeatherCard\.vue['"]/)
+  assert.match(section, /<IndustryWeatherCard\s*\/>/)
+  assert.match(card, /industryWeatherApi\.get\(\)/)
+  assert.match(api, /'\/public\/industry-weather'/)
+  assert.doesNotMatch(`${home}\n${section}\n${card}\n${api}`, /data\.gov\.tw|thb\.gov\.tw|fetch\(/)
+  assert.doesNotMatch(home, /marketScore\s*=|\{\{ marketScore \}\}/)
 })
 test('LIVE, FALLBACK and unavailable states remain visibly distinguishable', () => {
   const card = read('src/components/home/IndustryWeatherCard.vue')

@@ -1,0 +1,2 @@
+<script setup lang="ts">const placeholderPersonas=['創業者','司機','業主','新老闆','營運老闆','老老闆'].map((title,id)=>({id,title}))</script>
+<template><section class="kqc-card-block"><h2 class="block-section-title">👥 找到適合您的服務角色</h2><div class="customer-4col-large-grid"><div v-for="person in placeholderPersonas" :key="person.id" class="customer-large-card"><span class="cust-badge">服務對象</span><h4 class="cust-name">{{ person.title }}</h4></div></div></section></template>
