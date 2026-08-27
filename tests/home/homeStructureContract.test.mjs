@@ -48,7 +48,7 @@ test('service dock remains desktop-only without a mobile replacement', () => {
     styles.lastIndexOf('@media (max-width: 480px)'),
   )
 
-  assert.equal((home.match(/<HomeServiceDock \/>/g) ?? []).length, 1)
+  assert.equal((home.match(/<HomeServiceDock\b/g) ?? []).length, 1)
   assert.match(styles, /\.fixed-right-widget-panel\s*\{[^}]*display:\s*flex;/s)
   assert.match(mobileStyles, /\.fixed-right-widget-panel\s*\{\s*display:\s*none;\s*\}/)
   assert.doesNotMatch(home, /MobileServiceDock|BottomServiceDock/)

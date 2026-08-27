@@ -12,12 +12,19 @@ import HomeContactCtaSection from '@/components/home/HomeContactCtaSection.vue'
 import HomeLegacyCasesSection from '@/components/home/HomeLegacyCasesSection.vue'
 import HomeServiceDock from '@/components/home/HomeServiceDock.vue'
 
+type ServicePanel = 'ai' | 'quick-service' | 'human'
+
 const themeStore = useThemeStore()
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 const backendMessage = ref('正在連線到後端 API...')
 const casesData = ref<any[]>([])
 const textInput = ref('')
 const isLoading = ref(false)
+const activePanel = ref<ServicePanel | null>(null)
+
+const openServicePanel = (panel: ServicePanel) => {
+  activePanel.value = panel
+}
 
 const handleAiMatch = async () => {
   if (!textInput.value.trim()) return
@@ -54,13 +61,13 @@ onMounted(async () => {
       <HomeIndustryWeatherSection />
       <div class="system-status-pill"><span class="pulse-dot"></span><span class="status-msg">系統全端狀態：{{ backendMessage }}</span></div>
       <HomePromoCarouselSection />
-      <HomeServiceGuideSection />
+      <HomeServiceGuideSection :active-panel="activePanel" @open-panel="openServicePanel" />
       <HomePersonasSection />
       <HomeInsightsSection />
       <HomeLegacyCasesSection :cases="casesData" />
       <HomeContactCtaSection />
     </main>
-    <HomeServiceDock />
+    <HomeServiceDock :active-panel="activePanel" @update:active-panel="activePanel = $event" />
   </div>
 </template>
 
