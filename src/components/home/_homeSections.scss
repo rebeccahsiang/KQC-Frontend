@@ -185,6 +185,7 @@
 
 .home-promo-section {
   min-width: 0;
+  scroll-margin-top: 15rem;
   padding: clamp(1.5rem, 3vw, 2.25rem);
   overflow: hidden;
   border: 1px solid var(--border-grey);
@@ -285,6 +286,7 @@
 [data-theme='dark'] .home-promo-copy em { color: var(--accent); }
 
 @media (max-width: 768px) {
+  .home-promo-section { scroll-margin-top: 5rem; }
   .home-promo-heading { align-items: flex-start; flex-direction: column; gap: 0.5rem; }
   .home-promo-heading p { width: auto; margin-right: 0; text-align: left; }
 }

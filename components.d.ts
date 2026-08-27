@@ -57,6 +57,7 @@ declare module 'vue' {
     KqcToast: typeof import('./src/components/ui/KqcToast.vue')['default']
     MetricsDashboard: typeof import('./src/components/admin/MetricsDashboard.vue')['default']
     PublicBreadcrumb: typeof import('./src/components/layout/PublicBreadcrumb.vue')['default']
+    PublicFaqModal: typeof import('./src/components/public/PublicFaqModal.vue')['default']
     PublicLayout: typeof import('./src/components/layout/PublicLayout.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

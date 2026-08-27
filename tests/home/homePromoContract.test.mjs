@@ -12,6 +12,27 @@ test('Promo remains a bounded homepage section with a future-ready data shape', 
   assert.match(promo, /interface PromoItem/)
   for (const field of ['id', 'title', 'description', 'imageUrl', 'imageAlt']) assert.match(promo, new RegExp(`${field}[?:]`))
   assert.match(promo, /placeholderPromos: PromoItem\[\]/)
+  assert.equal((promo.match(/id="featured-services"/g) ?? []).length, 1)
+  assert.match(promo, /<section id="featured-services" class="home-promo-section"/)
+})
+
+test('featured services owns CSS anchor clearance below the compact header', () => {
+  const dock = read('src/components/home/HomeServiceDock.vue')
+  const styles = read('src/components/home/_homeSections.scss')
+  const sectionRule = styles.match(/\.home-promo-section\s*\{([^}]*)\}/)?.[1] ?? ''
+  const promoStart = styles.indexOf('.home-promo-section')
+  const mobileEnd = styles.indexOf('@media (max-width: 480px)', promoStart)
+  const mobileStart = styles.lastIndexOf('@media (max-width: 768px)', mobileEnd)
+  const mobileStyles = styles.slice(mobileStart, mobileEnd)
+  const desktopClearance = Number(sectionRule.match(/scroll-margin-top:\s*([\d.]+)rem/)?.[1])
+  const mobileClearance = Number(mobileStyles.match(/\.home-promo-section\s*\{[^}]*scroll-margin-top:\s*([\d.]+)rem/)?.[1])
+
+  assert.ok(promoStart >= 0 && mobileStart > promoStart && mobileEnd > mobileStart)
+  assert.match(sectionRule, /scroll-margin-top:\s*(?!0(?:rem|px)?;)[^;]+;/)
+  assert.ok(mobileClearance > 0 && mobileClearance < desktopClearance)
+  assert.match(dock, /target: '#featured-services'/)
+  assert.match(dock, /scrollIntoView\(\{ behavior, block: 'start' \}\)/)
+  assert.doesNotMatch(dock, /window\.scrollTo|scrollTop|setTimeout|header.*(?:offsetHeight|getBoundingClientRect)/i)
 })
 
 test('Swiper targets three desktop, two tablet and one mobile cards', () => {

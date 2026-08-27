@@ -11,7 +11,7 @@ test('the five primary public routes share one layout shell', () => {
   for (const routeName of ['Home', 'Products', 'Company', 'Insights', 'Contact']) {
     assert.ok(app.includes(`'${routeName}'`))
   }
-  for (const component of ['FrontHeader', 'PublicBreadcrumb', 'RouterView', 'BackToTop', 'AppFooter']) {
+  for (const component of ['FrontHeader', 'PublicBreadcrumb', 'RouterView', 'BackToTop', 'AppFooter', 'PublicFaqModal']) {
     assert.match(layout, new RegExp(`<${component}`))
   }
   assert.doesNotMatch(read('src/views/HomeView.vue'), /<FrontHeader|<AppFooter|btn-scroll-to-top/)

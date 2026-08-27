@@ -5,6 +5,7 @@ import { Icon } from '@iconify/vue'
 import { useThemeStore } from '@/stores/themeStore'
 import { useCaseStore } from '@/stores/useCaseStore'
 import { useAuthStore } from '@/stores/authStore' // 1. 匯入 Auth Store
+import { usePublicFaq } from '@/composables/usePublicFaq'
 
 // 型別宣告 (Types Definition)
 interface NavItem {
@@ -18,6 +19,7 @@ const themeStore = useThemeStore()
 const caseStore = useCaseStore()
 const mobileNavigationOpen = ref(false)
 const authStore = useAuthStore() // 2. 實例化 authStore (徹底修復 Template 紅字)
+const { openFaq } = usePublicFaq()
 
 // 頁面滾動監聽：超過 50px 觸發 A 區塊平滑折疊收合
 const isCompact = ref(false)
@@ -157,7 +159,7 @@ const handleSearch = (): void => {
         </button>
       
         <!-- FAQ 按鈕 -->
-        <button type="button" class="control-btn faq-btn" title="常見問題 FAQ" aria-label="常見問題 FAQ">
+        <button type="button" class="control-btn faq-btn" title="常見問題 FAQ" aria-label="常見問題 FAQ" @click="openFaq">
           <Icon icon="lucide:book-open" class="control-icon" />
         </button>
       

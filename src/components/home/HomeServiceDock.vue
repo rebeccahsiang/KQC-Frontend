@@ -1,24 +1,37 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { usePublicFaq } from '@/composables/usePublicFaq'
 
 type ServicePanel = 'ai' | 'quick-service' | 'human'
 type FutureAction = { id: string; label: string; action: 'future' | 'route'; target?: string; enabled: boolean }
+type QuickServiceAction = {
+  id: string
+  label: string
+  type: 'route' | 'home-anchor' | 'panel' | 'faq' | 'unavailable'
+  target?: string
+  panel?: ServicePanel
+  enabled: boolean
+}
 
 const props = defineProps<{ activePanel: ServicePanel | null }>()
 const emit = defineEmits<{ 'update:activePanel': [panel: ServicePanel | null] }>()
+const route = useRoute()
+const router = useRouter()
+const { openFaq } = usePublicFaq()
 const dockItems: { id: ServicePanel; icon: string; label: string }[] = [
   { id: 'ai', icon: '🤖', label: 'AI 助理' },
   { id: 'quick-service', icon: '💬', label: '快速服務' },
   { id: 'human', icon: '📞', label: '真人諮詢' },
 ]
 const aiPrompts = ['不確定是否符合設立條件？', '想了解牌照買賣流程？', '想獲得 24 小時即時解答']
-const quickServiceActions: FutureAction[] = [
-  { id: 'consultation', label: '預約諮詢', action: 'future', enabled: false },
-  { id: 'services', label: '服務介紹', action: 'future', enabled: false },
-  { id: 'question', label: '提出問題', action: 'future', enabled: false },
-  { id: 'faq', label: '常見問題解答', action: 'future', enabled: false },
-  { id: 'offers', label: '尋找優惠', action: 'future', enabled: false },
-  { id: 'events', label: '近期活動訊息', action: 'future', enabled: false },
+const quickServiceActions: QuickServiceAction[] = [
+  { id: 'consultation', label: '預約諮詢', type: 'route', target: '/contact', enabled: true },
+  { id: 'services', label: '服務介紹', type: 'home-anchor', target: '#featured-services', enabled: true },
+  { id: 'question', label: '提出問題', type: 'panel', panel: 'ai', enabled: true },
+  { id: 'faq', label: '常見問題解答', type: 'faq', enabled: true },
+  { id: 'offers', label: '尋找優惠', type: 'unavailable', enabled: false },
+  { id: 'events', label: '近期活動訊息', type: 'route', target: '/insights', enabled: true },
 ]
 const humanServiceCategories = ['資產買賣', '網站架設', '車額買賣', '停車位證明']
 const humanContactActions: FutureAction[] = [
@@ -28,6 +41,29 @@ const humanContactActions: FutureAction[] = [
 const panelTitle = computed(() => dockItems.find((item) => item.id === props.activePanel)?.label ?? '')
 const togglePanel = (panel: ServicePanel) => { emit('update:activePanel', props.activePanel === panel ? null : panel) }
 const closePanel = () => { emit('update:activePanel', null) }
+const scrollToFeaturedServices = async () => {
+  closePanel()
+  if (route.path !== '/' || route.hash !== '#featured-services') await router.push({ path: '/', hash: '#featured-services' })
+  await nextTick()
+  window.requestAnimationFrame(() => {
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    document.getElementById('featured-services')?.scrollIntoView({ behavior, block: 'start' })
+  })
+}
+const handleQuickServiceAction = (action: QuickServiceAction) => {
+  if (!action.enabled) return
+  if (action.type === 'route' && action.target) {
+    closePanel()
+    void router.push(action.target)
+  } else if (action.type === 'home-anchor') {
+    void scrollToFeaturedServices()
+  } else if (action.type === 'panel' && action.panel) {
+    emit('update:activePanel', action.panel)
+  } else if (action.type === 'faq') {
+    closePanel()
+    openFaq()
+  }
+}
 const handleEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') closePanel() }
 
 onMounted(() => window.addEventListener('keydown', handleEscape))
@@ -59,8 +95,8 @@ onUnmounted(() => window.removeEventListener('keydown', handleEscape))
           </template>
           <template v-else-if="props.activePanel === 'quick-service'">
             <p class="home-service-panel__intro">您好！<br>我可以幫您：</p>
-            <div class="home-service-panel__actions home-service-panel__actions--grid"><button v-for="action in quickServiceActions" :key="action.id" type="button" :disabled="!action.enabled">{{ action.label }}</button></div>
-            <p class="home-service-panel__status">服務入口將於對應功能完成後開放。</p>
+            <div class="home-service-panel__actions home-service-panel__actions--grid"><button v-for="action in quickServiceActions" :key="action.id" type="button" :disabled="!action.enabled" @click="handleQuickServiceAction(action)">{{ action.label }}</button></div>
+            <p class="home-service-panel__status">「尋找優惠」將於正式活動資料完成後開放。</p>
           </template>
           <template v-else>
             <p class="home-service-panel__intro">您好！<br>請選擇您需要的服務：</p>

@@ -4,6 +4,7 @@ import FrontHeader from '@/components/layout/FrontHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import PublicBreadcrumb from '@/components/layout/PublicBreadcrumb.vue'
 import BackToTop from '@/components/layout/BackToTop.vue'
+import PublicFaqModal from '@/components/public/PublicFaqModal.vue'
 </script>
 
 <template>
@@ -13,6 +14,7 @@ import BackToTop from '@/components/layout/BackToTop.vue'
     <div class="public-layout__content"><RouterView /></div>
     <BackToTop />
     <AppFooter />
+    <PublicFaqModal />
   </div>
 </template>
 

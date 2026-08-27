@@ -74,3 +74,11 @@ test('theme, account and capability-aware admin entries remain present', () => {
   const header = read('src/components/layout/FrontHeader.vue')
   for (const contract of ['themeStore.toggleTheme', "authStore.openAuthModal('login')", 'authStore.logout()', 'authStore.isAdminPortalUser', 'to="/admin"']) assert.ok(header.includes(contract))
 })
+
+test('FAQ button uses the bounded shared public FAQ foundation', () => {
+  const header = read('src/components/layout/FrontHeader.vue')
+  assert.match(header, /import \{ usePublicFaq \} from '@\/composables\/usePublicFaq'/)
+  assert.match(header, /const \{ openFaq \} = usePublicFaq\(\)/)
+  assert.match(header, /class="control-btn faq-btn"[^>]*@click="openFaq"/)
+  assert.doesNotMatch(header, /admin\/messages\/ai-faq|router\.push\([^)]*faq|axios|fetch\(/i)
+})

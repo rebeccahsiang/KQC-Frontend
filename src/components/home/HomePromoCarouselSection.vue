@@ -31,7 +31,7 @@ const swiperModules = [Navigation, Pagination, A11y]
 </script>
 
 <template>
-  <section class="home-promo-section" aria-labelledby="home-promo-title">
+  <section id="featured-services" class="home-promo-section" aria-labelledby="home-promo-title">
     <div class="home-promo-heading">
       <div><span>FEATURED</span><h2 id="home-promo-title">精選服務</h2></div>
       <p>從交通運輸需求出發，快速前往相關服務。</p>
