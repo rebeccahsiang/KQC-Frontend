@@ -17,6 +17,7 @@ test('public list uses the existing bounded Article endpoint and eight-item pagi
   assert.match(view, /const PAGE_SIZE = 8/)
   assert.match(view, /publicArticlesApi\.list\(\{ page: page\.value, limit: PAGE_SIZE, category: activeCategory\.value \}\)/)
   assert.doesNotMatch(`${api}\n${view}`, /adminArticlesApi|content:\s*string|hardcodedArticles|demoArticles|JSON\.stringify/)
+  assert.doesNotMatch(api, /scheduledAt|creatorDisplayName|createdBy/)
 })
 
 test('seven visible filters map to exactly six canonical categories and all sends no category', () => {

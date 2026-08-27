@@ -30,7 +30,7 @@ const CATEGORY_LABELS: Record<ArticleCategory, string> = {
   POLICY_REGULATION: '政策法規',
   KQC_NEWS: 'KQC 快訊',
 }
-const STATUS_LABELS: Record<ArticleStatus, string> = { DRAFT: '草稿', PUBLISHED: '已發布' }
+const STATUS_LABELS: Record<ArticleStatus, string> = { DRAFT: '草稿', SCHEDULED: '預定', PUBLISHED: '發布' }
 const categoryOptions = Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }))
 const articles = ref<ArticleAdminItem[]>([])
@@ -45,7 +45,7 @@ const uploadingCover = ref(false)
 const uploadError = ref('')
 const coverPreviewFailed = ref(false)
 let coverUploadEpoch = 0
-const form = reactive({ title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'] as ArticleCategory[], summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT' as ArticleStatus, isFeatured: false })
+const form = reactive({ title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'] as ArticleCategory[], summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT' as ArticleStatus, isFeatured: false, scheduledAt: '' })
 const coverPreviewUrl = computed(() => articleCoverImageUrl(form.coverImage))
 const resetCoverUpload = () => {
   coverUploadEpoch += 1
@@ -53,12 +53,19 @@ const resetCoverUpload = () => {
   if (coverInput.value) coverInput.value.value = ''
 }
 const resetForm = () => {
-  Object.assign(form, { title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'], summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT', isFeatured: false })
+  Object.assign(form, { title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'], summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT', isFeatured: false, scheduledAt: '' })
   resetCoverUpload()
 }
-const backendMessage = (error: unknown) => isAxiosError(error)
-  ? (error.response?.data as { error?: { message?: string } })?.error?.message || '文章操作失敗'
-  : '文章操作失敗'
+const backendMessage = (error: unknown) => {
+  if (!isAxiosError(error)) return '文章操作失敗'
+  const responseError = (error.response?.data as { error?: { code?: string; message?: string } })?.error
+  if (responseError?.code === 'ARTICLE_VALIDATION_ERROR') {
+    if (responseError.message === 'Cover image is required for publication') return '預定或發布文章前，請先設定封面圖片。'
+    if (responseError.message === 'Scheduled time is required') return '請設定預定發布時間。'
+    if (responseError.message === 'Scheduled time must be in the future') return '預定發布時間必須晚於目前時間。'
+  }
+  return responseError?.message || '文章操作失敗'
+}
 const coverUploadMessage = (error: unknown) => {
   if (!isAxiosError(error)) return '圖片上傳失敗，請稍後再試。'
   const status = error.response?.status
@@ -77,16 +84,22 @@ const loadArticles = async () => {
   finally { loading.value = false }
 }
 const openCreate = () => { editingId.value = ''; resetForm(); dialogVisible.value = true }
+const toLocalDateTime = (value: string | null) => {
+  if (!value) return ''
+  const date = new Date(value); const offset = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+}
 const openEdit = (article: ArticleAdminItem) => {
   resetCoverUpload()
   editingId.value = article.id
-  Object.assign(form, { ...article, coverImage: article.coverImage || '', tags: article.tags.join(', ') })
+  Object.assign(form, { ...article, coverImage: article.coverImage || '', tags: article.tags.join(', '), scheduledAt: toLocalDateTime(article.scheduledAt) })
   dialogVisible.value = true
 }
 const payload = (): ArticleWriteInput => ({
   title: form.title, slug: form.slug, categories: [...form.categories], summary: form.summary, content: form.content,
   coverImage: form.coverImage.trim() || null,
   tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean), status: form.status, isFeatured: form.isFeatured,
+  scheduledAt: form.status === 'SCHEDULED' && form.scheduledAt ? new Date(form.scheduledAt).toISOString() : null,
 })
 // ============================================================
 // Article Cover Image — Admin Upload Ownership
@@ -121,9 +134,21 @@ const uploadCoverImage = async () => {
   finally { if (requestEpoch === coverUploadEpoch) uploadingCover.value = false }
 }
 const removeCoverImage = () => { form.coverImage = ''; resetCoverUpload() }
+// Article Scheduled Publishing / WEB-1F-D2B-3
+const validatePublication = () => {
+  if (form.status === 'DRAFT') return true
+  if (!form.coverImage.trim()) { errorMessage.value = '預定或發布文章前，請先設定封面圖片。'; return false }
+  if (form.status === 'SCHEDULED') {
+    if (!form.scheduledAt) { errorMessage.value = '請設定預定發布時間。'; return false }
+    const scheduled = new Date(form.scheduledAt)
+    if (Number.isNaN(scheduled.getTime()) || scheduled.getTime() <= Date.now()) { errorMessage.value = '預定發布時間必須晚於目前時間。'; return false }
+  }
+  return true
+}
 const saveArticle = async () => {
   if (saving.value || uploadingCover.value) return
   if (form.categories.length < 1 || form.categories.length > 6) { errorMessage.value = '請選擇至少一個文章分類。'; return }
+  if (!validatePublication()) return
   saving.value = true; errorMessage.value = ''
   try {
     if (editingId.value) await adminArticlesApi.update(editingId.value, payload())
@@ -138,6 +163,7 @@ const deleteArticle = async (article: ArticleAdminItem) => {
   catch (error) { errorMessage.value = backendMessage(error) }
 }
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat('zh-TW', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '—'
+const publicationTime = (article: ArticleAdminItem) => article.status === 'SCHEDULED' ? article.scheduledAt : article.status === 'PUBLISHED' ? article.publishedAt : null
 onMounted(loadArticles)
 </script>
 
@@ -149,9 +175,9 @@ onMounted(loadArticles)
       <Column field="title" header="標題" />
       <Column header="分類"><template #body="{ data }"><div class="article-category-tags"><Tag v-for="category in data.categories" :key="category" class="article-category-tag" :value="CATEGORY_LABELS[category as ArticleCategory]" severity="secondary" /></div></template></Column>
       <Column field="creatorDisplayName" header="撰寫人" />
-      <Column header="狀態"><template #body="{ data }"><span class="article-status"><Icon :icon="data.status === 'PUBLISHED' ? 'lucide:circle-check' : 'lucide:file-clock'" aria-hidden="true" />{{ STATUS_LABELS[data.status as ArticleStatus] }}</span></template></Column>
+      <Column header="狀態"><template #body="{ data }"><span class="article-status"><Icon :icon="data.status === 'PUBLISHED' ? 'lucide:circle-check' : data.status === 'SCHEDULED' ? 'lucide:calendar-clock' : 'lucide:file-clock'" aria-hidden="true" />{{ STATUS_LABELS[data.status as ArticleStatus] }}</span></template></Column>
       <Column header="精選"><template #body="{ data }">{{ data.isFeatured ? '是' : '否' }}</template></Column>
-      <Column header="發布時間"><template #body="{ data }">{{ formatDate(data.publishedAt) }}</template></Column>
+      <Column header="發布時間"><template #body="{ data }">{{ formatDate(publicationTime(data)) }}</template></Column>
       <Column header="更新時間"><template #body="{ data }">{{ formatDate(data.updatedAt) }}</template></Column>
       <Column header="操作"><template #body="{ data }"><div class="row-actions"><Button size="small" outlined aria-label="編輯" title="編輯" @click="openEdit(data)"><template #icon><Icon icon="lucide:pencil" /></template></Button><Button size="small" severity="danger" text aria-label="刪除" title="刪除" @click="deleteArticle(data)"><template #icon><Icon icon="lucide:trash-2" /></template></Button></div></template></Column>
     </DataTable>
@@ -190,6 +216,7 @@ onMounted(loadArticles)
         </fieldset>
         <label>標籤（以逗號分隔）<InputText v-model="form.tags" /></label>
         <label>狀態<Select v-model="form.status" :options="statusOptions" option-label="label" option-value="value" /></label>
+        <label v-if="form.status === 'SCHEDULED'">預定發布時間<InputText v-model="form.scheduledAt" type="datetime-local" required /></label>
         <label class="checkbox-field"><Checkbox v-model="form.isFeatured" binary />精選文章</label>
         <footer><Button type="button" label="取消" text @click="dialogVisible = false" /><Button type="submit" label="儲存" :loading="saving" :disabled="saving || uploadingCover" /></footer>
       </form>

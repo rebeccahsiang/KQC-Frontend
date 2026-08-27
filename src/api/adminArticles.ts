@@ -6,15 +6,15 @@ import api from './axios'
 // ============================================================
 interface Envelope<T> { success: true; data: T }
 export type ArticleCategory = 'BUSINESS_MANAGEMENT' | 'TRANSPORT_KNOWLEDGE' | 'MARKET_TREND' | 'BUSINESS_TRANSFORMATION' | 'POLICY_REGULATION' | 'KQC_NEWS'
-export type ArticleStatus = 'DRAFT' | 'PUBLISHED'
+export type ArticleStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED'
 export interface ArticleAdminItem {
   id: string; title: string; slug: string; categories: ArticleCategory[]; summary: string; content: string
   coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean
-  publishedAt: string | null; createdAt: string; updatedAt: string; creatorDisplayName: string
+  publishedAt: string | null; scheduledAt: string | null; createdAt: string; updatedAt: string; creatorDisplayName: string
 }
 export interface ArticleWriteInput {
   title: string; slug: string; categories: ArticleCategory[]; summary: string; content: string
-  coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean
+  coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean; scheduledAt: string | null
 }
 export interface ArticleListResponse {
   articles: ArticleAdminItem[]

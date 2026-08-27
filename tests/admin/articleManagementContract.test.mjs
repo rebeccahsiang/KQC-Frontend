@@ -38,7 +38,7 @@ test('Article Admin view exposes six canonical labels and bounded management fie
   assert.match(view, /id="article-slug" v-model="form\.slug"[^>]*aria-describedby="article-slug-help"/)
   assert.match(view, /id="article-slug-help">用於文章網址，請使用英文小寫、數字或連字號。/)
   for (const action of ['新增文章', '編輯文章', '刪除', '儲存']) assert.ok(view.includes(action))
-  assert.match(view, /DRAFT: '草稿', PUBLISHED: '已發布'/)
+  assert.match(view, /DRAFT: '草稿', SCHEDULED: '預定', PUBLISHED: '發布'/)
   assert.match(view, /adminArticlesApi\.(?:create|update|remove)/)
   assert.match(view, /<MultiSelect v-model="form\.categories"[^>]*display="chip"/)
   assert.match(view, /form\.categories\.length < 1 \|\| form\.categories\.length > 6/)
@@ -62,6 +62,21 @@ test('Article Admin view exposes six canonical labels and bounded management fie
   assert.doesNotMatch(view, /\bv-html\b/i)
   assert.doesNotMatch(articleManagement, /\b(?:wysiwyg|quill|ckeditor|tinymce)\b/i)
   assert.doesNotMatch(articleManagement, /\b(?:Customer|BusinessCase|Lead)\b|human(?:-|_)?consultation/i)
+})
+
+test('Article scheduled publishing keeps the full Admin list and bounded local-time editor contract', () => {
+  const api = read('src/api/adminArticles.ts'); const view = read('src/views/admin/content/AdminArticlesView.vue')
+  assert.match(api, /export type ArticleStatus = 'DRAFT' \| 'SCHEDULED' \| 'PUBLISHED'/)
+  assert.match(api, /publishedAt: string \| null; scheduledAt: string \| null;/)
+  for (const column of ['標題', '分類', '撰寫人', '狀態', '精選', '發布時間', '更新時間', '操作']) assert.match(view, new RegExp(`header="${column}"`))
+  assert.match(view, /v-if="form\.status === 'SCHEDULED'">預定發布時間<InputText v-model="form\.scheduledAt" type="datetime-local" required/)
+  assert.match(view, /new Date\(form\.scheduledAt\)\.toISOString\(\)/)
+  assert.match(view, /article\.status === 'SCHEDULED' \? article\.scheduledAt : article\.status === 'PUBLISHED' \? article\.publishedAt : null/)
+  assert.match(view, /if \(form\.status === 'DRAFT'\) return true/)
+  assert.match(view, /預定或發布文章前，請先設定封面圖片。/)
+  assert.match(view, /請設定預定發布時間。/)
+  assert.match(view, /預定發布時間必須晚於目前時間。/)
+  assert.doesNotMatch(view, /slug.*(?:auto|generate)|generate.*slug/i)
 })
 
 test('Article category types align exactly with the final six-value Backend taxonomy', () => {
