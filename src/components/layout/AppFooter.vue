@@ -9,7 +9,8 @@ const expanded = ref(true)
     <div class="public-footer__inner">
       <div class="public-footer__brand">
         <span class="public-footer__logo">KQC</span>
-        <div><strong>中華汽車資訊交流協會</strong><p v-if="expanded">商用車資訊與產業服務平台</p></div>
+        <!-- Public Footer Branding / WEB-1F-D2B -->
+        <div><strong>三爵資訊</strong><p v-if="expanded">智慧運輸與資產交易平台</p></div>
       </div>
       <div v-if="expanded" class="public-footer__details">
         <RouterLink to="/contact">聯絡我們</RouterLink>

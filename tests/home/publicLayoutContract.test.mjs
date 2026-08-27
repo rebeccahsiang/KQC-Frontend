@@ -64,6 +64,10 @@ test('footer supports accessible collapse and retains privacy and contact entrie
   assert.match(footer, /:aria-expanded="expanded"/)
   assert.match(footer, /隱私政策/)
   assert.match(footer, /to="\/contact"/)
+  assert.match(footer, /<strong>三爵資訊<\/strong>/)
+  assert.match(footer, /智慧運輸與資產交易平台/)
+  assert.doesNotMatch(footer, /中華汽車資訊交流協會|商用車資訊與產業服務平台/)
+  assert.doesNotMatch(read('src/views/InsightsView.vue'), /<AppFooter|三爵資訊|智慧運輸與資產交易平台/)
 })
 
 test('account and capability-aware staff entry contracts remain in the shared header', () => {

@@ -45,11 +45,7 @@ const handleTriggerKey = (event: KeyboardEvent) => {
 
 const leaveBackend = async () => {
   closeAccountMenu()
-  try {
-    await authStore.exitAdminPortal()
-  } finally {
-    await router.replace('/')
-  }
+  await router.replace('/')
 }
 
 const logoutAccount = async () => {

@@ -9,6 +9,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/products', name: 'Products', component: () => import('@/views/ProductView.vue'), meta: { title: '業務櫥窗與資產轉型 - 三爵資訊 KQC' } },
   { path: '/company', name: 'Company', component: () => import('@/views/CompanyView.vue'), meta: { title: '關於公司與品牌理念 - 三爵資訊 KQC' } },
   { path: '/insights', name: 'Insights', component: () => import('@/views/InsightsView.vue'), meta: { title: '產業洞察與趨勢分析 - 三爵資訊 KQC' } },
+  // Industry Insights / WEB-1F-D2B — route boundary only; D2C owns article detail.
+  { path: '/insights/:slug', name: 'InsightDetail', component: () => import('@/views/InsightsDetailDeferredView.vue'), meta: { title: '產業文章 - 三爵資訊 KQC' } },
   { path: '/contact', name: 'Contact', component: () => import('@/views/ContactView.vue'), meta: { title: '聯絡我們與一對一諮詢 - 三爵資訊 KQC' } },
   { path: '/login', name: 'Login', component: () => import('@/views/LoginView.vue'), meta: { title: '會員與管理員登入 - 三爵資訊 KQC' } },
   {

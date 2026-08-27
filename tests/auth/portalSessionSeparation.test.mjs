@@ -15,12 +15,16 @@ test('member and admin access state are independent inside the existing store', 
   assert.match(store, /clearAuth: \(portal\) => portal === 'admin' \? clearAdminAuth\(\) : clearAuth\(\)/)
 })
 
-test('backend exit revokes and clears only the admin portal state', () => {
+test('ordinary backend leave preserves the reusable Admin session while explicit revocation stays bounded', () => {
   const store = read('src/stores/authStore.ts')
+  const header = read('src/components/layout/AdminHeader.vue')
   const flow = store.slice(store.indexOf('const exitAdminPortal = async'), store.indexOf('const logoutAll'))
   assert.match(flow, /await authApi\.logout\('admin'\)/)
   assert.match(flow, /finally \{\s*clearAdminAuth\(\)/)
   assert.doesNotMatch(flow, /clearAuth\(|logout\('frontend'\)/)
+  const leave = header.slice(header.indexOf('const leaveBackend = async'), header.indexOf('const logoutAccount'))
+  assert.match(leave, /await router\.replace\('\/'\)/)
+  assert.doesNotMatch(leave, /exitAdminPortal|logout|clearAdminAuth/)
   assert.match(store, /exitAdminPortal,/)
 })
 
@@ -93,6 +97,14 @@ test('Admin Handoff reuses a valid Admin Session before any login redirect', () 
     router.match(/path: 'human-consultations'[^\n]*/)?.[0] ?? '',
     /SALES|SALES_SUPERVISOR|PLATFORM_MANAGER/,
   )
+})
+
+test('Admin login surface has bounded desktop scale and responsive controls', () => {
+  const login = read('src/views/LoginView.vue')
+  assert.match(login, /class="admin-login-card w-full border space-y-8"/)
+  assert.match(login, /\.admin-login-card \{ max-width: 34rem; \}/)
+  assert.match(login, /\.admin-login-form input \{ min-height: 3rem; \}/)
+  assert.match(login, /@media \(max-width: 640px\).*admin-login-card/s)
 })
 
 test('Axios refresh failure clears only the request portal and activity follows the active portal', () => {

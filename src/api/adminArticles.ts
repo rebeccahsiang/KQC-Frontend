@@ -8,12 +8,12 @@ interface Envelope<T> { success: true; data: T }
 export type ArticleCategory = 'BUSINESS_MANAGEMENT' | 'TRANSPORT_KNOWLEDGE' | 'MARKET_TREND' | 'BUSINESS_TRANSFORMATION' | 'POLICY_REGULATION' | 'KQC_NEWS'
 export type ArticleStatus = 'DRAFT' | 'PUBLISHED'
 export interface ArticleAdminItem {
-  id: string; title: string; slug: string; category: ArticleCategory; summary: string; content: string
+  id: string; title: string; slug: string; categories: ArticleCategory[]; summary: string; content: string
   coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean
-  publishedAt: string | null; createdAt: string; updatedAt: string
+  publishedAt: string | null; createdAt: string; updatedAt: string; creatorDisplayName: string
 }
 export interface ArticleWriteInput {
-  title: string; slug: string; category: ArticleCategory; summary: string; content: string
+  title: string; slug: string; categories: ArticleCategory[]; summary: string; content: string
   coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean
 }
 export interface ArticleListResponse {

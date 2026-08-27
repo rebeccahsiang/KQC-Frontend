@@ -36,16 +36,16 @@ const handleLogin = async () => {
 
 <template>
   <div class="login-view min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <KqcCard padding="lg" class="w-full max-w-md border space-y-6">
+    <KqcCard padding="lg" class="admin-login-card w-full border space-y-8">
       <div class="text-center space-y-2">
         <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-[var(--kqc-accent)]/20 text-[var(--kqc-accent)]">
           三爵資訊 KQC
         </span>
-        <h1 class="text-2xl font-bold text-[var(--kqc-text-main)]">會員與戰情室登入</h1>
-        <p class="text-xs text-[var(--kqc-text-muted)]">輸入權限帳號進入高階數據與 CRM 管理後台</p>
+        <h1 class="text-3xl font-bold text-[var(--kqc-text-main)]">會員與戰情室登入</h1>
+        <p class="text-sm text-[var(--kqc-text-muted)]">輸入權限帳號進入高階數據與 CRM 管理後台</p>
       </div>
 
-      <form class="space-y-4" @submit.prevent="handleLogin">
+      <form class="admin-login-form space-y-6" @submit.prevent="handleLogin">
         <div>
           <label class="block text-xs font-bold text-[var(--kqc-text-main)] mb-1">帳號 / Email</label>
           <input
@@ -54,7 +54,7 @@ const handleLogin = async () => {
             required
             autocomplete="username"
             placeholder="admin@kqc.com.tw"
-            class="w-full px-3 py-2 border rounded-lg bg-[var(--kqc-bg-card)] text-[var(--kqc-text-main)] text-sm border-[var(--kqc-border)] focus:outline-none focus:border-[var(--kqc-accent)] transition-colors"
+            class="w-full px-4 border rounded-lg bg-[var(--kqc-bg-card)] text-[var(--kqc-text-main)] text-base border-[var(--kqc-border)] focus:outline-none focus:border-[var(--kqc-accent)] transition-colors"
           />
         </div>
 
@@ -66,7 +66,7 @@ const handleLogin = async () => {
             required
             autocomplete="current-password"
             placeholder="••••••••"
-            class="w-full px-3 py-2 border rounded-lg bg-[var(--kqc-bg-card)] text-[var(--kqc-text-main)] text-sm border-[var(--kqc-border)] focus:outline-none focus:border-[var(--kqc-accent)] transition-colors"
+            class="w-full px-4 border rounded-lg bg-[var(--kqc-bg-card)] text-[var(--kqc-text-main)] text-base border-[var(--kqc-border)] focus:outline-none focus:border-[var(--kqc-accent)] transition-colors"
           />
         </div>
 
@@ -85,4 +85,8 @@ const handleLogin = async () => {
 .login-view {
   background-color: var(--kqc-bg-main);
 }
+.admin-login-card { max-width: 34rem; }
+.admin-login-form input { min-height: 3rem; }
+.admin-login-form :deep(.kqc-btn) { min-height: 3rem; }
+@media (max-width: 640px) { .admin-login-card { max-width: 100%; } }
 </style>

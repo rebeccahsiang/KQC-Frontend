@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { isAxiosError } from 'axios'
+import { Icon } from '@iconify/vue'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'
@@ -8,6 +9,7 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
@@ -43,7 +45,7 @@ const uploadingCover = ref(false)
 const uploadError = ref('')
 const coverPreviewFailed = ref(false)
 let coverUploadEpoch = 0
-const form = reactive({ title: '', slug: '', category: 'BUSINESS_MANAGEMENT' as ArticleCategory, summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT' as ArticleStatus, isFeatured: false })
+const form = reactive({ title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'] as ArticleCategory[], summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT' as ArticleStatus, isFeatured: false })
 const coverPreviewUrl = computed(() => articleCoverImageUrl(form.coverImage))
 const resetCoverUpload = () => {
   coverUploadEpoch += 1
@@ -51,7 +53,7 @@ const resetCoverUpload = () => {
   if (coverInput.value) coverInput.value.value = ''
 }
 const resetForm = () => {
-  Object.assign(form, { title: '', slug: '', category: 'BUSINESS_MANAGEMENT', summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT', isFeatured: false })
+  Object.assign(form, { title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'], summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT', isFeatured: false })
   resetCoverUpload()
 }
 const backendMessage = (error: unknown) => isAxiosError(error)
@@ -82,7 +84,7 @@ const openEdit = (article: ArticleAdminItem) => {
   dialogVisible.value = true
 }
 const payload = (): ArticleWriteInput => ({
-  title: form.title, slug: form.slug, category: form.category, summary: form.summary, content: form.content,
+  title: form.title, slug: form.slug, categories: [...form.categories], summary: form.summary, content: form.content,
   coverImage: form.coverImage.trim() || null,
   tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean), status: form.status, isFeatured: form.isFeatured,
 })
@@ -121,6 +123,7 @@ const uploadCoverImage = async () => {
 const removeCoverImage = () => { form.coverImage = ''; resetCoverUpload() }
 const saveArticle = async () => {
   if (saving.value || uploadingCover.value) return
+  if (form.categories.length < 1 || form.categories.length > 6) { errorMessage.value = '請選擇至少一個文章分類。'; return }
   saving.value = true; errorMessage.value = ''
   try {
     if (editingId.value) await adminArticlesApi.update(editingId.value, payload())
@@ -144,12 +147,13 @@ onMounted(loadArticles)
     <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
     <DataTable :value="articles" :loading="loading" striped-rows empty-message="目前沒有文章">
       <Column field="title" header="標題" />
-      <Column header="分類"><template #body="{ data }">{{ CATEGORY_LABELS[data.category as ArticleCategory] }}</template></Column>
-      <Column header="狀態"><template #body="{ data }"><Tag :value="STATUS_LABELS[data.status as ArticleStatus]" :severity="data.status === 'PUBLISHED' ? 'success' : 'secondary'" /></template></Column>
+      <Column header="分類"><template #body="{ data }"><div class="article-category-tags"><Tag v-for="category in data.categories" :key="category" class="article-category-tag" :value="CATEGORY_LABELS[category as ArticleCategory]" severity="secondary" /></div></template></Column>
+      <Column field="creatorDisplayName" header="撰寫人" />
+      <Column header="狀態"><template #body="{ data }"><span class="article-status"><Icon :icon="data.status === 'PUBLISHED' ? 'lucide:circle-check' : 'lucide:file-clock'" aria-hidden="true" />{{ STATUS_LABELS[data.status as ArticleStatus] }}</span></template></Column>
       <Column header="精選"><template #body="{ data }">{{ data.isFeatured ? '是' : '否' }}</template></Column>
       <Column header="發布時間"><template #body="{ data }">{{ formatDate(data.publishedAt) }}</template></Column>
       <Column header="更新時間"><template #body="{ data }">{{ formatDate(data.updatedAt) }}</template></Column>
-      <Column header="操作"><template #body="{ data }"><div class="row-actions"><Button label="編輯" size="small" outlined @click="openEdit(data)" /><Button label="刪除" size="small" severity="danger" text @click="deleteArticle(data)" /></div></template></Column>
+      <Column header="操作"><template #body="{ data }"><div class="row-actions"><Button size="small" outlined aria-label="編輯" title="編輯" @click="openEdit(data)"><template #icon><Icon icon="lucide:pencil" /></template></Button><Button size="small" severity="danger" text aria-label="刪除" title="刪除" @click="deleteArticle(data)"><template #icon><Icon icon="lucide:trash-2" /></template></Button></div></template></Column>
     </DataTable>
     <Dialog v-model:visible="dialogVisible" modal :header="editingId ? '編輯文章' : '新增文章'" class="article-dialog" @hide="resetForm">
       <form class="article-form" @submit.prevent="saveArticle">
@@ -159,7 +163,8 @@ onMounted(loadArticles)
           <InputText id="article-slug" v-model="form.slug" maxlength="160" required aria-describedby="article-slug-help" placeholder="market-trend-2026" />
           <small id="article-slug-help">用於文章網址，請使用英文小寫、數字或連字號。</small>
         </div>
-        <label>分類<Select v-model="form.category" :options="categoryOptions" option-label="label" option-value="value" /></label>
+        <!-- Industry Insights / Article Multi-Category / WEB-1F-D2B-1 -->
+        <label>分類<MultiSelect v-model="form.categories" :options="categoryOptions" option-label="label" option-value="value" :max-selected-labels="6" display="chip" placeholder="請選擇至少一個分類" /></label>
         <label>摘要<Textarea v-model="form.summary" rows="3" maxlength="500" required /></label>
         <label>文章內容<Textarea v-model="form.content" rows="12" maxlength="100000" required /></label>
         <fieldset class="article-cover-field">
@@ -211,6 +216,10 @@ h1 { margin: 0; color: var(--text-main); font-size: $kqc-type-section-title; }
 .article-form :deep(input), .article-form :deep(textarea), .article-form :deep(.p-select) { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; }
 .article-form :deep(textarea) { resize: vertical; }
 .article-form .checkbox-field { display: flex; align-items: center; grid-template-columns: auto 1fr; }
+.article-category-tags { display: flex; width: max-content; max-width: 18rem; align-items: center; flex-wrap: wrap; gap: $kqc-spacing-2xs; }
+.article-category-tags :deep(.article-category-tag) { padding: $kqc-spacing-2xs $kqc-spacing-xs; font-size: $kqc-type-caption; line-height: 1.1; white-space: nowrap; }
+.article-status { display: inline-flex; align-items: center; gap: $kqc-spacing-xs; white-space: nowrap; font-size: $kqc-type-metadata; }
+.article-status svg { width: 0.95rem; height: 0.95rem; color: var(--accent-active); }
 .article-form footer { position: sticky; bottom: 0; z-index: 1; justify-content: flex-end; padding-top: $kqc-spacing-sm; background: var(--bg-card); }
 .article-cover-field { display: grid; min-width: 0; gap: $kqc-spacing-sm; margin: 0; padding: $kqc-spacing-md; border: 1px solid var(--border-grey); border-radius: $kqc-radius-md; }
 .article-cover-field legend { padding: 0 $kqc-spacing-xs; color: var(--text-main); font-weight: 650; }

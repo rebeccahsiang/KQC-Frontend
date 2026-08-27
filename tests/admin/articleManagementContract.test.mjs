@@ -40,6 +40,18 @@ test('Article Admin view exposes six canonical labels and bounded management fie
   for (const action of ['新增文章', '編輯文章', '刪除', '儲存']) assert.ok(view.includes(action))
   assert.match(view, /DRAFT: '草稿', PUBLISHED: '已發布'/)
   assert.match(view, /adminArticlesApi\.(?:create|update|remove)/)
+  assert.match(view, /<MultiSelect v-model="form\.categories"[^>]*display="chip"/)
+  assert.match(view, /form\.categories\.length < 1 \|\| form\.categories\.length > 6/)
+  assert.match(view, /header="撰寫人"/)
+  assert.match(view, /v-for="category in data\.categories"/)
+  assert.doesNotMatch(view, /v-model="form\.(?:author|createdBy)"/)
+  assert.match(view, /aria-label="編輯" title="編輯"[^>]*@click="openEdit\(data\)"/)
+  assert.match(view, /Icon icon="lucide:pencil"/)
+  assert.match(view, /aria-label="刪除" title="刪除"[^>]*@click="deleteArticle\(data\)"/)
+  assert.match(view, /Icon icon="lucide:trash-2"/)
+  assert.match(view, /class="article-status"/)
+  assert.match(view, /\.article-category-tags \{[^}]*width: max-content;[^}]*flex-wrap: wrap;[^}]*gap: \$kqc-spacing-2xs;/s)
+  assert.match(view, /\.article-category-tags :deep\(\.article-category-tag\)[^}]*font-size: \$kqc-type-caption;/s)
 
   // ============================================================
   // Article Management — Contract Boundary
