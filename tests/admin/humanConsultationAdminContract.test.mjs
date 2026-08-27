@@ -45,11 +45,13 @@ test('admin view exposes phone to authorized staff without logging personal data
   assert.doesNotMatch(view, /console\.|localStorage|sessionStorage/)
 })
 
-test('C2A leaves public C1 submission frontend-only and separate from CRM', () => {
+test('C2B public submission remains separate from Admin handling and CRM', () => {
   const dock = read('src/components/home/HomeServiceDock.vue')
-  const api = read('src/api/adminHumanConsultations.ts')
+  const publicApi = read('src/api/publicHumanConsultations.ts')
+  const adminApi = read('src/api/adminHumanConsultations.ts')
   const view = read('src/views/admin/messages/HumanConsultationsView.vue')
-  assert.match(dock, /正式送出功能將於後續版本串接。/)
-  assert.doesNotMatch(dock, /adminHumanConsultations|human-consultations|axios|fetch\(|\/api\//i)
-  assert.doesNotMatch(`${api}\n${view}`, /Customer|BusinessCase|Lead|crm|round.?robin/i)
+  assert.match(dock, /createHumanConsultationRequest/)
+  assert.match(publicApi, /'\/public\/human-consultations'/)
+  assert.doesNotMatch(`${dock}\n${publicApi}`, /adminHumanConsultations|\/v1\/admin\//i)
+  assert.doesNotMatch(`${publicApi}\n${adminApi}\n${view}`, /Customer|BusinessCase|Lead|crm|round.?robin/i)
 })

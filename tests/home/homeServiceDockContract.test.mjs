@@ -60,7 +60,7 @@ test('dock and panel are separate accessible surfaces with deterministic closing
   assert.equal((dock.match(/v-if="props\.activePanel"/g) ?? []).length, 1)
 })
 
-test('three panels expose bounded future-ready content without network integration', () => {
+test('three panels expose bounded content without inline network implementation', () => {
   const dock = read('src/components/home/HomeServiceDock.vue')
   for (const prompt of ['不確定是否符合設立條件？', '想了解牌照買賣流程？', '想獲得 24 小時即時解答']) assert.ok(dock.includes(prompt))
   for (const action of ['預約諮詢', '服務介紹', '提出問題', '常見問題解答', '尋找優惠', '近期活動訊息']) assert.ok(dock.includes(action))
@@ -68,7 +68,9 @@ test('three panels expose bounded future-ready content without network integrati
   for (const contact of ['直接撥打', '請與我聯絡']) assert.ok(dock.includes(contact))
   assert.match(dock, /const quickServiceActions: QuickServiceAction\[\]/)
   assert.match(dock, /const humanServiceOptions: HumanServiceOption\[\]/)
-  assert.doesNotMatch(dock, /axios|fetch\(|\/api\/|openai|line\.me|https?:\/\/|02\) 2345-6789/i)
+  assert.match(dock, /from '@\/api\/publicHumanConsultations'/)
+  assert.match(dock, /await createHumanConsultationRequest\(/)
+  assert.doesNotMatch(dock, /\baxios\b|fetch\s*\(|['"`]\/api\/|\/v1\/admin\/|\/v1\/crm\/|https?:\/\/|openai|line\.me|02\) 2345-6789/i)
 })
 
 test('Quick Service actions map only to approved frontend behavior', () => {

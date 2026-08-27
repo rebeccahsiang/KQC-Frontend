@@ -3,12 +3,16 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePublicFaq } from '@/composables/usePublicFaq'
 import { publicContact } from '@/config/publicContact'
+import {
+  createHumanConsultationRequest,
+  type HumanConsultationServiceType,
+} from '@/api/publicHumanConsultations'
 
 type ServicePanel = 'ai' | 'quick-service' | 'human'
-type HumanServiceId = 'asset-trade' | 'website' | 'vehicle-quota' | 'parking-proof'
+type HumanServiceId = HumanConsultationServiceType
 type ConsultationStep = 'selection' | 'callback' | 'complete'
+type SubmissionState = 'idle' | 'submitting' | 'success' | 'error'
 interface HumanServiceOption { id: HumanServiceId; label: string }
-interface HumanConsultationRequest { name: string; phone: string; serviceTypes: HumanServiceId[] }
 type QuickServiceAction = {
   id: string
   label: string
@@ -50,11 +54,19 @@ const callbackPhone = ref('')
 const serviceValidation = ref('')
 const nameValidation = ref('')
 const phoneValidation = ref('')
+// ============================================================
+// Human Consultation — Submission State
+// WEB-1F-C2B
+// ============================================================
+const submissionState = ref<SubmissionState>('idle')
+const submissionError = ref('')
+let submissionEpoch = 0
 const panelTitle = computed(() => dockItems.find((item) => item.id === props.activePanel)?.label ?? '')
 const selectedServiceOptions = computed(() => humanServiceOptions.filter(({ id }) => selectedServices.value.includes(id)))
 const togglePanel = (panel: ServicePanel) => { emit('update:activePanel', props.activePanel === panel ? null : panel) }
 const closePanel = () => { emit('update:activePanel', null) }
 const resetHumanConsultation = () => {
+  submissionEpoch += 1
   selectedServices.value = []
   consultationStep.value = 'selection'
   callbackName.value = ''
@@ -62,6 +74,8 @@ const resetHumanConsultation = () => {
   serviceValidation.value = ''
   nameValidation.value = ''
   phoneValidation.value = ''
+  submissionState.value = 'idle'
+  submissionError.value = ''
 }
 const toggleHumanService = (id: HumanServiceId) => {
   selectedServices.value = selectedServices.value.includes(id)
@@ -81,12 +95,20 @@ const returnToSelection = () => {
   consultationStep.value = 'selection'
   nameValidation.value = ''
   phoneValidation.value = ''
+  submissionState.value = 'idle'
+  submissionError.value = ''
 }
 const finishConsultation = () => {
   resetHumanConsultation()
   closePanel()
 }
-const submitCallbackRequest = () => {
+// ============================================================
+// Human Consultation — Public Submission
+// WEB-1F-C2B
+// Validates locally, submits one canonical payload, and ignores stale responses.
+// ============================================================
+const submitCallbackRequest = async () => {
+  if (submissionState.value === 'submitting') return
   const name = callbackName.value.trim()
   const phone = callbackPhone.value.trim()
   const normalizedPhone = phone.replace(/[\s()+.-]/g, '')
@@ -94,9 +116,19 @@ const submitCallbackRequest = () => {
   phoneValidation.value = /^\d{7,15}$/.test(normalizedPhone) ? '' : '請輸入有效的聯絡電話'
   if (nameValidation.value || phoneValidation.value) return
 
-  const futureRequest: HumanConsultationRequest = { name, phone, serviceTypes: [...selectedServices.value] }
-  void futureRequest
-  consultationStep.value = 'complete'
+  const requestEpoch = ++submissionEpoch
+  submissionState.value = 'submitting'
+  submissionError.value = ''
+  try {
+    await createHumanConsultationRequest({ name, phone, serviceTypes: [...selectedServices.value] })
+    if (requestEpoch !== submissionEpoch) return
+    submissionState.value = 'success'
+    consultationStep.value = 'complete'
+  } catch {
+    if (requestEpoch !== submissionEpoch) return
+    submissionState.value = 'error'
+    submissionError.value = '送出失敗，請稍後再試。'
+  }
 }
 const scrollToFeaturedServices = async () => {
   closePanel()
@@ -183,14 +215,19 @@ onUnmounted(() => window.removeEventListener('keydown', handleEscape))
               <label for="human-callback-phone">電話</label>
               <input id="human-callback-phone" v-model="callbackPhone" type="tel" maxlength="24" autocomplete="tel" inputmode="tel" :aria-invalid="Boolean(phoneValidation)" :aria-describedby="phoneValidation ? 'human-callback-phone-error' : undefined">
               <p v-if="phoneValidation" id="human-callback-phone-error" class="human-consultation-error">{{ phoneValidation }}</p>
-              <div class="human-callback-form__actions"><button type="button" @click="returnToSelection">返回</button><button type="submit" class="is-primary">送出需求</button></div>
+              <!-- ========================================================
+                   Human Consultation — Submission Feedback
+                   WEB-1F-C2B
+              ========================================================= -->
+              <p v-if="submissionError" class="human-consultation-error" role="alert">{{ submissionError }}</p>
+              <div class="human-callback-form__actions"><button type="button" @click="returnToSelection">返回</button><button type="submit" class="is-primary" :disabled="submissionState === 'submitting'">{{ submissionState === 'submitting' ? '送出中…' : '送出需求' }}</button></div>
             </form>
           </template>
           <template v-else>
             <div class="human-consultation-complete" role="status">
-              <h3>聯絡資料填寫完成</h3>
+              <h3>已收到您的聯絡需求</h3>
               <p>已選服務：{{ selectedServiceOptions.map(({ label }) => label).join('、') }}</p>
-              <p>正式送出功能將於後續版本串接。</p>
+              <p>我們已收到您留下的聯絡資料，後續將由服務人員依需求與您聯繫。</p>
               <button type="button" @click="finishConsultation">返回</button>
             </div>
           </template>
