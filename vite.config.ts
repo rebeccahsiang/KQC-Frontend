@@ -44,6 +44,12 @@ export default defineConfig({
         target: 'http://localhost:3000', // 指向 Node.js Express 後端伺服器
         changeOrigin: true,             // 允許修改請求標頭的 Origin
         secure: false                    // 若為 http 協議不強制校驗 SSL
+      },
+      // Article Media / WEB-1F-D2A-1 — local preview uses the bounded Backend static route.
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
       }
     }
   }

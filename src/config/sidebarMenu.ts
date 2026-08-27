@@ -58,6 +58,16 @@ export const sidebarMenu: SidebarMenuItem[] = [
     ]
   },
   {
+    // ============================================================
+    // Industry Insights — Admin Article Navigation
+    // WEB-1F-D2A
+    // ============================================================
+    id: 'content-management', title: '內容管理', icon: 'lucide:notebook-tabs', capabilities: ['PLATFORM_MANAGER', 'ADMIN'],
+    children: [
+      { id: 'articles', title: '產業文章管理', icon: 'lucide:newspaper', path: '/admin/content/articles', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] }
+    ]
+  },
+  {
     id: 'frontend', title: '前台管理', icon: 'lucide:monitor', roles: ['admin'],
     children: [
       { id: 'marquee', title: '跑馬燈', icon: 'lucide:megaphone', path: '/admin/frontend/marquee', roles: ['admin'] },

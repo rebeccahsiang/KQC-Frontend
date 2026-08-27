@@ -64,6 +64,11 @@ const routes: RouteRecordRaw[] = [
       { path: 'finance', name: 'AdminFinanceCenter', component: () => import('@/views/admin/finance/FinanceCenterView.vue'), meta: { title: '財務中心', capabilities: ['ADMIN'] } },
       { path: 'finance/:businessCaseId', name: 'AdminFinanceDetail', component: () => import('@/views/admin/finance/FinanceDetailView.vue'), meta: { title: '財務案件詳情', capabilities: ['ADMIN'] } },
       { path: 'crm/my-business', name: 'CrmMyBusiness', component: () => import('@/views/admin/crm/MyBusinessView.vue'), meta: { title: '我的業務', capabilities: ['SALES', 'SALES_SUPERVISOR'] } },
+      // ============================================================
+      // Industry Insights — Admin Article Management
+      // WEB-1F-D2A
+      // ============================================================
+      { path: 'content/articles', name: 'AdminArticles', component: () => import('@/views/admin/content/AdminArticlesView.vue'), meta: { title: '產業文章管理', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
       {
         path: 'users',
         name: 'AdminUserManagement',
