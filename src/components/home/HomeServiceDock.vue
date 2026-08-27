@@ -33,8 +33,12 @@ const dockItems: { id: ServicePanel; icon: string; label: string }[] = [
   { id: 'human', icon: '📞', label: '真人諮詢' },
 ]
 const aiPrompts = ['不確定是否符合設立條件？', '想了解牌照買賣流程？', '想獲得 24 小時即時解答']
+// ============================================================
+// Quick Service — Reservation to Human Consultation
+// WEB-1F-D1
+// ============================================================
 const quickServiceActions: QuickServiceAction[] = [
-  { id: 'consultation', label: '預約諮詢', type: 'route', target: '/contact', enabled: true },
+  { id: 'consultation', label: '預約諮詢', type: 'panel', panel: 'human', enabled: true },
   { id: 'services', label: '服務介紹', type: 'home-anchor', target: '#featured-services', enabled: true },
   { id: 'question', label: '提出問題', type: 'panel', panel: 'ai', enabled: true },
   { id: 'faq', label: '常見問題解答', type: 'faq', enabled: true },
