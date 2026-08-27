@@ -1,5 +1,13 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  readonly VITE_PUBLIC_CONSULTATION_PHONE?: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}
+
 // 讓 TypeScript 能夠正確識別並解析所有 .vue 單檔案組件 (SFC)
 declare module '*.vue' {
   import type { DefineComponent } from 'vue'

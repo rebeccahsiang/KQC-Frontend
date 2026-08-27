@@ -67,8 +67,8 @@ test('three panels expose bounded future-ready content without network integrati
   for (const category of ['資產買賣', '網站架設', '車額買賣', '停車位證明']) assert.ok(dock.includes(category))
   for (const contact of ['直接撥打', '請與我聯絡']) assert.ok(dock.includes(contact))
   assert.match(dock, /const quickServiceActions: QuickServiceAction\[\]/)
-  assert.match(dock, /const humanContactActions: FutureAction\[\]/)
-  assert.doesNotMatch(dock, /axios|fetch\(|\/api\/|openai|line\.me|https?:\/\/|tel:|02\) 2345-6789/i)
+  assert.match(dock, /const humanServiceOptions: HumanServiceOption\[\]/)
+  assert.doesNotMatch(dock, /axios|fetch\(|\/api\/|openai|line\.me|https?:\/\/|02\) 2345-6789/i)
 })
 
 test('Quick Service actions map only to approved frontend behavior', () => {
@@ -76,7 +76,7 @@ test('Quick Service actions map only to approved frontend behavior', () => {
   const promo = read('src/components/home/HomePromoCarouselSection.vue')
   const header = read('src/components/layout/FrontHeader.vue')
   const faq = read('src/composables/usePublicFaq.ts')
-  const actions = dock.slice(dock.indexOf('const quickServiceActions'), dock.indexOf('const humanServiceCategories'))
+  const actions = dock.slice(dock.indexOf('const quickServiceActions'), dock.indexOf('const humanServiceOptions'))
 
   assert.equal((actions.match(/\{ id:/g) ?? []).length, 6)
   assert.match(actions, /label: '預約諮詢', type: 'route', target: '\/contact', enabled: true/)
