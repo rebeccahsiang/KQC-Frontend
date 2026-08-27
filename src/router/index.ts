@@ -101,10 +101,11 @@ const routes: RouteRecordRaw[] = [
         path: 'messages',
         name: 'MessageManagement',
         redirect: '/admin/messages/emails',
-        meta: { title: '訊息管理', roles: ['admin'] },
+        meta: { title: '訊息管理', capabilities: ['ADMIN'] },
         children: [
-          { path: 'emails', name: 'EmailLogs', component: () => import('@/views/admin/messages/EmailLogsView.vue'), meta: { title: '表格電子郵件紀錄', roles: ['admin'] } },
-          { path: 'ai-faq', name: 'AiFaqManage', component: () => import('@/views/admin/messages/AiFaqView.vue'), meta: { title: '智能客服答疑紀錄', roles: ['admin'] } }
+          { path: 'emails', name: 'EmailLogs', component: () => import('@/views/admin/messages/EmailLogsView.vue'), meta: { title: '表格電子郵件紀錄', capabilities: ['ADMIN'] } },
+          { path: 'ai-faq', name: 'AiFaqManage', component: () => import('@/views/admin/messages/AiFaqView.vue'), meta: { title: '智能客服答疑紀錄', capabilities: ['ADMIN'] } },
+          { path: 'human-consultations', name: 'HumanConsultations', component: () => import('@/views/admin/messages/HumanConsultationsView.vue'), meta: { title: '真人諮詢需求', capabilities: ['ADMIN'] } }
         ]
       }
     ]

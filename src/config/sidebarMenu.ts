@@ -73,10 +73,11 @@ export const sidebarMenu: SidebarMenuItem[] = [
     ]
   },
   {
-    id: 'messages', title: '訊息管理', icon: 'lucide:messages-square', roles: ['admin'],
+    id: 'messages', title: '訊息管理', icon: 'lucide:messages-square', capabilities: ['ADMIN'],
     children: [
-      { id: 'emails', title: 'Email 紀錄', icon: 'lucide:mail', path: '/admin/messages/emails', roles: ['admin'] },
-      { id: 'ai-faq', title: '智能客服對答', icon: 'lucide:bot', path: '/admin/messages/ai-faq', roles: ['admin'] }
+      { id: 'emails', title: 'Email 紀錄', icon: 'lucide:mail', path: '/admin/messages/emails', capabilities: ['ADMIN'] },
+      { id: 'ai-faq', title: '智能客服對答', icon: 'lucide:bot', path: '/admin/messages/ai-faq', capabilities: ['ADMIN'] },
+      { id: 'human-consultations', title: '真人諮詢需求', icon: 'lucide:phone-call', path: '/admin/messages/human-consultations', capabilities: ['ADMIN'] }
     ]
   }
 ]

@@ -64,6 +64,37 @@ test('first elevation is passwordless, re-entry supports password, and failure p
   assert.match(store, /if \(\(credentials\.portal \|\| 'frontend'\) === 'admin'\) clearAdminAuth\(\)/)
 })
 
+// ============================================================
+// Admin Handoff — Reuse Valid Admin Session
+// WEB-1F-C2A regression protection
+// ============================================================
+test('Admin Handoff reuses a valid Admin Session before any login redirect', () => {
+  const router = read('src/router/index.ts')
+  const store = read('src/stores/authStore.ts')
+  const sidebar = read('src/config/sidebarMenu.ts')
+  const adminGuard = router.slice(
+    router.indexOf("if (portal === 'admin')"),
+    router.indexOf('setRuntimeAuthPortal(portal)'),
+  )
+  const ensureSession = store.slice(
+    store.indexOf('const ensureAdminSession = async () => {'),
+    store.indexOf('const initialize = () => {'),
+  )
+
+  assert.ok(adminGuard.indexOf('ensureAdminSession()') < adminGuard.indexOf("return { name: 'Login'"))
+  assert.match(ensureSession, /if \(isAdminAuthenticated\.value\) return true/)
+  assert.match(ensureSession, /await refreshAdminAccessToken\(\); return true/)
+  assert.match(ensureSession, /catch \{ clearAdminAuth\(\) \}[\s\S]*return \(await elevateAdmin\(\)\)\.success/)
+  assert.doesNotMatch(`${router}\n${store}`, /localStorage|sessionStorage|adminSessionKey/)
+
+  assert.match(router, /path: 'human-consultations'[\s\S]{0,220}capabilities: \['ADMIN'\]/)
+  assert.match(sidebar, /id: 'human-consultations'[^\n]*capabilities: \['ADMIN'\]/)
+  assert.doesNotMatch(
+    router.match(/path: 'human-consultations'[^\n]*/)?.[0] ?? '',
+    /SALES|SALES_SUPERVISOR|PLATFORM_MANAGER/,
+  )
+})
+
 test('Axios refresh failure clears only the request portal and activity follows the active portal', () => {
   const axios = read('src/api/axios.ts')
   const store = read('src/stores/authStore.ts')
