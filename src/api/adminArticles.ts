@@ -7,13 +7,27 @@ import api from './axios'
 interface Envelope<T> { success: true; data: T }
 export type ArticleCategory = 'BUSINESS_MANAGEMENT' | 'TRANSPORT_KNOWLEDGE' | 'MARKET_TREND' | 'BUSINESS_TRANSFORMATION' | 'POLICY_REGULATION' | 'KQC_NEWS'
 export type ArticleStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED'
+export type RichTextMark =
+  | { type: 'BOLD' | 'ITALIC' | 'EMPHASIS' }
+  | { type: 'LINK'; href: string }
+export interface RichTextSegment { text: string; marks: RichTextMark[] }
+export type ArticleContentBlock =
+  | { type: 'PARAGRAPH'; content: RichTextSegment[] }
+  | { type: 'BULLET_LIST' | 'NUMBERED_LIST'; items: RichTextSegment[][] }
+  | { type: 'CALLOUT'; title: string | null; content: RichTextSegment[] }
+export interface ArticleSection { heading: string; blocks: ArticleContentBlock[] }
+export interface NewsSummary { enabled: boolean; content: string | null; sourceName: string | null; sourceUrl: string | null }
+export interface AdvisorAdvice { enabled: boolean; title: string; blocks: ArticleContentBlock[] }
+export interface StructuredArticleContent { newsSummary: NewsSummary; sections: ArticleSection[]; advisorAdvice: AdvisorAdvice }
 export interface ArticleAdminItem {
   id: string; title: string; slug: string; categories: ArticleCategory[]; summary: string; content: string
+  structuredContent: StructuredArticleContent | null
   coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean
   publishedAt: string | null; scheduledAt: string | null; createdAt: string; updatedAt: string; creatorDisplayName: string
 }
 export interface ArticleWriteInput {
   title: string; slug: string; categories: ArticleCategory[]; summary: string; content: string
+  structuredContent?: StructuredArticleContent
   coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean; scheduledAt: string | null
 }
 export interface ArticleListResponse {

@@ -13,10 +13,13 @@ import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
+import ArticleQuickImport from '@/components/admin/articles/ArticleQuickImport.vue'
+import StructuredArticleEditor from '@/components/admin/articles/StructuredArticleEditor.vue'
 import {
   ARTICLE_COVER_IMAGE_MAX_BYTES, adminArticlesApi, articleCoverImageUrl,
-  type ArticleAdminItem, type ArticleCategory, type ArticleStatus, type ArticleWriteInput,
+  type ArticleAdminItem, type ArticleCategory, type ArticleStatus, type ArticleWriteInput, type StructuredArticleContent,
 } from '@/api/adminArticles'
+import { buildLegacyContentFallback, cloneStructuredArticleContent, createStructuredArticleContent, validateStructuredArticleContent } from '@/utils/articleStructuredContent'
 
 // ============================================================
 // Industry Insights — Admin Article Management
@@ -44,8 +47,14 @@ const selectedCoverFile = ref<File | null>(null)
 const uploadingCover = ref(false)
 const uploadError = ref('')
 const coverPreviewFailed = ref(false)
+const contentMode = ref<'LEGACY' | 'STRUCTURED'>('STRUCTURED')
+const structuredErrors = ref<string[]>([])
+const structuredSurface = ref<'CHOICE' | 'IMPORT' | 'EDITOR'>('CHOICE')
+const quickImportReturnSurface = ref<'CHOICE' | 'EDITOR'>('CHOICE')
+const quickImportText = ref('')
+const quickImportFeedback = ref('')
 let coverUploadEpoch = 0
-const form = reactive({ title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'] as ArticleCategory[], summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT' as ArticleStatus, isFeatured: false, scheduledAt: '' })
+const form = reactive({ title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'] as ArticleCategory[], summary: '', content: '', structuredContent: createStructuredArticleContent() as StructuredArticleContent | null, coverImage: '', tags: '', status: 'DRAFT' as ArticleStatus, isFeatured: false, scheduledAt: '' })
 const coverPreviewUrl = computed(() => articleCoverImageUrl(form.coverImage))
 const resetCoverUpload = () => {
   coverUploadEpoch += 1
@@ -53,7 +62,9 @@ const resetCoverUpload = () => {
   if (coverInput.value) coverInput.value.value = ''
 }
 const resetForm = () => {
-  Object.assign(form, { title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'], summary: '', content: '', coverImage: '', tags: '', status: 'DRAFT', isFeatured: false, scheduledAt: '' })
+  Object.assign(form, { title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'], summary: '', content: '', structuredContent: createStructuredArticleContent(), coverImage: '', tags: '', status: 'DRAFT', isFeatured: false, scheduledAt: '' })
+  contentMode.value = 'STRUCTURED'; structuredErrors.value = []; errorMessage.value = ''
+  structuredSurface.value = 'CHOICE'; quickImportReturnSurface.value = 'CHOICE'; quickImportText.value = ''; quickImportFeedback.value = ''
   resetCoverUpload()
 }
 const backendMessage = (error: unknown) => {
@@ -92,11 +103,37 @@ const toLocalDateTime = (value: string | null) => {
 const openEdit = (article: ArticleAdminItem) => {
   resetCoverUpload()
   editingId.value = article.id
-  Object.assign(form, { ...article, coverImage: article.coverImage || '', tags: article.tags.join(', '), scheduledAt: toLocalDateTime(article.scheduledAt) })
+  Object.assign(form, { ...article, structuredContent: article.structuredContent ? cloneStructuredArticleContent(article.structuredContent) : null, coverImage: article.coverImage || '', tags: article.tags.join(', '), scheduledAt: toLocalDateTime(article.scheduledAt) })
+  contentMode.value = article.structuredContent ? 'STRUCTURED' : 'LEGACY'; structuredErrors.value = []
+  structuredSurface.value = article.structuredContent ? 'EDITOR' : 'CHOICE'; quickImportReturnSurface.value = article.structuredContent ? 'EDITOR' : 'CHOICE'; quickImportText.value = ''; quickImportFeedback.value = ''
   dialogVisible.value = true
 }
+// ============================================================
+// Structured Content Mapping / Legacy Article Compatibility
+// Legacy Content Fallback / WEB-1F-D2D-B1
+// ============================================================
+const convertLegacyToStructured = () => {
+  form.structuredContent = createStructuredArticleContent()
+  contentMode.value = 'STRUCTURED'; structuredSurface.value = 'EDITOR'; structuredErrors.value = []
+}
+// ============================================================
+// D2D-B1B — AI Article Quick Import / Article Create Round Trip
+// Quick Import owns only session text and structuredContent replacement;
+// Article metadata and the existing JSON create/update path remain isolated.
+// ============================================================
+const applyQuickImport = (value: StructuredArticleContent) => {
+  form.structuredContent = value
+  const blockCount = value.sections.reduce((total, section) => total + section.blocks.length, 0) + value.advisorAdvice.blocks.length
+  quickImportFeedback.value = `已轉為結構化內容：${value.sections.length} 個章節、${blockCount} 個內容區塊${value.newsSummary.enabled ? '、新聞摘要' : ''}${value.advisorAdvice.enabled ? '、KQC 顧問建議' : ''}。`
+  structuredErrors.value = []; structuredSurface.value = 'EDITOR'
+}
+const openQuickImport = (returnSurface: 'CHOICE' | 'EDITOR') => {
+  quickImportReturnSurface.value = returnSurface; quickImportFeedback.value = ''; structuredSurface.value = 'IMPORT'
+}
 const payload = (): ArticleWriteInput => ({
-  title: form.title, slug: form.slug, categories: [...form.categories], summary: form.summary, content: form.content,
+  title: form.title, slug: form.slug, categories: [...form.categories], summary: form.summary,
+  content: contentMode.value === 'STRUCTURED' && form.structuredContent ? buildLegacyContentFallback(form.structuredContent) : form.content,
+  ...(contentMode.value === 'STRUCTURED' && form.structuredContent ? { structuredContent: cloneStructuredArticleContent(form.structuredContent) } : {}),
   coverImage: form.coverImage.trim() || null,
   tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean), status: form.status, isFeatured: form.isFeatured,
   scheduledAt: form.status === 'SCHEDULED' && form.scheduledAt ? new Date(form.scheduledAt).toISOString() : null,
@@ -148,6 +185,10 @@ const validatePublication = () => {
 const saveArticle = async () => {
   if (saving.value || uploadingCover.value) return
   if (form.categories.length < 1 || form.categories.length > 6) { errorMessage.value = '請選擇至少一個文章分類。'; return }
+  if (contentMode.value === 'STRUCTURED' && form.structuredContent) {
+    structuredErrors.value = validateStructuredArticleContent(form.structuredContent)
+    if (structuredErrors.value.length) { structuredSurface.value = 'EDITOR'; return }
+  }
   if (!validatePublication()) return
   saving.value = true; errorMessage.value = ''
   try {
@@ -183,6 +224,7 @@ onMounted(loadArticles)
     </DataTable>
     <Dialog v-model:visible="dialogVisible" modal :header="editingId ? '編輯文章' : '新增文章'" class="article-dialog" @hide="resetForm">
       <form class="article-form" @submit.prevent="saveArticle">
+        <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
         <label>標題<InputText v-model="form.title" maxlength="160" required /></label>
         <label for="article-slug">文章網址名稱</label>
         <div class="article-form__field">
@@ -191,8 +233,25 @@ onMounted(loadArticles)
         </div>
         <!-- Industry Insights / Article Multi-Category / WEB-1F-D2B-1 -->
         <label>分類<MultiSelect v-model="form.categories" :options="categoryOptions" option-label="label" option-value="value" :max-selected-labels="6" display="chip" placeholder="請選擇至少一個分類" /></label>
-        <label>摘要<Textarea v-model="form.summary" rows="3" maxlength="500" required /></label>
-        <label>文章內容<Textarea v-model="form.content" rows="12" maxlength="100000" required /></label>
+        <label>文章摘要<Textarea v-model="form.summary" rows="3" maxlength="500" required /><small>顯示於產業洞察列表與文章卡片。</small></label>
+        <!-- Legacy Article Compatibility — explicit conversion only / WEB-1F-D2D-B1 -->
+        <div v-if="contentMode === 'LEGACY'" class="legacy-content-editor">
+          <header><div><strong>文章內容</strong><small>Legacy 模式：保留既有文章正文。</small></div><Button type="button" outlined label="改用結構化文章內容" @click="convertLegacyToStructured" /></header>
+          <label for="legacy-article-content">既有文章內容</label>
+          <Textarea id="legacy-article-content" v-model="form.content" rows="12" maxlength="100000" required />
+        </div>
+        <section v-else-if="form.structuredContent" class="structured-content-workflow">
+          <div v-if="structuredSurface === 'CHOICE'" class="structured-entry">
+            <div><strong>快速匯入文章</strong><p>將 AI 產生並完成審稿的 KQC 格式文章一次貼入，系統會自動整理成新聞摘要、章節、清單、重點提醒與 KQC 顧問建議。</p></div>
+            <div><Button type="button" label="快速匯入文章" @click="openQuickImport('CHOICE')" /><Button type="button" outlined label="手動建立結構化內容" @click="structuredSurface = 'EDITOR'" /></div>
+          </div>
+          <ArticleQuickImport v-else-if="structuredSurface === 'IMPORT'" v-model="quickImportText" :current-content="form.structuredContent" @apply="applyQuickImport" @close="structuredSurface = quickImportReturnSurface" />
+          <template v-else>
+            <Message v-if="quickImportFeedback" severity="success" :closable="false">{{ quickImportFeedback }}</Message>
+            <div class="structured-reimport"><Button type="button" text size="small" label="快速重新匯入" @click="openQuickImport('EDITOR')" /></div>
+            <StructuredArticleEditor v-model="form.structuredContent" :errors="structuredErrors" />
+          </template>
+        </section>
         <fieldset class="article-cover-field">
           <legend>文章封面圖片</legend>
           <div class="article-cover-upload">
@@ -240,6 +299,15 @@ h1 { margin: 0; color: var(--text-main); font-size: $kqc-type-section-title; }
 .article-form label { display: grid; gap: $kqc-spacing-xs; color: var(--text-main); font-weight: 650; }
 .article-form__field { display: grid; min-width: 0; gap: $kqc-spacing-xs; }
 .article-form__field small { color: var(--text-muted); font-weight: 400; }
+.legacy-content-editor { display: grid; gap: $kqc-spacing-sm; padding: $kqc-spacing-md; border: 1px solid var(--border-grey); border-radius: $kqc-radius-md; }
+.legacy-content-editor > header { display: flex; align-items: center; justify-content: space-between; gap: $kqc-spacing-sm; }
+.legacy-content-editor > header > div { display: grid; gap: $kqc-spacing-xs; }
+.legacy-content-editor small { color: var(--text-muted); font-weight: 400; }
+.structured-content-workflow { display: grid; gap: $kqc-spacing-sm; }
+.structured-entry { display: grid; gap: $kqc-spacing-md; padding: $kqc-spacing-lg; border: 1px solid var(--border-grey); border-radius: $kqc-radius-md; }
+.structured-entry p { max-width: 48rem; margin: $kqc-spacing-xs 0 0; color: var(--text-muted); }
+.structured-entry > div:last-child { display: flex; flex-wrap: wrap; gap: $kqc-spacing-sm; }
+.structured-reimport { display: flex; justify-content: flex-end; }
 .article-form :deep(input), .article-form :deep(textarea), .article-form :deep(.p-select) { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; }
 .article-form :deep(textarea) { resize: vertical; }
 .article-form .checkbox-field { display: flex; align-items: center; grid-template-columns: auto 1fr; }
