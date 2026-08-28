@@ -122,11 +122,26 @@ test('AdminHeader account menu separates backend exit from full account logout a
   assert.equal((accountMenu.match(/<button\b[^>]*\brole="menuitem"[^>]*>/g) || []).length, 2)
   assert.match(accountMenu, />離開後台</)
   assert.match(accountMenu, />登出帳號</)
-  assert.match(header, /await authStore\.exitAdminPortal\(\)/)
-  assert.match(header, /await authStore\.logout\(\)/)
+  assert.match(accountMenu, /@click="leaveBackend"/)
+  assert.match(accountMenu, /@click="logoutAccount"/)
+  // ============================================================
+  // Regression Gate — Admin Portal Exit / Account Logout
+  // REGRESSION-GATE-R1: navigation-only exit must stay distinct from full logout.
+  // ============================================================
+  const leaveStart = header.indexOf('const leaveBackend = async () => {')
+  const logoutStart = header.indexOf('const logoutAccount = async () => {')
+  const logoutEnd = header.indexOf('\nonMounted(', logoutStart)
+  assert.ok(leaveStart >= 0 && logoutStart > leaveStart && logoutEnd > logoutStart, 'account action function slices must be bounded')
+  const leaveBackend = header.slice(leaveStart, logoutStart)
+  const logoutAccount = header.slice(logoutStart, logoutEnd)
+  assert.match(leaveBackend, /closeAccountMenu\(\)/)
+  assert.match(leaveBackend, /await router\.replace\('\/'\)/)
+  assert.doesNotMatch(leaveBackend, /authStore\.(?:logout|exitAdminPortal)\(/)
+  assert.match(logoutAccount, /closeAccountMenu\(\)/)
+  assert.match(logoutAccount, /await authStore\.logout\(\)/)
+  assert.match(logoutAccount, /await router\.replace\('\/'\)/)
   assert.match(header, /event\.key === 'Escape'/)
   assert.match(header, /document\.addEventListener\('pointerdown'/)
-  assert.match(header, /router\.replace\('\/'\)/)
 })
 
 test('Frontend Auth and routing contain only the four approved roles', () => {

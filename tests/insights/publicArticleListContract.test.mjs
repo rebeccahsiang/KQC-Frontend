@@ -11,12 +11,14 @@ const read = (path) => readFileSync(new URL(path, root), 'utf8')
 // ============================================================
 test('public list uses the existing bounded Article endpoint and eight-item pagination', () => {
   const api = read('src/api/publicArticles.ts'); const view = read('src/views/InsightsView.vue')
+  const listItemType = api.slice(api.indexOf('export interface PublicArticleListItem'), api.indexOf('export interface PublicArticleListResponse'))
   assert.match(api, /import api from '\.\/axios'/)
   assert.match(api, /api\.get<Envelope<PublicArticleListResponse>>\('\/public\/articles'/)
   assert.match(api, /params: \{ page, limit, \.\.\.\(category \? \{ category \} : \{\}\) \}/)
   assert.match(view, /const PAGE_SIZE = 8/)
   assert.match(view, /publicArticlesApi\.list\(\{ page: page\.value, limit: PAGE_SIZE, category: activeCategory\.value \}\)/)
-  assert.doesNotMatch(`${api}\n${view}`, /adminArticlesApi|content:\s*string|hardcodedArticles|demoArticles|JSON\.stringify/)
+  assert.doesNotMatch(listItemType, /content:\s*string/)
+  assert.doesNotMatch(`${api}\n${view}`, /adminArticlesApi|hardcodedArticles|demoArticles|JSON\.stringify/)
   assert.doesNotMatch(api, /scheduledAt|creatorDisplayName|createdBy/)
 })
 
@@ -33,17 +35,17 @@ test('seven visible filters map to exactly six canonical categories and all send
   assert.match(view, /activeCategory\.value = category; page\.value = 1; void loadArticles\(\)/)
 })
 
-test('cards use coverImage and slug navigation while D2C remains deferred', () => {
-  const view = read('src/views/InsightsView.vue'); const router = read('src/router/index.ts'); const deferred = read('src/views/InsightsDetailDeferredView.vue')
+test('cards use coverImage and slug navigation while detail ownership remains separate', () => {
+  const view = read('src/views/InsightsView.vue'); const router = read('src/router/index.ts'); const detail = read('src/views/InsightsDetailView.vue')
   assert.match(view, /:to="`\/insights\/\$\{article\.slug\}`"/)
   assert.match(view, /v-if="article\.coverImage" :src="publicArticleCoverUrl\(article\.coverImage\)"/)
   for (const field of ['article.categories', 'article.title', 'article.publishedAt', 'article.summary']) assert.ok(view.includes(field))
   assert.match(view, /v-for="category in article\.categories"/)
   assert.match(view, /class="article-card__read-more">閱讀全文 →/)
   assert.doesNotMatch(view, /creatorDisplayName|createdBy|撰寫人|作者/)
-  assert.match(router, /path: '\/insights\/:slug'[\s\S]{0,180}InsightsDetailDeferredView\.vue/)
-  assert.match(deferred, /D2C owns the full article detail surface/)
-  assert.doesNotMatch(`${view}\n${deferred}`, /v-html|article\.content|video|relatedArticles|related links|share|like|subscribe/i)
+  assert.match(router, /path: '\/insights\/:slug'[\s\S]{0,180}InsightsDetailView\.vue/)
+  assert.match(detail, /Public Article Detail[\s\S]*WEB-1F-D2C/)
+  assert.doesNotMatch(view, /v-html|article\.content|video|relatedArticles|related links|share|like|subscribe/i)
 })
 
 test('grid and media preserve four two one columns and a consistent sixteen-nine crop', () => {

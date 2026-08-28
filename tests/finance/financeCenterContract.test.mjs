@@ -18,8 +18,18 @@ test('Finance Center route and navigation are ADMIN-authoritative while reserved
   assert.match(menu, /id:\s*'finance-center'[\s\S]{0,160}path:\s*'\/admin\/finance'[\s\S]{0,100}capabilities:\s*\['ADMIN'\]/)
   assert.match(menu, /id:\s*'my-performance'[\s\S]{0,180}disabled:\s*true[\s\S]{0,120}\['SALES', 'SALES_SUPERVISOR', 'ADMIN'\]/)
   assert.match(menu, /id:\s*'team-performance'[\s\S]{0,180}disabled:\s*true[\s\S]{0,120}\['SALES_SUPERVISOR', 'ADMIN'\]/)
-  const financeMenu = menu.slice(menu.indexOf("id: 'finance-management'"), menu.indexOf("id: 'frontend'"))
-  assert.doesNotMatch(financeMenu, /PLATFORM_MANAGER/)
+  // ============================================================
+  // Regression Gate — Finance Center Authorization
+  // REGRESSION-GATE-R1: exclude later Content Management capabilities.
+  // ============================================================
+  const entryStart = menu.indexOf("{ id: 'finance-center'")
+  const entryEnd = menu.indexOf('\n', entryStart)
+  assert.ok(entryStart >= 0 && entryEnd > entryStart, 'Finance Center entry slice must be non-empty')
+  const financeCenterEntry = menu.slice(entryStart, entryEnd)
+  assert.match(financeCenterEntry, /id: 'finance-center'/)
+  assert.match(financeCenterEntry, /path: '\/admin\/finance'/)
+  assert.match(financeCenterEntry, /capabilities: \['ADMIN'\]/)
+  assert.doesNotMatch(financeCenterEntry, /PLATFORM_MANAGER/)
 })
 
 test('typed Finance API preserves reads and exposes only the initialization mutation', () => {

@@ -11,7 +11,7 @@ const themeStore = useThemeStore()
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
-const publicRouteNames = new Set(['Home', 'Products', 'Company', 'Insights', 'Contact'])
+const publicRouteNames = new Set(['Home', 'Products', 'Company', 'Insights', 'InsightDetail', 'Contact'])
 const usesPublicLayout = computed(() => publicRouteNames.has(String(route.name)))
 let stopAuthActivityTracker: (() => void) | null = null
 

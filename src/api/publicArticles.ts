@@ -14,6 +14,7 @@ export interface PublicArticleListResponse {
   articles: PublicArticleListItem[]
   pagination: { page: number; limit: number; total: number; totalPages: number }
 }
+export interface PublicArticleDetail extends PublicArticleListItem { content: string }
 export const publicArticleCoverUrl = (path: string) => {
   if (!path || /^https?:\/\//i.test(path)) return path
   const apiBase = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -24,4 +25,6 @@ export const publicArticlesApi = {
     api.get<Envelope<PublicArticleListResponse>>('/public/articles', {
       params: { page, limit, ...(category ? { category } : {}) },
     }),
+  detail: (slug: string) =>
+    api.get<Envelope<{ article: PublicArticleDetail }>>(`/public/articles/${encodeURIComponent(slug)}`),
 }
