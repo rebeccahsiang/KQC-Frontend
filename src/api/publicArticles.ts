@@ -19,6 +19,7 @@ export interface PublicArticleDetail extends PublicArticleListItem {
   content: string
   structuredContent?: StructuredArticleContent | null
 }
+export interface ArticleLikeState { liked: boolean; likeCount: number }
 export const publicArticleCoverUrl = (path: string) => {
   if (!path || /^https?:\/\//i.test(path)) return path
   const apiBase = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -31,4 +32,8 @@ export const publicArticlesApi = {
     }),
   detail: (slug: string) =>
     api.get<Envelope<{ article: PublicArticleDetail }>>(`/public/articles/${encodeURIComponent(slug)}`),
+  likeState: (slug: string) =>
+    api.get<Envelope<ArticleLikeState>>(`/public/articles/${encodeURIComponent(slug)}/like`),
+  toggleLike: (slug: string) =>
+    api.post<Envelope<ArticleLikeState>>(`/public/articles/${encodeURIComponent(slug)}/like`),
 }

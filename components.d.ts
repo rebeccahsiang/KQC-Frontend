@@ -18,6 +18,7 @@ declare module 'vue' {
     AppHeader: typeof import('./src/components/layout/AppHeader.vue')['default']
     ArticleContentBlocks: typeof import('./src/components/insights/ArticleContentBlocks.vue')['default']
     ArticleContentBlocksEditor: typeof import('./src/components/admin/articles/ArticleContentBlocksEditor.vue')['default']
+    ArticleLike: typeof import('./src/components/insights/ArticleLike.vue')['default']
     ArticleQuickImport: typeof import('./src/components/admin/articles/ArticleQuickImport.vue')['default']
     ArticleRichText: typeof import('./src/components/insights/ArticleRichText.vue')['default']
     ArticleShare: typeof import('./src/components/insights/ArticleShare.vue')['default']

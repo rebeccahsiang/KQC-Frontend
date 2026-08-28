@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import Skeleton from 'primevue/skeleton'
+import ArticleLike from '@/components/insights/ArticleLike.vue'
 import ArticleShare from '@/components/insights/ArticleShare.vue'
 import StructuredArticleContent from '@/components/insights/StructuredArticleContent.vue'
 import {
@@ -145,7 +146,10 @@ onBeforeUnmount(() => {
              Structured articles render once; pre-structured articles remain readable. -->
         <StructuredArticleContent v-if="article.structuredContent" :content="article.structuredContent" />
         <div v-else class="article-detail__body">{{ article.content }}</div>
-        <ArticleShare :title="article.title" :summary="article.summary" />
+        <div class="article-detail__engagement">
+          <ArticleLike :slug="article.slug" />
+          <ArticleShare :title="article.title" :summary="article.summary" />
+        </div>
         <RouterLink class="article-detail__return" to="/insights">返回產業洞察</RouterLink>
       </div>
     </article>
@@ -179,6 +183,7 @@ onBeforeUnmount(() => {
 .article-detail__header time { color: var(--text-muted); font-size: $kqc-type-metadata; }
 /* Industry Insights / Article Detail Body / WEB-1F-D2C / WEB-1F-D2C-P1 */
 .article-detail__body { overflow-wrap: anywhere; color: var(--text-main); font-size: $kqc-type-body-emphasis; line-height: 1.9; white-space: pre-wrap; }
+.article-detail__engagement { display: grid; min-width: 0; }
 .article-detail__return { width: fit-content; padding: $kqc-spacing-sm $kqc-spacing-lg; border: 1px solid var(--accent-active); border-radius: $kqc-radius-full; color: var(--accent-active); font-weight: 700; text-decoration: none; }
 .article-detail__return:hover { background: var(--accent-active); color: var(--text-on-accent, #fff); }
 .article-detail__loading { display: grid; gap: clamp(2rem, 5vw, 4rem); }

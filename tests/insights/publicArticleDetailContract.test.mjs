@@ -106,7 +106,7 @@ test('loading unavailable title and route-change guards are bounded', () => {
 test('D2C keeps deferred engagement media and unsafe rich-content surfaces excluded', () => {
   const view = read('src/views/InsightsDetailView.vue')
   const template = view.slice(view.indexOf('<template>'), view.indexOf('<style'))
-  // D2E-A R10 — D2C Deferred Surface Contract Update:
-  // Share graduated in D2E-A; Like, Subscription, Video, Related Links and Media Library remain deferred.
-  assert.doesNotMatch(template, /v-html|like|subscribe|video|related(?:-|_)?links|media-library/i)
+  // D2E-B2 — D2C Deferred Surface Contract Update:
+  // Share and Like graduated in D2E; Subscription, Video, Related Links and Media Library remain deferred.
+  assert.doesNotMatch(template, /v-html|subscribe|video|related(?:-|_)?links|media-library/i)
 })
