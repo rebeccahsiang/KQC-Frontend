@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import Skeleton from 'primevue/skeleton'
+import ArticleShare from '@/components/insights/ArticleShare.vue'
 import StructuredArticleContent from '@/components/insights/StructuredArticleContent.vue'
 import {
   publicArticleCoverUrl,
@@ -144,6 +145,7 @@ onBeforeUnmount(() => {
              Structured articles render once; pre-structured articles remain readable. -->
         <StructuredArticleContent v-if="article.structuredContent" :content="article.structuredContent" />
         <div v-else class="article-detail__body">{{ article.content }}</div>
+        <ArticleShare :title="article.title" :summary="article.summary" />
         <RouterLink class="article-detail__return" to="/insights">返回產業洞察</RouterLink>
       </div>
     </article>
