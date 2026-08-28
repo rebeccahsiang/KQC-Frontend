@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import Skeleton from 'primevue/skeleton'
+import StructuredArticleContent from '@/components/insights/StructuredArticleContent.vue'
 import {
   publicArticleCoverUrl,
   publicArticlesApi,
@@ -139,8 +140,10 @@ onBeforeUnmount(() => {
           <div v-if="article.tags.length" class="article-detail__tags"><span v-for="tag in article.tags" :key="tag">#{{ tag }}</span></div>
         </header>
 
-        <!-- Article Detail Body — escaped plain text only / WEB-1F-D2C -->
-        <div class="article-detail__body">{{ article.content }}</div>
+        <!-- D2D-B2 — Legacy Article Fallback:
+             Structured articles render once; pre-structured articles remain readable. -->
+        <StructuredArticleContent v-if="article.structuredContent" :content="article.structuredContent" />
+        <div v-else class="article-detail__body">{{ article.content }}</div>
         <RouterLink class="article-detail__return" to="/insights">返回產業洞察</RouterLink>
       </div>
     </article>

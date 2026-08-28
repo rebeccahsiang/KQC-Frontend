@@ -18,7 +18,8 @@ test('canonical detail route owns the final public view and shared public shell'
 
 test('detail fetch uses only the bounded public slug endpoint and public-safe type', () => {
   const api = read('src/api/publicArticles.ts'); const view = read('src/views/InsightsDetailView.vue')
-  assert.match(api, /export interface PublicArticleDetail extends PublicArticleListItem \{ content: string \}/)
+  assert.match(api, /import type \{ StructuredArticleContent \} from '\.\/adminArticles'/)
+  assert.match(api, /export interface PublicArticleDetail extends PublicArticleListItem \{[\s\S]*content: string[\s\S]*structuredContent\?: StructuredArticleContent \| null/)
   assert.match(api, /detail: \(slug: string\)[\s\S]*api\.get<Envelope<\{ article: PublicArticleDetail \}>>\(`\/public\/articles\/\$\{encodeURIComponent\(slug\)\}`\)/)
   assert.match(view, /publicArticlesApi\.detail\(slug\)/)
   assert.doesNotMatch(`${api}\n${view}`, /adminArticlesApi|scheduledAt|createdBy|creatorDisplayName/)
@@ -41,9 +42,9 @@ test('detail renders semantic breadcrumb hero header metadata and deterministic 
   assert.doesNotMatch(view, /updatedAt|author|作者|撰寫人|creator/i)
 })
 
-test('body remains escaped plain text with editorial responsive reading width', () => {
+test('detail selects structured rendering or escaped legacy text within the editorial responsive reading width', () => {
   const view = read('src/views/InsightsDetailView.vue'); const styles = view.slice(view.indexOf('<style'))
-  assert.match(view, /class="article-detail__body">\{\{ article\.content \}\}<\/div>/)
+  assert.match(view, /<StructuredArticleContent v-if="article\.structuredContent" :content="article\.structuredContent" \/>[\s\S]*<div v-else class="article-detail__body">\{\{ article\.content \}\}<\/div>/)
   assert.doesNotMatch(view, /v-html/)
   assert.match(styles, /\.article-detail__reading \{[^}]*width: min\(100%, 52rem\);[^}]*margin-inline: auto;/s)
   assert.match(styles, /\.article-detail__body \{[^}]*overflow-wrap: anywhere;[^}]*line-height: 1\.9;[^}]*white-space: pre-wrap;/s)

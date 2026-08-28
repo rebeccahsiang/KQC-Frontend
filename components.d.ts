@@ -16,8 +16,10 @@ declare module 'vue' {
     AiSearchBar: typeof import('./src/components/showcase/AiSearchBar.vue')['default']
     AppFooter: typeof import('./src/components/layout/AppFooter.vue')['default']
     AppHeader: typeof import('./src/components/layout/AppHeader.vue')['default']
+    ArticleContentBlocks: typeof import('./src/components/insights/ArticleContentBlocks.vue')['default']
     ArticleContentBlocksEditor: typeof import('./src/components/admin/articles/ArticleContentBlocksEditor.vue')['default']
     ArticleQuickImport: typeof import('./src/components/admin/articles/ArticleQuickImport.vue')['default']
+    ArticleRichText: typeof import('./src/components/insights/ArticleRichText.vue')['default']
     AuthModal: typeof import('./src/components/auth/AuthModal.vue')['default']
     BackToTop: typeof import('./src/components/layout/BackToTop.vue')['default']
     CaseCard: typeof import('./src/components/showcase/CaseCard.vue')['default']
@@ -67,6 +69,7 @@ declare module 'vue' {
     SidebarMenuItem: typeof import('./src/components/layout/sidebar/SidebarMenuItem.vue')['default']
     SidebarNav: typeof import('./src/components/layout/sidebar/SidebarNav.vue')['default']
     StatsDashboard: typeof import('./src/components/admin/StatsDashboard.vue')['default']
+    StructuredArticleContent: typeof import('./src/components/insights/StructuredArticleContent.vue')['default']
     StructuredArticleEditor: typeof import('./src/components/admin/articles/StructuredArticleEditor.vue')['default']
   }
 }
