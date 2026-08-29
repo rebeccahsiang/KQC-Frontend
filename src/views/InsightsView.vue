@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Paginator, { type PageState } from 'primevue/paginator'
@@ -45,6 +45,8 @@ let requestEpoch = 0
 const verificationFeedback = ref('')
 const verificationBusy = ref(false)
 let verificationStarted = false
+const articleScrollTarget = ref<HTMLElement | null>(null)
+let articleScrollHandled = false
 
 const loadArticles = async () => {
   const epoch = ++requestEpoch
@@ -76,7 +78,7 @@ const selectCategory = (category?: PublicArticleCategory) => {
   const query = { ...route.query }
   if (category) query.category = category
   else delete query.category
-  void router.push({ name: 'Insights', query })
+  void router.push({ name: 'Insights', query, hash: route.hash })
 }
 const changePage = (event: PageState) => { page.value = Math.max(1, event.page + 1); void loadArticles() }
 const formatDate = (value: string | null) => value
@@ -98,7 +100,7 @@ const verifySubscription = async () => {
     verificationBusy.value = false
     const query = { ...route.query }
     delete query.token
-    await router.replace({ name: 'Insights', query })
+    await router.replace({ name: 'Insights', query, hash: route.hash })
   }
 }
 // D2H — Route / Stale Response Guard / route changes reuse the existing request epoch authority.
@@ -107,7 +109,7 @@ watch(() => route.query.category, (value) => {
   if (value !== undefined && category === undefined) {
     const query = { ...route.query }
     delete query.category
-    void router.replace({ name: 'Insights', query })
+    void router.replace({ name: 'Insights', query, hash: route.hash })
   }
   if (activeCategory.value === category && page.value === 1) return
   activeCategory.value = category
@@ -119,9 +121,19 @@ onMounted(async () => {
   if (route.query.category !== undefined && categoryFromQuery(route.query.category) === undefined) {
     const query = { ...route.query }
     delete query.category
-    await router.replace({ name: 'Insights', query })
+    await router.replace({ name: 'Insights', query, hash: route.hash })
   }
   await loadArticles()
+  // D2H-R2 — One-shot Scroll Coordination / reactive list, pagination, and category updates never pull the visitor back.
+  if (!articleScrollHandled && route.hash === '#insights-articles') {
+    articleScrollHandled = true
+    await nextTick()
+    window.requestAnimationFrame(() => {
+      // D2H-R2 — Reduced Motion / Header Offset / CSS owns clearance while motion preference owns animation.
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      articleScrollTarget.value?.scrollIntoView({ behavior, block: 'start' })
+    })
+  }
 })
 </script>
 
@@ -133,6 +145,8 @@ onMounted(async () => {
          Industry Insights — Category Filter Layout
          WEB-1F-D2B
          ============================================================ -->
+    <!-- D2H-R2 — Insights Article Scroll Target / groups complete tabs with the immediately following Article results. -->
+    <div id="insights-articles" ref="articleScrollTarget" class="insights-article-region">
     <nav class="article-filters" aria-label="文章分類">
       <div class="article-filters__inner">
         <button v-for="filter in filters" :key="filter.label" type="button" :class="{ active: activeCategory === filter.category }" :aria-pressed="activeCategory === filter.category" @click="selectCategory(filter.category)">{{ filter.label }}</button>
@@ -158,6 +172,7 @@ onMounted(async () => {
       <p v-if="loading && initialLoadComplete" class="article-refresh-status" role="status">正在更新文章…</p>
     </section>
     <Paginator v-if="initialLoadComplete && !errorMessage && total > PAGE_SIZE" :first="(page - 1) * PAGE_SIZE" :rows="PAGE_SIZE" :total-records="total" @page="changePage" />
+    </div>
   </main>
 </template>
 
@@ -170,6 +185,8 @@ onMounted(async () => {
 .insights-hero h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.1; }
 .insights-hero > p:last-child { margin: $kqc-spacing-lg 0 0; color: var(--text-muted); font-size: $kqc-type-body-emphasis; line-height: 1.7; }
 .subscription-verification { margin: 0 0 $kqc-spacing-xl; padding: $kqc-spacing-md $kqc-spacing-lg; border-inline-start: 3px solid var(--accent-active); background: color-mix(in srgb, var(--accent-active) 7%, transparent); color: var(--text-main); line-height: 1.6; }
+/* D2H-R2-2 — Scroll Offset Visual Tuning / balances complete tab visibility with a compact Hero remainder. */
+.insights-article-region { scroll-margin-top: 10.5rem; }
 .article-filters { max-width: 100%; margin-bottom: $kqc-spacing-2xl; padding-bottom: $kqc-spacing-xs; overflow-x: auto; scrollbar-width: thin; }
 .article-filters__inner { display: flex; width: max-content; min-width: 100%; justify-content: center; gap: $kqc-spacing-sm; }
 .article-filters button { flex: 0 0 auto; padding: 0.65rem 1rem; border: 1px solid var(--border-grey); border-radius: $kqc-radius-full; background: var(--bg-card); color: var(--text-muted); cursor: pointer; font: inherit; font-weight: 650; }
@@ -198,6 +215,6 @@ onMounted(async () => {
 .article-refresh-status { margin: $kqc-spacing-md 0 0; color: var(--text-muted); font-size: $kqc-type-metadata; text-align: center; }
 :deep(.p-paginator) { margin-top: $kqc-spacing-2xl; background: transparent; }
 @media (max-width: $breakpoint-lg) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: $breakpoint-sm) { .insights-view { width: min(100% - 1.25rem, 90rem); } .article-grid { grid-template-columns: minmax(0, 1fr); } .article-card__meta { align-items: flex-start; flex-direction: column; } }
+@media (max-width: $breakpoint-sm) { .insights-view { width: min(100% - 1.25rem, 90rem); } .insights-article-region { scroll-margin-top: 5rem; } .article-grid { grid-template-columns: minmax(0, 1fr); } .article-card__meta { align-items: flex-start; flex-direction: column; } }
 @media (prefers-reduced-motion: reduce) { .article-card__media img { transition: none; } .article-card:hover .article-card__media img, .article-card:focus-visible .article-card__media img { transform: none; } }
 </style>

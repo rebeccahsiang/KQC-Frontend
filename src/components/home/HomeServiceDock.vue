@@ -19,6 +19,7 @@ type QuickServiceAction = {
   type: 'route' | 'home-anchor' | 'panel' | 'faq' | 'unavailable'
   target?: string
   query?: Record<string, string>
+  hash?: string
   panel?: ServicePanel
   enabled: boolean
 }
@@ -45,7 +46,8 @@ const quickServiceActions: QuickServiceAction[] = [
   { id: 'faq', label: '常見問題解答', type: 'faq', enabled: true },
   { id: 'offers', label: '尋找優惠', type: 'unavailable', enabled: false },
   // D2H — Quick Service KQC News Navigation / this action navigates only; Insights remains Article data authority.
-  { id: 'events', label: '近期活動訊息', type: 'route', target: '/insights', query: { category: 'KQC_NEWS' }, enabled: true },
+  // D2H-R2 — Quick Service KQC News Scroll Intent / only this source carries the article-region hash.
+  { id: 'events', label: '近期活動訊息', type: 'route', target: '/insights', query: { category: 'KQC_NEWS' }, hash: '#insights-articles', enabled: true },
 ]
 const humanServiceOptions: HumanServiceOption[] = [
   { id: 'asset-trade', label: '資產買賣' },
@@ -149,7 +151,7 @@ const handleQuickServiceAction = (action: QuickServiceAction) => {
   if (!action.enabled) return
   if (action.type === 'route' && action.target) {
     closePanel()
-    void router.push({ path: action.target, query: action.query })
+    void router.push({ path: action.target, query: action.query, hash: action.hash })
   } else if (action.type === 'home-anchor') {
     void scrollToFeaturedServices()
   } else if (action.type === 'panel' && action.panel) {

@@ -35,10 +35,17 @@ test('seven visible filters map to exactly six canonical categories and all send
   assert.match(view, /const canonicalCategories = new Set<PublicArticleCategory>/)
   assert.match(view, /canonicalCategories\.has\(value as PublicArticleCategory\)/)
   assert.match(view, /activeCategory = ref<PublicArticleCategory \| undefined>\(categoryFromQuery\(route\.query\.category\)\)/)
-  assert.match(view, /if \(category\) query\.category = category[\s\S]*else delete query\.category[\s\S]*router\.push\(\{ name: 'Insights', query \}\)/)
+  assert.match(view, /if \(category\) query\.category = category[\s\S]*else delete query\.category[\s\S]*router\.push\(\{ name: 'Insights', query, hash: route\.hash \}\)/)
   assert.match(view, /watch\(\(\) => route\.query\.category,[\s\S]*activeCategory\.value = category[\s\S]*page\.value = 1[\s\S]*loadArticles\(\)/)
   assert.match(view, /value !== undefined && category === undefined[\s\S]*delete query\.category[\s\S]*router\.replace/)
   assert.doesNotMatch(view, /window\.location|history\.pushState|localStorage|sessionStorage|tab=|category=KQC 快訊/)
+  // D2H-R2 — Insights Article Scroll Target is one-shot and layout-safe, never a general category-navigation side effect.
+  assert.match(view, /id="insights-articles" ref="articleScrollTarget" class="insights-article-region"/)
+  assert.match(view, /if \(!articleScrollHandled && route\.hash === '#insights-articles'\)/)
+  assert.match(view, /articleScrollHandled = true[\s\S]*await nextTick\(\)[\s\S]*requestAnimationFrame[\s\S]*scrollIntoView\(\{ behavior, block: 'start' \}\)/)
+  assert.match(view, /prefers-reduced-motion: reduce[\s\S]*\? 'auto' : 'smooth'/)
+  assert.match(view, /\.insights-article-region \{ scroll-margin-top: 10\.5rem; \}/)
+  assert.doesNotMatch(view, /window\.scrollTo|scrollTo\s*\(\s*0\s*,|localStorage|sessionStorage/)
 })
 
 test('cards use coverImage and slug navigation while detail ownership remains separate', () => {

@@ -91,10 +91,11 @@ test('Quick Service actions map only to approved frontend behavior', () => {
   assert.match(actions, /label: '常見問題解答', type: 'faq', enabled: true/)
   assert.match(actions, /label: '尋找優惠', type: 'unavailable', enabled: false/)
   // D2H — Quick Service KQC News Navigation protects the canonical deep link without adding Article fetching here.
-  assert.match(actions, /label: '近期活動訊息', type: 'route', target: '\/insights', query: \{ category: 'KQC_NEWS' \}, enabled: true/)
+  // D2H-R2 — Quick Service KQC News Scroll Intent remains source-specific through the canonical target hash.
+  assert.match(actions, /label: '近期活動訊息', type: 'route', target: '\/insights', query: \{ category: 'KQC_NEWS' \}, hash: '#insights-articles', enabled: true/)
   assert.match(promo, /<section id="featured-services" class="home-promo-section"/)
   assert.match(dock, /router\.push\(\{ path: '\/', hash: '#featured-services' \}\)/)
-  assert.match(handler, /closePanel\(\)[\s\S]*router\.push\(\{ path: action\.target, query: action\.query \}\)/)
+  assert.match(handler, /closePanel\(\)[\s\S]*router\.push\(\{ path: action\.target, query: action\.query, hash: action\.hash \}\)/)
   assert.doesNotMatch(handler, /window\.location|fetch\s*\(|publicArticlesApi/)
   assert.match(dock, /scrollIntoView\(\{ behavior, block: 'start' \}\)/)
   assert.match(dock, /emit\('update:activePanel', action\.panel\)/)
