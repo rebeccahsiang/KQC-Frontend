@@ -22,6 +22,7 @@ declare module 'vue' {
     ArticleQuickImport: typeof import('./src/components/admin/articles/ArticleQuickImport.vue')['default']
     ArticleRichText: typeof import('./src/components/insights/ArticleRichText.vue')['default']
     ArticleShare: typeof import('./src/components/insights/ArticleShare.vue')['default']
+    ArticleSubscription: typeof import('./src/components/insights/ArticleSubscription.vue')['default']
     AuthModal: typeof import('./src/components/auth/AuthModal.vue')['default']
     BackToTop: typeof import('./src/components/layout/BackToTop.vue')['default']
     CaseCard: typeof import('./src/components/showcase/CaseCard.vue')['default']

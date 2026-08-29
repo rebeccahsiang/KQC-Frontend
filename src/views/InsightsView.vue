@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Paginator, { type PageState } from 'primevue/paginator'
 import Skeleton from 'primevue/skeleton'
 import { publicArticleCoverUrl, publicArticlesApi, type PublicArticleCategory, type PublicArticleListItem } from '@/api/publicArticles'
+import { publicArticleSubscriptionsApi } from '@/api/publicArticleSubscriptions'
 
 // ============================================================
 // Industry Insights — Public Article List
@@ -32,6 +33,11 @@ const loading = ref(false)
 const initialLoadComplete = ref(false)
 const errorMessage = ref('')
 let requestEpoch = 0
+const route = useRoute()
+const router = useRouter()
+const verificationFeedback = ref('')
+const verificationBusy = ref(false)
+let verificationStarted = false
 
 const loadArticles = async () => {
   const epoch = ++requestEpoch
@@ -62,12 +68,31 @@ const changePage = (event: PageState) => { page.value = Math.max(1, event.page +
 const formatDate = (value: string | null) => value
   ? new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value))
   : '日期待定'
-onMounted(loadArticles)
+// D2E-C2 — Verification Callback / Route / Stale Response Guard
+const verifySubscription = async () => {
+  if (verificationStarted || typeof route.query.token !== 'string' || !route.query.token) return
+  verificationStarted = true
+  verificationBusy.value = true
+  const token = route.query.token
+  try {
+    await publicArticleSubscriptionsApi.verify(token)
+    verificationFeedback.value = '信箱驗證成功，已完成 KQC 產業洞察訂閱。'
+  } catch {
+    verificationFeedback.value = '驗證連結無效或已過期，請重新訂閱。'
+  } finally {
+    verificationBusy.value = false
+    const query = { ...route.query }
+    delete query.token
+    await router.replace({ name: 'Insights', query })
+  }
+}
+onMounted(async () => { await verifySubscription(); await loadArticles() })
 </script>
 
 <template>
   <main class="insights-view insights-view--breadcrumb-compact">
     <header class="insights-hero"><p class="insights-hero__eyebrow">Industry Insights</p><h1>產業洞察</h1><p>掌握運輸產業知識、市場趨勢與重要政策資訊。</p></header>
+    <p v-if="verificationBusy || verificationFeedback" class="subscription-verification" role="status" aria-live="polite">{{ verificationBusy ? '正在確認訂閱…' : verificationFeedback }}</p>
     <!-- ============================================================
          Industry Insights — Category Filter Layout
          WEB-1F-D2B
@@ -108,6 +133,7 @@ onMounted(loadArticles)
 .insights-hero__eyebrow { margin: 0 0 $kqc-spacing-sm; color: var(--accent-active); font-size: $kqc-type-label; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
 .insights-hero h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.1; }
 .insights-hero > p:last-child { margin: $kqc-spacing-lg 0 0; color: var(--text-muted); font-size: $kqc-type-body-emphasis; line-height: 1.7; }
+.subscription-verification { margin: 0 0 $kqc-spacing-xl; padding: $kqc-spacing-md $kqc-spacing-lg; border-inline-start: 3px solid var(--accent-active); background: color-mix(in srgb, var(--accent-active) 7%, transparent); color: var(--text-main); line-height: 1.6; }
 .article-filters { max-width: 100%; margin-bottom: $kqc-spacing-2xl; padding-bottom: $kqc-spacing-xs; overflow-x: auto; scrollbar-width: thin; }
 .article-filters__inner { display: flex; width: max-content; min-width: 100%; justify-content: center; gap: $kqc-spacing-sm; }
 .article-filters button { flex: 0 0 auto; padding: 0.65rem 1rem; border: 1px solid var(--border-grey); border-radius: $kqc-radius-full; background: var(--bg-card); color: var(--text-muted); cursor: pointer; font: inherit; font-weight: 650; }

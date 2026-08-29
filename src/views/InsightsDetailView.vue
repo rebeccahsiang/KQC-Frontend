@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import Skeleton from 'primevue/skeleton'
 import ArticleLike from '@/components/insights/ArticleLike.vue'
 import ArticleShare from '@/components/insights/ArticleShare.vue'
+import ArticleSubscription from '@/components/insights/ArticleSubscription.vue'
 import StructuredArticleContent from '@/components/insights/StructuredArticleContent.vue'
 import {
   publicArticleCoverUrl,
@@ -149,6 +150,7 @@ onBeforeUnmount(() => {
         <div class="article-detail__engagement">
           <ArticleLike :slug="article.slug" />
           <ArticleShare :title="article.title" :summary="article.summary" />
+          <ArticleSubscription />
         </div>
         <RouterLink class="article-detail__return" to="/insights">返回產業洞察</RouterLink>
       </div>
