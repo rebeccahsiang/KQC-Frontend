@@ -92,7 +92,13 @@ test('Quick Import UI is session-only, metadata-isolated and preserves legacy/co
   assert.match(view, /buildLegacyContentFallback\(form\.structuredContent\)/)
   assert.match(view, /v-if="contentMode === 'LEGACY'"/)
   assert.doesNotMatch(api, /quickImport|importText|rawImport/i)
-  assert.doesNotMatch(view.slice(view.indexOf('const payload'), view.indexOf('Article Cover Image')), /quickImportText/)
+  // D2F-B-R1 — Quick Import Test Boundary
+  // D2F-B inserted unrelated Cover Picker code, so raw import isolation is scoped to Article payload authority.
+  const payloadStart = view.indexOf('const payload')
+  const payloadEnd = view.indexOf('// D2F-B — Article Cover Picker', payloadStart)
+  assert.ok(payloadStart >= 0 && payloadEnd > payloadStart)
+  const articlePayload = view.slice(payloadStart, payloadEnd)
+  assert.doesNotMatch(articlePayload, /quickImportText|quickImportFeedback|quickImportReturnSurface/)
   // D2D-B1B Regression Gate R6 — allow the DTO type-only import while
   // continuing to reject direct network, upload, and unsafe rendering behavior.
   const importSurface = `${component}\n${read('src/utils/articleQuickImport.mjs')}`

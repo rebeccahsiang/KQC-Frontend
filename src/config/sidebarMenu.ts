@@ -59,12 +59,13 @@ export const sidebarMenu: SidebarMenuItem[] = [
   },
   {
     // ============================================================
-    // Industry Insights — Admin Article Navigation
-    // WEB-1F-D2A
+    // D2F-B — Admin Industry Insights Navigation
     // ============================================================
-    id: 'content-management', title: '內容管理', icon: 'lucide:notebook-tabs', capabilities: ['PLATFORM_MANAGER', 'ADMIN'],
+    id: 'content-management', title: '產業洞察', icon: 'lucide:notebook-tabs', capabilities: ['PLATFORM_MANAGER', 'ADMIN'],
     children: [
-      { id: 'articles', title: '產業文章管理', icon: 'lucide:newspaper', path: '/admin/content/articles', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] }
+      { id: 'articles', title: '文章管理', icon: 'lucide:newspaper', path: '/admin/content/articles', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
+      { id: 'article-images', title: '文章圖片', icon: 'lucide:images', path: '/admin/content/article-images', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
+      { id: 'related-links', title: '相關連結', icon: 'lucide:link', disabled: true, capabilities: ['PLATFORM_MANAGER', 'ADMIN'] }
     ]
   },
   {

@@ -22,13 +22,13 @@ export interface StructuredArticleContent { newsSummary: NewsSummary; sections: 
 export interface ArticleAdminItem {
   id: string; title: string; slug: string; categories: ArticleCategory[]; summary: string; content: string
   structuredContent: StructuredArticleContent | null
-  coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean
+  coverImage: string | null; coverImageId: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean
   publishedAt: string | null; scheduledAt: string | null; createdAt: string; updatedAt: string; creatorDisplayName: string
 }
 export interface ArticleWriteInput {
-  title: string; slug: string; categories: ArticleCategory[]; summary: string; content: string
+  title: string; slug?: string; categories: ArticleCategory[]; summary: string; content: string
   structuredContent?: StructuredArticleContent
-  coverImage: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean; scheduledAt: string | null
+  coverImage: string | null; coverImageId: string | null; tags: string[]; status: ArticleStatus; isFeatured: boolean; scheduledAt: string | null
 }
 export interface ArticleListResponse {
   articles: ArticleAdminItem[]

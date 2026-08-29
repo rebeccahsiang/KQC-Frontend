@@ -13,7 +13,9 @@ test('Admin Article route and sidebar share the platform content capability boun
   const router = read('src/router/index.ts'); const sidebar = read('src/config/sidebarMenu.ts')
   assert.match(router, /path: 'content\/articles', name: 'AdminArticles'[^\n]*AdminArticlesView\.vue[^\n]*capabilities: \['PLATFORM_MANAGER', 'ADMIN'\]/)
   assert.match(sidebar, /id: 'content-management'[^\n]*capabilities: \['PLATFORM_MANAGER', 'ADMIN'\]/)
-  assert.match(sidebar, /id: 'articles'[^\n]*title: '產業文章管理'[^\n]*path: '\/admin\/content\/articles'[^\n]*capabilities: \['PLATFORM_MANAGER', 'ADMIN'\]/)
+  assert.match(sidebar, /id: 'content-management'[^\n]*title: '產業洞察'/)
+  assert.match(sidebar, /id: 'articles'[^\n]*title: '文章管理'[^\n]*path: '\/admin\/content\/articles'[^\n]*capabilities: \['PLATFORM_MANAGER', 'ADMIN'\]/)
+  assert.match(sidebar, /id: 'article-images'[^\n]*title: '文章圖片'[^\n]*path: '\/admin\/content\/article-images'/)
   assert.match(router, /path: '\/insights', name: 'Insights'[^\n]*InsightsView\.vue/)
 })
 
@@ -34,9 +36,9 @@ test('Article Admin view exposes six canonical labels and bounded management fie
   for (const label of ['經營管理', '運輸小知識', '市場趨勢', '事業轉型', '政策法規', 'KQC 快訊']) assert.ok(categoryMapping.includes(label))
   assert.doesNotMatch(categoryMapping, /數位轉型|實務指南|案例洞察|KQC 動態|全部文章/)
   assert.match(categoryMapping, /KQC_NEWS: 'KQC 快訊'/)
-  for (const label of ['標題', '文章網址名稱', '分類', '摘要', '文章內容', '文章封面圖片', '標籤（以逗號分隔）', '狀態', '精選文章']) assert.ok(view.includes(label))
-  assert.match(view, /id="article-slug" v-model="form\.slug"[^>]*aria-describedby="article-slug-help"/)
-  assert.match(view, /id="article-slug-help">用於文章網址，請使用英文小寫、數字或連字號。/)
+  for (const label of ['標題', '文章網址', '分類', '摘要', '文章內容', '封面圖片', '標籤（以逗號分隔）', '狀態', '精選文章']) assert.ok(view.includes(label))
+  assert.match(view, /<output id="article-slug"[^>]*>/)
+  assert.match(view, /儲存後由系統自動產生/)
   for (const action of ['新增文章', '編輯文章', '刪除', '儲存']) assert.ok(view.includes(action))
   assert.match(view, /DRAFT: '草稿', SCHEDULED: '預定', PUBLISHED: '發布'/)
   assert.match(view, /adminArticlesApi\.(?:create|update|remove)/)
@@ -76,7 +78,7 @@ test('Article scheduled publishing keeps the full Admin list and bounded local-t
   assert.match(view, /預定或發布文章前，請先設定封面圖片。/)
   assert.match(view, /請設定預定發布時間。/)
   assert.match(view, /預定發布時間必須晚於目前時間。/)
-  assert.doesNotMatch(view, /slug.*(?:auto|generate)|generate.*slug/i)
+  assert.doesNotMatch(view, /v-model="form\.slug"|generateSlug|Math\.random/)
 })
 
 test('Article category types align exactly with the final six-value Backend taxonomy', () => {

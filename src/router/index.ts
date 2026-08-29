@@ -70,7 +70,9 @@ const routes: RouteRecordRaw[] = [
       // Industry Insights — Admin Article Management
       // WEB-1F-D2A
       // ============================================================
-      { path: 'content/articles', name: 'AdminArticles', component: () => import('@/views/admin/content/AdminArticlesView.vue'), meta: { title: '產業文章管理', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
+      { path: 'content/articles', name: 'AdminArticles', component: () => import('@/views/admin/content/AdminArticlesView.vue'), meta: { title: '文章管理', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
+      // D2F-B — Article Image Library Route
+      { path: 'content/article-images', name: 'AdminArticleImages', component: () => import('@/views/admin/content/AdminArticleImagesView.vue'), meta: { title: '文章圖片', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
       {
         path: 'users',
         name: 'AdminUserManagement',

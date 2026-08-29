@@ -16,9 +16,10 @@ import Textarea from 'primevue/textarea'
 import ArticleQuickImport from '@/components/admin/articles/ArticleQuickImport.vue'
 import StructuredArticleEditor from '@/components/admin/articles/StructuredArticleEditor.vue'
 import {
-  ARTICLE_COVER_IMAGE_MAX_BYTES, adminArticlesApi, articleCoverImageUrl,
+  adminArticlesApi, articleCoverImageUrl,
   type ArticleAdminItem, type ArticleCategory, type ArticleStatus, type ArticleWriteInput, type StructuredArticleContent,
 } from '@/api/adminArticles'
+import { adminArticleImagesApi, articleImageUrl, type ArticleImageItem } from '@/api/adminArticleImages'
 import { buildLegacyContentFallback, cloneStructuredArticleContent, createStructuredArticleContent, validateStructuredArticleContent } from '@/utils/articleStructuredContent'
 
 // ============================================================
@@ -42,30 +43,26 @@ const saving = ref(false)
 const errorMessage = ref('')
 const dialogVisible = ref(false)
 const editingId = ref('')
-const coverInput = ref<HTMLInputElement | null>(null)
-const selectedCoverFile = ref<File | null>(null)
-const uploadingCover = ref(false)
-const uploadError = ref('')
 const coverPreviewFailed = ref(false)
+const coverPickerVisible = ref(false)
+const coverPickerLoading = ref(false)
+const coverPickerError = ref('')
+const coverImages = ref<ArticleImageItem[]>([])
+const selectedCover = ref<ArticleImageItem | null>(null)
 const contentMode = ref<'LEGACY' | 'STRUCTURED'>('STRUCTURED')
 const structuredErrors = ref<string[]>([])
 const structuredSurface = ref<'CHOICE' | 'IMPORT' | 'EDITOR'>('CHOICE')
 const quickImportReturnSurface = ref<'CHOICE' | 'EDITOR'>('CHOICE')
 const quickImportText = ref('')
 const quickImportFeedback = ref('')
-let coverUploadEpoch = 0
-const form = reactive({ title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'] as ArticleCategory[], summary: '', content: '', structuredContent: createStructuredArticleContent() as StructuredArticleContent | null, coverImage: '', tags: '', status: 'DRAFT' as ArticleStatus, isFeatured: false, scheduledAt: '' })
-const coverPreviewUrl = computed(() => articleCoverImageUrl(form.coverImage))
-const resetCoverUpload = () => {
-  coverUploadEpoch += 1
-  selectedCoverFile.value = null; uploadingCover.value = false; uploadError.value = ''; coverPreviewFailed.value = false
-  if (coverInput.value) coverInput.value.value = ''
-}
+let coverPickerEpoch = 0
+const form = reactive({ title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'] as ArticleCategory[], summary: '', content: '', structuredContent: createStructuredArticleContent() as StructuredArticleContent | null, coverImage: '', coverImageId: null as string | null, tags: '', status: 'DRAFT' as ArticleStatus, isFeatured: false, scheduledAt: '' })
+const coverPreviewUrl = computed(() => selectedCover.value ? articleImageUrl(selectedCover.value.path) : articleCoverImageUrl(form.coverImage))
 const resetForm = () => {
-  Object.assign(form, { title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'], summary: '', content: '', structuredContent: createStructuredArticleContent(), coverImage: '', tags: '', status: 'DRAFT', isFeatured: false, scheduledAt: '' })
+  Object.assign(form, { title: '', slug: '', categories: ['BUSINESS_MANAGEMENT'], summary: '', content: '', structuredContent: createStructuredArticleContent(), coverImage: '', coverImageId: null, tags: '', status: 'DRAFT', isFeatured: false, scheduledAt: '' })
   contentMode.value = 'STRUCTURED'; structuredErrors.value = []; errorMessage.value = ''
   structuredSurface.value = 'CHOICE'; quickImportReturnSurface.value = 'CHOICE'; quickImportText.value = ''; quickImportFeedback.value = ''
-  resetCoverUpload()
+  selectedCover.value = null; coverPreviewFailed.value = false; coverPickerVisible.value = false; coverPickerError.value = ''; coverPickerEpoch += 1
 }
 const backendMessage = (error: unknown) => {
   if (!isAxiosError(error)) return '文章操作失敗'
@@ -76,17 +73,6 @@ const backendMessage = (error: unknown) => {
     if (responseError.message === 'Scheduled time must be in the future') return '預定發布時間必須晚於目前時間。'
   }
   return responseError?.message || '文章操作失敗'
-}
-const coverUploadMessage = (error: unknown) => {
-  if (!isAxiosError(error)) return '圖片上傳失敗，請稍後再試。'
-  const status = error.response?.status
-  const code = (error.response?.data as { error?: { code?: string } })?.error?.code
-  if (status === 401) return '登入狀態已失效，請重新登入後再試。'
-  if (status === 403) return '目前帳號沒有上傳文章圖片的權限。'
-  if (status === 413 || code === 'ARTICLE_COVER_IMAGE_TOO_LARGE') return '圖片檔案不得超過 5 MB。'
-  if (status === 415 || code === 'ARTICLE_COVER_IMAGE_TYPE_UNSUPPORTED') return '僅支援 JPG、PNG、WebP 圖片格式。'
-  if (code === 'ARTICLE_COVER_IMAGE_INVALID') return '圖片上傳失敗，請重新選擇圖片後再試一次。'
-  return '圖片上傳失敗，請稍後再試。'
 }
 const loadArticles = async () => {
   loading.value = true; errorMessage.value = ''
@@ -100,13 +86,23 @@ const toLocalDateTime = (value: string | null) => {
   const date = new Date(value); const offset = date.getTimezoneOffset() * 60_000
   return new Date(date.getTime() - offset).toISOString().slice(0, 16)
 }
+// D2F-B — Cover Image Authority / persisted identity is hydrated only for presentation.
+const hydrateSelectedCover = async (articleId: string, coverImageId: string) => {
+  try {
+    const response = await adminArticleImagesApi.list()
+    if (editingId.value !== articleId || form.coverImageId !== coverImageId) return
+    selectedCover.value = response.data.images.find((image) => image.id === coverImageId) || null
+    coverPreviewFailed.value = !selectedCover.value
+  } catch { /* Existing Article remains editable even when preview metadata is unavailable. */ }
+}
 const openEdit = (article: ArticleAdminItem) => {
-  resetCoverUpload()
+  selectedCover.value = null; coverPreviewFailed.value = false
   editingId.value = article.id
-  Object.assign(form, { ...article, structuredContent: article.structuredContent ? cloneStructuredArticleContent(article.structuredContent) : null, coverImage: article.coverImage || '', tags: article.tags.join(', '), scheduledAt: toLocalDateTime(article.scheduledAt) })
+  Object.assign(form, { ...article, structuredContent: article.structuredContent ? cloneStructuredArticleContent(article.structuredContent) : null, coverImage: article.coverImage || '', coverImageId: article.coverImageId || null, tags: article.tags.join(', '), scheduledAt: toLocalDateTime(article.scheduledAt) })
   contentMode.value = article.structuredContent ? 'STRUCTURED' : 'LEGACY'; structuredErrors.value = []
   structuredSurface.value = article.structuredContent ? 'EDITOR' : 'CHOICE'; quickImportReturnSurface.value = article.structuredContent ? 'EDITOR' : 'CHOICE'; quickImportText.value = ''; quickImportFeedback.value = ''
   dialogVisible.value = true
+  if (article.coverImageId) void hydrateSelectedCover(article.id, article.coverImageId)
 }
 // ============================================================
 // Structured Content Mapping / Legacy Article Compatibility
@@ -131,50 +127,29 @@ const openQuickImport = (returnSurface: 'CHOICE' | 'EDITOR') => {
   quickImportReturnSurface.value = returnSurface; quickImportFeedback.value = ''; structuredSurface.value = 'IMPORT'
 }
 const payload = (): ArticleWriteInput => ({
-  title: form.title, slug: form.slug, categories: [...form.categories], summary: form.summary,
+  title: form.title, ...(editingId.value && form.slug ? { slug: form.slug } : {}), categories: [...form.categories], summary: form.summary,
   content: contentMode.value === 'STRUCTURED' && form.structuredContent ? buildLegacyContentFallback(form.structuredContent) : form.content,
   ...(contentMode.value === 'STRUCTURED' && form.structuredContent ? { structuredContent: cloneStructuredArticleContent(form.structuredContent) } : {}),
-  coverImage: form.coverImage.trim() || null,
+  coverImage: form.coverImage.trim() || null, coverImageId: form.coverImageId,
   tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean), status: form.status, isFeatured: form.isFeatured,
   scheduledAt: form.status === 'SCHEDULED' && form.scheduledAt ? new Date(form.scheduledAt).toISOString() : null,
 })
 // ============================================================
-// Article Cover Image — Admin Upload Ownership
-// WEB-1F-D2A-1
-// Upload returns a reference; existing Article CRUD persists that reference.
-// ============================================================
-const selectCoverImage = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0] || null
-  uploadError.value = ''; selectedCoverFile.value = null
-  if (!file) return
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-    uploadError.value = '僅支援 JPG、PNG 或 WebP 圖片。'; input.value = ''; return
-  }
-  if (file.size > ARTICLE_COVER_IMAGE_MAX_BYTES) {
-    uploadError.value = '圖片大小不可超過 5 MB。'; input.value = ''; return
-  }
-  selectedCoverFile.value = file
+// D2F-B — Article Cover Picker / Cover Image Authority / Route / Stale Response Guard.
+const openCoverPicker = async () => {
+  const epoch = ++coverPickerEpoch; coverPickerVisible.value = true; coverPickerLoading.value = true; coverPickerError.value = ''
+  try { const response = await adminArticleImagesApi.list(); if (epoch === coverPickerEpoch && coverPickerVisible.value) coverImages.value = response.data.images }
+  catch { if (epoch === coverPickerEpoch) coverPickerError.value = '文章圖片載入失敗，請稍後再試。' }
+  finally { if (epoch === coverPickerEpoch) coverPickerLoading.value = false }
 }
-const uploadCoverImage = async () => {
-  if (!selectedCoverFile.value) { uploadError.value = '請先選擇圖片。'; return }
-  if (uploadingCover.value) return
-  const requestEpoch = ++coverUploadEpoch
-  uploadingCover.value = true; uploadError.value = ''
-  try {
-    const response = await adminArticlesApi.uploadCoverImage(selectedCoverFile.value)
-    if (requestEpoch !== coverUploadEpoch) return
-    form.coverImage = response.data.path; coverPreviewFailed.value = false
-    selectedCoverFile.value = null
-    if (coverInput.value) coverInput.value.value = ''
-  } catch (error) { if (requestEpoch === coverUploadEpoch) uploadError.value = coverUploadMessage(error) }
-  finally { if (requestEpoch === coverUploadEpoch) uploadingCover.value = false }
+const chooseCoverImage = (image: ArticleImageItem) => {
+  selectedCover.value = image; form.coverImageId = image.id; form.coverImage = ''; coverPreviewFailed.value = false; coverPickerVisible.value = false
 }
-const removeCoverImage = () => { form.coverImage = ''; resetCoverUpload() }
+const removeCoverImage = () => { selectedCover.value = null; form.coverImageId = null; form.coverImage = ''; coverPreviewFailed.value = false }
 // Article Scheduled Publishing / WEB-1F-D2B-3
 const validatePublication = () => {
   if (form.status === 'DRAFT') return true
-  if (!form.coverImage.trim()) { errorMessage.value = '預定或發布文章前，請先設定封面圖片。'; return false }
+  if (!form.coverImage.trim() && !form.coverImageId) { errorMessage.value = '預定或發布文章前，請先設定封面圖片。'; return false }
   if (form.status === 'SCHEDULED') {
     if (!form.scheduledAt) { errorMessage.value = '請設定預定發布時間。'; return false }
     const scheduled = new Date(form.scheduledAt)
@@ -183,7 +158,7 @@ const validatePublication = () => {
   return true
 }
 const saveArticle = async () => {
-  if (saving.value || uploadingCover.value) return
+  if (saving.value) return
   if (form.categories.length < 1 || form.categories.length > 6) { errorMessage.value = '請選擇至少一個文章分類。'; return }
   if (contentMode.value === 'STRUCTURED' && form.structuredContent) {
     structuredErrors.value = validateStructuredArticleContent(form.structuredContent)
@@ -210,7 +185,7 @@ onMounted(loadArticles)
 
 <template>
   <section class="article-admin">
-    <header><div><p class="eyebrow">Industry Insights</p><h1>產業文章管理</h1></div><Button label="新增文章" @click="openCreate" /></header>
+    <header><div><p class="eyebrow">Industry Insights</p><h1>文章管理</h1></div><Button label="新增文章" @click="openCreate" /></header>
     <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
     <DataTable :value="articles" :loading="loading" striped-rows empty-message="目前沒有文章">
       <Column field="title" header="標題" />
@@ -226,10 +201,11 @@ onMounted(loadArticles)
       <form class="article-form" @submit.prevent="saveArticle">
         <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
         <label>標題<InputText v-model="form.title" maxlength="160" required /></label>
-        <label for="article-slug">文章網址名稱</label>
+        <!-- D2F-B — Automatic Article URL UX / persisted slugs are stable and read-only. -->
         <div class="article-form__field">
-          <InputText id="article-slug" v-model="form.slug" maxlength="160" required aria-describedby="article-slug-help" placeholder="market-trend-2026" />
-          <small id="article-slug-help">用於文章網址，請使用英文小寫、數字或連字號。</small>
+          <strong>文章網址</strong>
+          <output id="article-slug" aria-describedby="article-slug-help">{{ editingId && form.slug ? `/insights/${form.slug}` : '儲存後由系統自動產生' }}</output>
+          <small id="article-slug-help">{{ editingId ? '文章網址建立後不會因內容修改而變更。' : '網址將於文章首次儲存時由系統自動產生。' }}</small>
         </div>
         <!-- Industry Insights / Article Multi-Category / WEB-1F-D2B-1 -->
         <label>分類<MultiSelect v-model="form.categories" :options="categoryOptions" option-label="label" option-value="value" :max-selected-labels="6" display="chip" placeholder="請選擇至少一個分類" /></label>
@@ -252,33 +228,33 @@ onMounted(loadArticles)
             <StructuredArticleEditor v-model="form.structuredContent" :errors="structuredErrors" />
           </template>
         </section>
+        <!-- D2F-B — Article Cover Picker / Legacy Cover Compatibility -->
         <fieldset class="article-cover-field">
-          <legend>文章封面圖片</legend>
-          <div class="article-cover-upload">
-            <label class="article-cover-select" for="article-cover-file">
-              <input id="article-cover-file" ref="coverInput" class="article-cover-select__input" type="file" accept="image/jpeg,image/png,image/webp" :disabled="uploadingCover" aria-describedby="article-cover-filename" @change="selectCoverImage">
-              <span aria-hidden="true">＋</span>
-              {{ selectedCoverFile ? '重新選擇' : '選擇圖片' }}
-            </label>
-            <span id="article-cover-filename" class="article-cover-filename">
-              {{ selectedCoverFile ? `已選擇：${selectedCoverFile.name}` : '尚未選擇檔案' }}
-            </span>
-            <Button class="article-cover-upload__button" type="button" label="上傳圖片" :loading="uploadingCover" :disabled="uploadingCover || !selectedCoverFile" @click="uploadCoverImage" />
-          </div>
-          <small>支援 JPG、PNG、WebP，檔案上限 5 MB。</small>
-          <Message v-if="uploadError" severity="error" :closable="false">{{ uploadError }}</Message>
-          <div v-if="form.coverImage" class="article-cover-preview">
-            <img v-if="!coverPreviewFailed" :src="coverPreviewUrl" alt="文章封面預覽" @error="coverPreviewFailed = true">
+          <legend>封面圖片</legend>
+          <div class="article-cover-actions"><Button type="button" :label="form.coverImage || form.coverImageId ? '更換圖片' : '選擇圖片'" outlined @click="openCoverPicker" /><small>圖片請先至「文章圖片」上傳與管理。</small></div>
+          <div v-if="form.coverImage || form.coverImageId" class="article-cover-preview">
+            <img v-if="!coverPreviewFailed" :src="coverPreviewUrl" :alt="selectedCover?.altText || '現有文章封面'" @error="coverPreviewFailed = true">
             <p v-else role="status">封面圖片暫時無法預覽。</p>
-            <Button type="button" label="移除封面" severity="danger" text :disabled="uploadingCover" @click="removeCoverImage" />
+            <strong v-if="selectedCover">{{ selectedCover.name }}</strong>
+            <small v-else-if="form.coverImage && !form.coverImageId">目前文章既有封面</small>
+            <Button type="button" label="移除封面" severity="danger" text @click="removeCoverImage" />
           </div>
         </fieldset>
         <label>標籤（以逗號分隔）<InputText v-model="form.tags" /></label>
         <label>狀態<Select v-model="form.status" :options="statusOptions" option-label="label" option-value="value" /></label>
         <label v-if="form.status === 'SCHEDULED'">預定發布時間<InputText v-model="form.scheduledAt" type="datetime-local" required /></label>
         <label class="checkbox-field"><Checkbox v-model="form.isFeatured" binary />精選文章</label>
-        <footer><Button type="button" label="取消" text @click="dialogVisible = false" /><Button type="submit" label="儲存" :loading="saving" :disabled="saving || uploadingCover" /></footer>
+        <footer><Button type="button" label="取消" text @click="dialogVisible = false" /><Button type="submit" label="儲存" :loading="saving" :disabled="saving" /></footer>
       </form>
+    </Dialog>
+    <Dialog v-model:visible="coverPickerVisible" modal header="選擇文章封面" class="article-cover-picker" @hide="coverPickerEpoch += 1">
+      <p v-if="coverPickerLoading" role="status">正在載入文章圖片…</p>
+      <Message v-else-if="coverPickerError" severity="error" :closable="false">{{ coverPickerError }}</Message>
+      <div v-else-if="!coverImages.length" class="cover-picker-empty"><strong>目前尚無文章圖片</strong><p>請先前往「文章圖片」新增圖片。</p></div>
+      <!-- D2F-B — Article Image Accessibility / semantic single-selection buttons. -->
+      <div v-else class="cover-picker-grid">
+        <button v-for="image in coverImages" :key="image.id" type="button" class="cover-picker-card" :aria-pressed="form.coverImageId === image.id" @click="chooseCoverImage(image)"><img :src="articleImageUrl(image.path)" :alt="image.altText"><strong>{{ image.name }}</strong><span>{{ image.altText }}</span><small>{{ image.usageCount === 0 ? '尚未使用' : `已使用於 ${image.usageCount} 篇文章` }}</small></button>
+      </div>
     </Dialog>
   </section>
 </template>
@@ -343,5 +319,19 @@ h1 { margin: 0; color: var(--text-main); font-size: $kqc-type-section-title; }
 .article-cover-preview img { display: block; object-fit: cover; }
 .article-cover-preview p { display: grid; place-items: center; color: var(--text-muted); }
 .article-cover-preview .p-button { justify-self: start; }
+.article-cover-actions { display: flex; align-items: center; flex-wrap: wrap; gap: $kqc-spacing-sm; }
+.article-cover-actions small, .article-cover-preview small { color: var(--text-muted); }
+:global(.article-cover-picker) { width: min(58rem, calc(100vw - 2rem)); max-height: 86dvh; }
+:global(.article-cover-picker .p-dialog-content) { overflow-y: auto; }
+.cover-picker-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: $kqc-spacing-md; }
+.cover-picker-card { display: grid; min-width: 0; gap: $kqc-spacing-xs; overflow: hidden; padding: 0 0 $kqc-spacing-sm; border: 1px solid var(--border-grey); border-radius: $kqc-radius-md; background: var(--bg-card); color: var(--text-main); cursor: pointer; text-align: start; }
+.cover-picker-card[aria-pressed="true"] { border-color: var(--accent-active); outline: 3px solid color-mix(in srgb, var(--accent-active) 25%, transparent); }
+.cover-picker-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-active) 35%, transparent); outline-offset: 2px; }
+.cover-picker-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.cover-picker-card strong, .cover-picker-card span, .cover-picker-card small { margin-inline: $kqc-spacing-sm; }
+.cover-picker-card span, .cover-picker-card small { color: var(--text-muted); }
+.cover-picker-empty { display: grid; min-height: 14rem; place-items: center; align-content: center; text-align: center; }
+@media (max-width: 800px) { .cover-picker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .cover-picker-grid { grid-template-columns: 1fr; } }
 @media (max-width: 768px) { :global(.article-dialog) { width: 95vw; max-height: 92dvh; } .article-admin > header { align-items: stretch; flex-direction: column; } }
 </style>
