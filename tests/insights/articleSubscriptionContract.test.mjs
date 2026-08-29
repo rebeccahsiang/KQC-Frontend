@@ -80,10 +80,12 @@ test('verification callback is one-shot and reports success or invalid-expired f
 })
 
 test('verification always removes only token while preserving unrelated query parameters', () => {
-  const callback = list.slice(list.indexOf('const verifySubscription'), list.indexOf('onMounted('))
+  const callback = list.slice(list.indexOf('const verifySubscription'), list.indexOf('// D2H — Route / Stale Response Guard'))
   assert.match(callback, /finally \{[\s\S]*const query = \{ \.\.\.route\.query \}[\s\S]*delete query\.token[\s\S]*router\.replace\(\{ name: 'Insights', query \}\)/)
   assert.doesNotMatch(callback, /history\.|location\.|query:\s*\{\s*\}/)
-  assert.match(list, /onMounted\(async \(\) => \{ await verifySubscription\(\); await loadArticles\(\) \}\)/)
+  assert.match(list, /onMounted\(async \(\) => \{[\s\S]*await verifySubscription\(\)[\s\S]*await loadArticles\(\)[\s\S]*\}\)/)
+  assert.match(callback, /const query = \{ \.\.\.route\.query \}[\s\S]*delete query\.token/)
+  assert.doesNotMatch(callback, /delete query\.category/)
 })
 
 test('token and subscription authority are never persisted logged or rendered', () => {

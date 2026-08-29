@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Paginator, { type PageState } from 'primevue/paginator'
@@ -25,7 +25,16 @@ const categoryLabels: Record<PublicArticleCategory, string> = {
   BUSINESS_MANAGEMENT: '經營管理', TRANSPORT_KNOWLEDGE: '運輸小知識', MARKET_TREND: '市場趨勢',
   BUSINESS_TRANSFORMATION: '事業轉型', POLICY_REGULATION: '政策法規', KQC_NEWS: 'KQC 快訊',
 }
-const activeCategory = ref<PublicArticleCategory | undefined>()
+const canonicalCategories = new Set<PublicArticleCategory>(filters.flatMap((filter) => filter.category ? [filter.category] : []))
+// D2H — Category Query Validation / only canonical enum values may become public Article filter authority.
+const categoryFromQuery = (value: unknown): PublicArticleCategory | undefined =>
+  typeof value === 'string' && canonicalCategories.has(value as PublicArticleCategory)
+    ? value as PublicArticleCategory
+    : undefined
+const route = useRoute()
+const router = useRouter()
+// D2H — Insights Category Deep Link / initial state comes from the URL so direct open and refresh remain deterministic.
+const activeCategory = ref<PublicArticleCategory | undefined>(categoryFromQuery(route.query.category))
 const page = ref(1)
 const total = ref(0)
 const articles = ref<PublicArticleListItem[]>([])
@@ -33,8 +42,6 @@ const loading = ref(false)
 const initialLoadComplete = ref(false)
 const errorMessage = ref('')
 let requestEpoch = 0
-const route = useRoute()
-const router = useRouter()
 const verificationFeedback = ref('')
 const verificationBusy = ref(false)
 let verificationStarted = false
@@ -60,15 +67,23 @@ const loadArticles = async () => {
 // Industry Insights — Article Category Filter
 // WEB-1F-D2B: no category parameter represents 全部文章.
 // ============================================================
+// D2H — Category Route Synchronization / tabs update Vue Router while preserving unrelated query state.
 const selectCategory = (category?: PublicArticleCategory) => {
-  if (activeCategory.value === category && page.value === 1) return
-  activeCategory.value = category; page.value = 1; void loadArticles()
+  if (activeCategory.value === category) {
+    if (page.value !== 1) { page.value = 1; void loadArticles() }
+    return
+  }
+  const query = { ...route.query }
+  if (category) query.category = category
+  else delete query.category
+  void router.push({ name: 'Insights', query })
 }
 const changePage = (event: PageState) => { page.value = Math.max(1, event.page + 1); void loadArticles() }
 const formatDate = (value: string | null) => value
   ? new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value))
   : '日期待定'
 // D2E-C2 — Verification Callback / Route / Stale Response Guard
+// D2H — Verification Query Compatibility / token cleanup preserves the independent category query.
 const verifySubscription = async () => {
   if (verificationStarted || typeof route.query.token !== 'string' || !route.query.token) return
   verificationStarted = true
@@ -86,7 +101,28 @@ const verifySubscription = async () => {
     await router.replace({ name: 'Insights', query })
   }
 }
-onMounted(async () => { await verifySubscription(); await loadArticles() })
+// D2H — Route / Stale Response Guard / route changes reuse the existing request epoch authority.
+watch(() => route.query.category, (value) => {
+  const category = categoryFromQuery(value)
+  if (value !== undefined && category === undefined) {
+    const query = { ...route.query }
+    delete query.category
+    void router.replace({ name: 'Insights', query })
+  }
+  if (activeCategory.value === category && page.value === 1) return
+  activeCategory.value = category
+  page.value = 1
+  void loadArticles()
+})
+onMounted(async () => {
+  await verifySubscription()
+  if (route.query.category !== undefined && categoryFromQuery(route.query.category) === undefined) {
+    const query = { ...route.query }
+    delete query.category
+    await router.replace({ name: 'Insights', query })
+  }
+  await loadArticles()
+})
 </script>
 
 <template>

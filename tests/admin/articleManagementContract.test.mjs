@@ -106,6 +106,8 @@ test('D2A preserves deferred public and Quick Service boundaries with maintenanc
   const insights = read('src/views/InsightsView.vue')
   const combined = `${view}\n${read('src/api/adminArticles.ts')}\n${read('src/router/index.ts')}\n${read('src/config/sidebarMenu.ts')}`
   assert.match(combined, /Industry Insights[\s\S]*WEB-1F-D2A/)
-  assert.doesNotMatch(dock, /KQC_NEWS|\/api\/public\/articles|category.*KQC_NEWS/)
+  // D2H-R1 — Superseded D2A Quick Service Boundary: D2H allows KQC_NEWS navigation, but Dock must never own or fetch Article data.
+  assert.doesNotMatch(dock, /\/api\/public\/articles|publicArticlesApi|(?:activity|event|news)Api|\/public\/(?:activities|events|news)|fetch\s*\([^)]*articles/i)
+  assert.doesNotMatch(dock, /<Article|v-for="article|article-grid|article-card/)
   assert.doesNotMatch(insights, /adminArticlesApi|public\/articles/)
 })

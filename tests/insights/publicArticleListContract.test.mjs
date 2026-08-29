@@ -32,7 +32,13 @@ test('seven visible filters map to exactly six canonical categories and all send
   assert.doesNotMatch(`${api}\n${filters}`, /DIGITAL_TRANSFORMATION|PRACTICAL_GUIDE|CASE_INSIGHT|ALL_ARTICLES|'ALL'/)
   const categoryType = api.match(/export type PublicArticleCategory = ([^\r\n]+)/)?.[1] ?? ''
   assert.equal((categoryType.match(/'[A-Z_]+'/g) ?? []).length, 6)
-  assert.match(view, /activeCategory\.value = category; page\.value = 1; void loadArticles\(\)/)
+  assert.match(view, /const canonicalCategories = new Set<PublicArticleCategory>/)
+  assert.match(view, /canonicalCategories\.has\(value as PublicArticleCategory\)/)
+  assert.match(view, /activeCategory = ref<PublicArticleCategory \| undefined>\(categoryFromQuery\(route\.query\.category\)\)/)
+  assert.match(view, /if \(category\) query\.category = category[\s\S]*else delete query\.category[\s\S]*router\.push\(\{ name: 'Insights', query \}\)/)
+  assert.match(view, /watch\(\(\) => route\.query\.category,[\s\S]*activeCategory\.value = category[\s\S]*page\.value = 1[\s\S]*loadArticles\(\)/)
+  assert.match(view, /value !== undefined && category === undefined[\s\S]*delete query\.category[\s\S]*router\.replace/)
+  assert.doesNotMatch(view, /window\.location|history\.pushState|localStorage|sessionStorage|tab=|category=KQC 快訊/)
 })
 
 test('cards use coverImage and slug navigation while detail ownership remains separate', () => {
