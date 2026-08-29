@@ -69,10 +69,11 @@ export const sidebarMenu: SidebarMenuItem[] = [
     ]
   },
   {
-    id: 'frontend', title: '前台管理', icon: 'lucide:monitor', roles: ['admin'],
+    // D2G-B — Carousel Image Admin Management navigation.
+    id: 'frontend', title: '前台管理', icon: 'lucide:monitor', capabilities: ['PLATFORM_MANAGER', 'ADMIN'],
     children: [
       { id: 'marquee', title: '跑馬燈', icon: 'lucide:megaphone', path: '/admin/frontend/marquee', roles: ['admin'] },
-      { id: 'banner', title: '首頁輪播圖', icon: 'lucide:gallery-horizontal', path: '/admin/frontend/banner', roles: ['admin'] }
+      { id: 'carousel-images', title: '輪播圖片', icon: 'lucide:gallery-horizontal', path: '/admin/frontend/carousel-images', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] }
     ]
   },
   {

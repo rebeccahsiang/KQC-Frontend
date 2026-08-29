@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useThemeStore } from '@/stores/themeStore'
 import HomeHeroSection from '@/components/home/HomeHeroSection.vue'
 import HomeIndustryWeatherSection from '@/components/home/HomeIndustryWeatherSection.vue'
+import HomeCarouselSection from '@/components/home/HomeCarouselSection.vue'
 import HomePromoCarouselSection from '@/components/home/HomePromoCarouselSection.vue'
 import HomeServiceGuideSection from '@/components/home/HomeServiceGuideSection.vue'
 import HomePersonasSection from '@/components/home/HomePersonasSection.vue'
@@ -60,6 +61,8 @@ onMounted(async () => {
       <HomeHeroSection v-model="textInput" :loading="isLoading" @submit="handleAiMatch" />
       <HomeIndustryWeatherSection />
       <div class="system-status-pill"><span class="pulse-dot"></span><span class="status-msg">系統全端狀態：{{ backendMessage }}</span></div>
+      <!-- D2G-B — Homepage Section Placement: Weather → Carousel → Featured Services. -->
+      <HomeCarouselSection />
       <HomePromoCarouselSection />
       <HomeServiceGuideSection :active-panel="activePanel" @open-panel="openServicePanel" />
       <HomePersonasSection />

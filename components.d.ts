@@ -33,6 +33,7 @@ declare module 'vue' {
     CaseShowcase: typeof import('./src/components/showcase/CaseShowcase.vue')['default']
     CaseTableSection: typeof import('./src/components/admin/CaseTableSection.vue')['default']
     FrontHeader: typeof import('./src/components/layout/FrontHeader.vue')['default']
+    HomeCarouselSection: typeof import('./src/components/home/HomeCarouselSection.vue')['default']
     HomeContactCtaSection: typeof import('./src/components/home/HomeContactCtaSection.vue')['default']
     HomeHeroSection: typeof import('./src/components/home/HomeHeroSection.vue')['default']
     HomeIndustryWeatherSection: typeof import('./src/components/home/HomeIndustryWeatherSection.vue')['default']
