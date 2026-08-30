@@ -1,231 +1,153 @@
-<!-- src/views/admin/cases/CaseListView.vue -->
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
-import { getCasePhoto } from '@/utils/casePhotoHelper'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import Dialog from 'primevue/dialog'
+import { adminMarketplaceCasesApi, type AdminMarketplaceCase, type MarketplaceStatus } from '@/api/adminMarketplaceCases'
+import { adminProductImagesApi, productImageUrl, type ProductBusinessCategory, type ProductImageRepresentativeSlot } from '@/api/adminProductImages'
+import { useAuthStore } from '@/stores/authStore'
+import { hasCapability } from '@/config/capabilities'
 
-interface CaseItem {
-  id: string
-  caseNumber: string
-  title: string
-  caseType: 'seller_listing' | 'buyer_request'
-  assetCategory: string
-  region: string
-  capitalAmount: number
-  status: 'active' | 'hidden' | 'closed'
-  photoUrl?: string
-}
+const router = useRouter()
+const authStore = useAuthStore()
+const items = ref<AdminMarketplaceCase[]>([])
+const representativeSlots = ref<ProductImageRepresentativeSlot[]>([])
+const loading = ref(true)
+const mutatingId = ref('')
+const errorMessage = ref('')
+const statusFilter = ref<'ALL' | MarketplaceStatus>('ALL')
+const transactionFilter = ref<'ALL' | 'BUY' | 'SELL'>('ALL')
+const categoryFilter = ref<'ALL' | ProductBusinessCategory>('ALL')
+const keyword = ref('')
+const returnVisible = ref(false)
+const returnTarget = ref<AdminMarketplaceCase | null>(null)
+const returnReason = ref('')
+const returnError = ref('')
 
-// Mock Data
-const caseList = ref<CaseItem[]>([
-  {
-    id: '1',
-    caseNumber: 'KQC-SFT260814',
-    title: '隊長創業：貨櫃貨運業特許牌照讓渡',
-    caseType: 'seller_listing',
-    assetCategory: '貨櫃貨運',
-    region: '北部地區',
-    capitalAmount: 850,
-    status: 'active'
-  },
-  {
-    id: '2',
-    caseNumber: 'KQC-SFT260815',
-    title: '控股公司指定收購：汽車貨運公司',
-    caseType: 'buyer_request',
-    assetCategory: '汽車貨運 (FT)',
-    region: '中部地區',
-    capitalAmount: 1200,
-    status: 'active'
-  },
-  {
-    id: '3',
-    caseNumber: 'KQC-SFT260810',
-    title: '老牌物流企業圓滿退場讓渡',
-    caseType: 'seller_listing',
-    assetCategory: '甲種運輸業',
-    region: '南部地區',
-    capitalAmount: 500,
-    status: 'closed'
-  }
-])
+/* PRODUCT-CASE-B3 — Marketplace Status Presentation / canonical values retain explicit Traditional Chinese labels. */
+const statuses: ReadonlyArray<{ value: MarketplaceStatus; label: string }> = [
+  { value: 'DRAFT', label: '草稿' }, { value: 'PENDING_APPROVAL', label: '待審核' },
+  { value: 'RETURNED', label: '已退回' }, { value: 'PUBLISHED', label: '已發布' },
+  { value: 'UNPUBLISHED', label: '已下架' }, { value: 'CLOSED', label: '已結案' },
+]
+const statusLabel = (value: MarketplaceStatus) => statuses.find((item) => item.value === value)?.label || value
+const categories: ReadonlyArray<{ value: ProductBusinessCategory; label: string }> = [
+  { value: 'CA', label: 'CA｜甲種小客車' }, { value: 'CB', label: 'CB｜乙種小客車' },
+  { value: 'TX', label: 'TX｜計程車' }, { value: 'LT', label: 'LT｜小貨車' },
+  { value: 'MV', label: 'MV｜搬家公司' }, { value: 'FT', label: 'FT｜汽車貨運' },
+  { value: 'CT', label: 'CT｜貨櫃貨運' },
+]
+const categoryLabel = (value: ProductBusinessCategory) => categories.find((item) => item.value === value)?.label || value
+const actorId = computed(() => authStore.user?._id || '')
+const canPublish = computed(() => hasCapability(authStore.user, 'SALES_SUPERVISOR') || hasCapability(authStore.user, 'ADMIN'))
+const canReadRepresentativeSlots = computed(() => hasCapability(authStore.user, 'SALES_SUPERVISOR') || hasCapability(authStore.user, 'ADMIN'))
+const isCreator = (item: AdminMarketplaceCase) => Boolean(actorId.value) && item.createdBy === actorId.value
+const canReview = (item: AdminMarketplaceCase) => item.marketplaceStatus === 'PENDING_APPROVAL' && !isCreator(item) && hasCapability(authStore.user, item.requiredApproverCapability)
 
-// 狀態篩選控制
-const selectedStatusFilter = ref<string>('all')
-
-const filteredCases = computed(() => {
-  if (selectedStatusFilter.value === 'all') return caseList.value
-  return caseList.value.filter(item => item.status === selectedStatusFilter.value)
+const counts = computed(() => Object.fromEntries(statuses.map(({ value }) => [value, items.value.filter((item) => item.marketplaceStatus === value).length])))
+const filteredItems = computed(() => {
+  const query = keyword.value.trim().toLocaleLowerCase('zh-Hant')
+  return items.value.filter((item) =>
+    (statusFilter.value === 'ALL' || item.marketplaceStatus === statusFilter.value) &&
+    (transactionFilter.value === 'ALL' || item.transactionType === transactionFilter.value) &&
+    (categoryFilter.value === 'ALL' || item.businessCategory === categoryFilter.value) &&
+    (!query || item.caseId.toLocaleLowerCase().includes(query) || item.title.toLocaleLowerCase().includes(query)))
 })
 
-// 修改彈窗 (Modal) 狀態控制
-const isEditModalOpen = ref(false)
-const editingForm = reactive({
-  id: '',
-  caseNumber: '',
-  title: '',
-  capitalAmount: 0,
-  status: 'active' as 'active' | 'hidden' | 'closed'
-})
-
-const openEditModal = (item: CaseItem) => {
-  editingForm.id = item.id
-  editingForm.caseNumber = item.caseNumber
-  editingForm.title = item.title
-  editingForm.capitalAmount = item.capitalAmount
-  editingForm.status = item.status
-  isEditModalOpen.value = true
+const formatWan = (value: number | null) => value == null ? '—' : `${new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 4 }).format(value / 10000)} 萬`
+/* PRODUCT-CASE-B3 — Structured Price Display / legacy price is never a display authority. */
+const priceLabel = (item: AdminMarketplaceCase) => {
+  const prefix = item.transactionType === 'BUY' ? '預算' : '售價'
+  if (item.priceType === 'RANGE') return `${prefix} ${formatWan(item.priceMin).replace(' 萬', '')}～${formatWan(item.priceMax)}`
+  if (item.priceType === 'MAX') return `${prefix} ${formatWan(item.priceAmount)}以下`
+  if (item.priceType === 'APPROXIMATE') return `${prefix}約 ${formatWan(item.priceAmount)}`
+  return `${prefix} ${formatWan(item.priceAmount)}`
 }
 
-const handleSaveEdit = () => {
-  const target = caseList.value.find(c => c.id === editingForm.id)
-  if (target) {
-    target.title = editingForm.title
-    target.capitalAmount = editingForm.capitalAmount
-    target.status = editingForm.status
-  }
-  isEditModalOpen.value = false
+/* PRODUCT-CASE-B3 — Representative Image Resolution / list cards resolve the authoritative category + transaction slot. */
+const representative = (item: AdminMarketplaceCase) => representativeSlots.value.find((slot) => slot.businessCategory === item.businessCategory && slot.transactionType === item.transactionType)?.productImage || null
+
+/* PRODUCT-CASE-B3 — Marketplace List Authority / Backend result owns visible scope; filters are presentation only. */
+const load = async () => {
+  loading.value = true; errorMessage.value = ''
+  try {
+    const casesResponse = await adminMarketplaceCasesApi.list()
+    items.value = casesResponse.data
+    representativeSlots.value = canReadRepresentativeSlots.value ? (await adminProductImagesApi.getProductImageRepresentatives()).data.slots : []
+  } catch { errorMessage.value = '商品案件載入失敗，請稍後重試。' }
+  finally { loading.value = false }
 }
+const replaceItem = (item: AdminMarketplaceCase) => { const index = items.value.findIndex((current) => current.id === item.id); if (index >= 0) items.value[index] = item }
+const transition = async (item: AdminMarketplaceCase, operation: () => Promise<{ data: AdminMarketplaceCase }>) => {
+  mutatingId.value = item.id; errorMessage.value = ''
+  try { replaceItem((await operation()).data) } catch { errorMessage.value = '操作失敗，案件狀態可能已變更，請重新整理。' }
+  finally { mutatingId.value = '' }
+}
+const edit = (item: AdminMarketplaceCase) => router.push({ name: 'CaseCreate', query: { id: item.id } })
+const submit = (item: AdminMarketplaceCase) => transition(item, () => adminMarketplaceCasesApi.submit(item.id))
+const approve = (item: AdminMarketplaceCase) => { if (window.confirm(`確定通過並發布「${item.title}」？`)) void transition(item, () => adminMarketplaceCasesApi.approve(item.id)) }
+const unpublish = (item: AdminMarketplaceCase) => transition(item, () => adminMarketplaceCasesApi.unpublish(item.id))
+const republish = (item: AdminMarketplaceCase) => transition(item, () => adminMarketplaceCasesApi.republish(item.id))
+const close = (item: AdminMarketplaceCase) => { if (window.confirm(`確定將「${item.title}」結案？`)) void transition(item, () => adminMarketplaceCasesApi.close(item.id)) }
+
+/* PRODUCT-CASE-B3 — Return Review Flow / a non-empty reason is required before the canonical return request. */
+const openReturn = (item: AdminMarketplaceCase) => { returnTarget.value = item; returnReason.value = ''; returnError.value = ''; returnVisible.value = true }
+const returnForRevision = async () => {
+  if (!returnTarget.value || !returnReason.value.trim()) { returnError.value = '請填寫退回原因。'; return }
+  const target = returnTarget.value
+  await transition(target, () => adminMarketplaceCasesApi.returnForRevision(target.id, returnReason.value.trim()))
+  if (!errorMessage.value) returnVisible.value = false
+}
+
+onMounted(() => { void load() })
 </script>
 
 <template>
-  <div class="case-list-page p-6 bg-[var(--bg-main)] min-h-screen text-white">
-    <!-- 頂部控制列：標題與狀態篩選條件清單 -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-gray-800 pb-4">
-      <div>
-        <h1 class="text-2xl font-bold text-[var(--accent)] flex items-center gap-2">
-          <span>📋</span> 案件列表管理
-        </h1>
-        <p class="text-xs text-gray-400 mt-1">即時檢視、篩選與修改平台跨區資產仲介案件</p>
-      </div>
+  <main class="case-list-page">
+    <header class="page-heading"><div><p class="eyebrow">商品管理</p><h1>商品列表</h1><p>檢視可管理案件並依權限完成提交、審核與發布流程。</p></div><button type="button" @click="load">重新整理</button></header>
+    <section class="summary" aria-label="案件狀態摘要"><button v-for="status in statuses" :key="status.value" type="button" :class="{ active: statusFilter === status.value }" @click="statusFilter = status.value"><span>{{ status.label }}</span><strong>{{ counts[status.value] }}</strong></button></section>
+    <section class="filters" aria-label="商品案件篩選">
+      <label>狀態<select v-model="statusFilter"><option value="ALL">全部狀態</option><option v-for="status in statuses" :key="status.value" :value="status.value">{{ status.label }}</option></select></label>
+      <label>交易類型<select v-model="transactionFilter"><option value="ALL">全部交易類型</option><option value="BUY">BUY｜買家需求</option><option value="SELL">SELL｜精選待售</option></select></label>
+      <label>業務類別<select v-model="categoryFilter"><option value="ALL">全部業務類別</option><option v-for="category in categories" :key="category.value" :value="category.value">{{ category.label }}</option></select></label>
+      <label>關鍵字<input v-model="keyword" type="search" placeholder="搜尋案件編號或標題" /></label>
+    </section>
 
-      <!-- 狀態選擇清單選項 -->
-      <div class="flex items-center gap-2">
-        <label class="text-sm text-gray-400">案件狀態篩選：</label>
-        <select
-          v-model="selectedStatusFilter"
-          class="bg-[var(--primary)] border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:border-[var(--accent)] focus:outline-none"
-        >
-          <option value="all">全部分類 (All)</option>
-          <option value="active">🟢 仲介中 (Active)</option>
-          <option value="hidden">🟡 暫停/隱藏 (Hidden)</option>
-          <option value="closed">🔴 已結案 (Closed)</option>
-        </select>
-      </div>
-    </div>
+    <p v-if="errorMessage" class="error-state" role="alert">{{ errorMessage }}</p>
+    <p v-if="loading" class="state-message" role="status">載入商品案件中…</p>
+    <p v-else-if="!items.length" class="state-message">目前沒有可管理的商品案件。</p>
+    <p v-else-if="!filteredItems.length" class="state-message">沒有符合篩選條件的商品案件。</p>
 
-    <!-- 案件 Table 資料列表 -->
-    <div class="bg-[var(--bg-card)] border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-      <table class="w-full text-left border-collapse">
-        <thead class="bg-[var(--primary)] text-gray-300 text-xs uppercase">
-          <tr>
-            <th class="p-4">案件視覺/預設照片</th>
-            <th class="p-4">案件編號</th>
-            <th class="p-4">案件標題與類別</th>
-            <th class="p-4">區域 / 交易金額</th>
-            <th class="p-4">狀態</th>
-            <th class="p-4 text-center">操作</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-800 text-sm">
-          <tr v-for="item in filteredCases" :key="item.id" class="hover:bg-[#1F2937]/50 transition-colors">
-            <!-- 案件照片帶入 -->
-            <td class="p-4">
-              <img
-                :src="getCasePhoto(item.photoUrl, item.assetCategory)"
-                :alt="item.title"
-                class="w-16 h-12 object-cover rounded border border-gray-700"
-              />
-            </td>
-            <td class="p-4 font-mono font-bold text-amber-500">{{ item.caseNumber }}</td>
-            <td class="p-4">
-              <div class="font-bold text-gray-100">{{ item.title }}</div>
-              <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded bg-slate-800 text-gray-400 border border-gray-700">
-                {{ item.assetCategory }}
-              </span>
-            </td>
-            <td class="p-4">
-              <div class="text-gray-300">{{ item.region }}</div>
-              <div class="text-xs text-amber-400 font-semibold">{{ item.capitalAmount }} 萬 NT</div>
-            </td>
-            <td class="p-4">
-              <span v-if="item.status === 'active'" class="px-2 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                仲介中
-              </span>
-              <span v-else-if="item.status === 'hidden'" class="px-2 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-400 border border-amber-800">
-                已隱藏
-              </span>
-              <span v-else class="px-2 py-1 rounded-full text-xs font-bold bg-rose-950 text-rose-400 border border-rose-800">
-                已結案
-              </span>
-            </td>
-            <td class="p-4 text-center">
-              <button
-                @click="openEditModal(item)"
-                class="bg-[var(--accent)] hover:bg-[#CA8A04] text-gray-900 font-bold px-3 py-1.5 rounded text-xs transition-colors"
-              >
-                ✏️ 修改內容
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- 編輯案件對話框 Modal -->
-    <div v-if="isEditModalOpen" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div class="bg-[var(--bg-card)] border border-gray-700 rounded-xl max-w-lg w-full p-6 shadow-2xl">
-        <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
-          <h3 class="text-lg font-bold text-[var(--accent)]">修改案件資料：{{ editingForm.caseNumber }}</h3>
-          <button @click="isEditModalOpen = false" class="text-gray-400 hover:text-white">✕</button>
+    <section v-else class="case-grid" aria-label="商品案件清單">
+      <article v-for="item in filteredItems" :key="item.id" class="case-card">
+        <div class="case-image"><img v-if="representative(item)" :src="productImageUrl(representative(item)!.imageUrl)" :alt="`${item.title} 代表圖片`" /><span v-else>尚未設定代表圖片</span></div>
+        <div class="case-content">
+          <header><div><p class="case-id">{{ item.caseId }}</p><h2>{{ item.title }}</h2></div><span class="status" :data-status="item.marketplaceStatus">{{ statusLabel(item.marketplaceStatus) }}</span></header>
+          <div class="meta"><span>{{ categoryLabel(item.businessCategory) }}</span><span>{{ item.transactionType === 'BUY' ? 'BUY｜買家需求' : 'SELL｜精選待售' }}</span><span>{{ item.targetArea }}</span><strong>{{ priceLabel(item) }}</strong></div>
+          <p v-if="item.marketplaceStatus === 'RETURNED' && item.returnReason" class="return-reason"><strong>退回原因：</strong>{{ item.returnReason }}</p>
+          <!-- PRODUCT-CASE-B3 — Review Action Matrix / client hides impossible actions while Backend retains final authority. -->
+          <footer class="actions">
+            <template v-if="['DRAFT', 'RETURNED'].includes(item.marketplaceStatus) && isCreator(item)"><button type="button" @click="edit(item)">編輯</button><button type="button" :disabled="mutatingId === item.id" @click="submit(item)">{{ item.marketplaceStatus === 'RETURNED' ? '重新提交審核' : '提交審核' }}</button></template>
+            <template v-if="canReview(item)"><button type="button" :disabled="mutatingId === item.id" @click="approve(item)">通過並發布</button><button type="button" class="secondary" :disabled="mutatingId === item.id" @click="openReturn(item)">退回修改</button></template>
+            <template v-if="item.marketplaceStatus === 'PUBLISHED' && canPublish"><button type="button" class="secondary" :disabled="mutatingId === item.id" @click="unpublish(item)">下架</button><button type="button" :disabled="mutatingId === item.id" @click="close(item)">結案</button></template>
+            <template v-if="item.marketplaceStatus === 'UNPUBLISHED' && canPublish"><button type="button" :disabled="mutatingId === item.id" @click="republish(item)">重新發布</button><button type="button" class="secondary" :disabled="mutatingId === item.id" @click="close(item)">結案</button></template>
+            <span v-if="item.marketplaceStatus === 'PENDING_APPROVAL' && !canReview(item)" class="waiting">等待授權審核者處理</span><span v-if="item.marketplaceStatus === 'CLOSED'" class="waiting">案件已結案</span>
+          </footer>
         </div>
+      </article>
+    </section>
 
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">案件標題：</label>
-            <input
-              v-model="editingForm.title"
-              type="text"
-              class="w-full bg-[var(--primary)] border border-gray-700 rounded p-2 text-white focus:border-[var(--accent)] focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">金額 (萬 NT)：</label>
-            <input
-              v-model.number="editingForm.capitalAmount"
-              type="number"
-              class="w-full bg-[var(--primary)] border border-gray-700 rounded p-2 text-white focus:border-[var(--accent)] focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">案件生命週期狀態：</label>
-            <select
-              v-model="editingForm.status"
-              class="w-full bg-[var(--primary)] border border-gray-700 rounded p-2 text-white focus:border-[var(--accent)] focus:outline-none"
-            >
-              <option value="active">🟢 仲介中 (Active)</option>
-              <option value="hidden">🟡 暫停/隱藏 (Hidden)</option>
-              <option value="closed">🔴 已結案 (Closed)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-800">
-          <button
-            @click="isEditModalOpen = false"
-            class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs font-medium"
-          >
-            取消
-          </button>
-          <button
-            @click="handleSaveEdit"
-            class="px-4 py-2 bg-[var(--accent)] hover:bg-[#CA8A04] text-gray-900 rounded text-xs font-bold"
-          >
-            儲存變更
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+    <Dialog v-model:visible="returnVisible" modal header="退回修改" :style="{ width: 'min(32rem, calc(100vw - 2rem))' }" @hide="returnError = ''">
+      <label for="marketplace-return-reason">退回原因 *</label><textarea id="marketplace-return-reason" v-model="returnReason" rows="5" aria-describedby="return-reason-error" />
+      <p id="return-reason-error" class="field-error" role="alert">{{ returnError }}</p>
+      <template #footer><button type="button" class="secondary" @click="returnVisible = false">取消</button><button type="button" :disabled="mutatingId === returnTarget?.id" @click="returnForRevision">確認退回</button></template>
+    </Dialog>
+  </main>
 </template>
+
+<style scoped lang="scss">
+.case-list-page { max-width: 76rem; margin: 0 auto; padding: 2rem; color: #e5e7eb; }.page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; h1 { color: var(--accent); margin: .1rem 0 .35rem; } p { margin: 0; color: #94a3b8; } }.eyebrow { font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; }
+button { border: 0; border-radius: .5rem; padding: .65rem .85rem; cursor: pointer; font-weight: 700; background: var(--accent); color: #111827; &:focus-visible { outline: 2px solid #fff; outline-offset: 2px; } &:disabled { opacity: .45; cursor: not-allowed; } &.secondary { background: #334155; color: #f8fafc; } }.summary { display: grid; grid-template-columns: repeat(6, 1fr); gap: .6rem; margin-bottom: 1rem; button { display: flex; justify-content: space-between; background: #1e293b; color: #cbd5e1; &.active { outline: 2px solid var(--accent); } } }.filters { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; padding: 1rem; border: 1px solid #334155; border-radius: .8rem; background: #111827; label { font-size: .78rem; color: #cbd5e1; } select, input { display: block; width: 100%; box-sizing: border-box; margin-top: .35rem; padding: .65rem; border: 1px solid #475569; border-radius: .45rem; background: #0f172a; color: #f8fafc; } }
+.case-grid { display: grid; gap: .85rem; margin-top: 1rem; }.case-card { display: grid; grid-template-columns: 11rem 1fr; min-width: 0; border: 1px solid #334155; border-radius: .8rem; overflow: hidden; background: #111827; }.case-image { display: grid; place-items: center; min-height: 9rem; background: #0f172a; color: #94a3b8; font-size: .8rem; img { width: 100%; height: 100%; object-fit: cover; } }.case-content { min-width: 0; padding: 1rem; > header { display: flex; justify-content: space-between; gap: 1rem; h2 { margin: .15rem 0 .65rem; font-size: 1.05rem; } } }.case-id { margin: 0; color: var(--accent); font: 700 .78rem monospace; }.status { height: fit-content; white-space: nowrap; padding: .3rem .55rem; border: 1px solid #64748b; border-radius: 999px; font-size: .75rem; }.meta { display: flex; flex-wrap: wrap; gap: .45rem .8rem; color: #cbd5e1; font-size: .82rem; strong { color: #fde68a; } }.actions { display: flex; justify-content: flex-end; align-items: center; gap: .55rem; margin-top: 1rem; }.waiting { color: #94a3b8; font-size: .8rem; }.return-reason, .error-state { padding: .65rem .8rem; border-radius: .5rem; background: #422006; color: #fde68a; }.state-message { padding: 2.5rem; text-align: center; color: #94a3b8; }.field-error { min-height: 1.2rem; color: #fca5a5; }textarea { width: 100%; box-sizing: border-box; margin-top: .4rem; padding: .7rem; border: 1px solid #475569; border-radius: .5rem; background: #0f172a; color: #f8fafc; }
+@media (max-width: 900px) { .summary { grid-template-columns: repeat(3, 1fr); }.filters { grid-template-columns: 1fr 1fr; }.case-card { grid-template-columns: 9rem 1fr; } }
+@media (max-width: 640px) { .case-list-page { padding: 1rem; }.page-heading { flex-direction: column; }.summary, .filters { grid-template-columns: 1fr; }.case-card { grid-template-columns: 1fr; }.case-image { min-height: 8rem; max-height: 12rem; }.case-content > header { flex-direction: column; }.actions { justify-content: stretch; flex-wrap: wrap; button { flex: 1; } } }
+</style>
