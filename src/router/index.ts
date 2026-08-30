@@ -105,7 +105,7 @@ const routes: RouteRecordRaw[] = [
         children: [
           { path: 'list', name: 'CaseList', component: () => import('@/views/admin/cases/CaseListView.vue'), meta: { title: '案件列表管理', roles: ['manager', 'admin'] } },
           { path: 'create', name: 'CaseCreate', component: () => import('@/views/admin/cases/CaseCreateView.vue'), meta: { title: '新增智慧案例', roles: ['sales', 'manager', 'admin'] } },
-          { path: 'photos', name: 'CasePhotos', component: () => import('@/views/admin/cases/CasePhotosView.vue'), meta: { title: '案件照片管理', roles: ['admin'] } }
+          { path: 'photos', name: 'CasePhotos', component: () => import('@/views/admin/cases/CasePhotosView.vue'), meta: { title: '商品照片', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] } }
         ]
       },
       {
