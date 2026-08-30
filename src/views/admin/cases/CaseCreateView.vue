@@ -1,485 +1,191 @@
-<template>
-  <div class="admin-container">
-    <h2 class="title">三爵資訊 (KQC) - 全端智慧控制台戰情室</h2>
-    
-    <!-- 1. 實時供需晴雨窗看板 -->
-    <div class="stats-dashboard">
-      <div class="stat-card">
-        <h3>📊 供需晴雨窗 (買家比例)</h3>
-        <div class="circle-progress">
-          <span class="ratio-text">{{ computedStats.demandRatio }}%</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <h3>🟥 出讓賣方 (供應)</h3>
-        <p class="stat-num text-red-400">{{ computedStats.sellerCount }} 筆</p>
-      </div>
-      <div class="stat-card">
-        <h3>🟩 購買接收請求 (需求)</h3>
-        <p class="stat-num text-green-400">{{ computedStats.buyerCount }} 筆</p>
-      </div>
-    </div>
-
-    <!-- 2. 大一統萬用表單區域（支援「新增案源」與「反向帶回修改」雙模式） -->
-    <div class="form-section" :class="{ 'edit-mode-border': isEditMode }">
-      <h3 class="form-title-text">
-        {{ isEditMode ? '✏️ 正在修改案件：' + form.caseId : '🚀 新增智慧案源櫥窗' }}
-      </h3>
-      
-      <form @submit.prevent="handleSubmit">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>案件編號（連動生成）：</label>
-            <input v-model="form.caseId" type="text" disabled class="disabled-input" />
-          </div>
-          <div class="form-group">
-            <label>案件標題：</label>
-            <input v-model="form.title" type="text" placeholder="例如: 隊長創業：貨櫃貨運業" required />
-          </div>
-          <div class="form-group">
-            <label>案件性質：</label>
-            <select v-model="form.caseType" @change="updateCaseId" :disabled="isEditMode">
-              <option value="seller">讓渡出讓 (Seller)</option>
-              <option value="buyer">尋求買收 (Buyer)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>資產分類：</label>
-            <select v-model="form.leaseType" @change="updateCaseId" :disabled="isEditMode">
-              <option value="甲種小客車">甲種小客車 (CA)</option>
-              <option value="乙種小客車">乙種小客車 (CB)</option>
-              <option value="計程車">計程車 (TX)</option>
-              <option value="小貨車">小貨車 (LT)</option>
-              <option value="搬家公司">搬家公司 (MV)</option>
-              <option value="汽車貨運">汽車貨運 (FT)</option>
-              <option value="貨櫃貨運">貨櫃貨運 (CT)</option>
-            </select>
-          </div>
-          <!-- 💡 核心優化點 1：補上區域下拉選單，完全對齊資料庫與前台卡片的需求，解除修改時的必填驗證失敗錯誤 -->
-          <div class="form-group">
-            <label>區域分類：</label>
-            <select v-model="form.targetArea">
-              <option value="北部地區">北部地區</option>
-              <option value="中部地區">中部地區</option>
-              <option value="南部地區">南部地區</option>
-              <option value="東部地區">東部地區</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>公司類型：</label>
-            <select v-model="form.companyType">
-              <option value="有限公司">有限公司</option>
-              <option value="股份有限公司">股份有限公司</option>
-              <option value="車行">車行</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>資本額 (萬NT，0代表不限)：</label>
-            <input v-model.number="form.capitalAmount" type="number" min="0" required />
-          </div>
-          <div class="form-group">
-            <label>金額 (萬NT，0代表不限/電議)：</label>
-            <input v-model.number="form.price" type="number" min="0" required />
-          </div>
-          <div class="form-group">
-            <label>上架初始狀態：</label>
-            <select v-model="form.caseStatus">
-              <option value="selling">🚀 直接公開發布</option>
-              <option value="preparation">📝 暫存為草稿隱藏</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group full-width-group">
-          <label>核心需求與體質背景描述（前台精選櫥窗呈現）：</label>
-          <textarea 
-            v-model="form.coreNeed" 
-            rows="3" 
-            placeholder="請輸入公司體質描述與債務背景限制..."
-            required
-          ></textarea>
-        </div>
-
-        <h4 class="sub-section-title">🔒 後臺 CRM 企業機密個資（前台自動遮蔽物理隔離）</h4>
-        <div class="form-grid crm-grid">
-          <div class="form-group">
-            <label>客戶真實公司名稱：</label>
-            <input v-model="form.crmData.clientCompany" type="text" placeholder="真實行號公司" required />
-          </div>
-          <div class="form-group">
-            <label>客戶聯絡負責人：</label>
-            <input v-model="form.crmData.clientName" type="text" placeholder="老闆或窗口姓名" required />
-          </div>
-          <div class="form-group">
-            <label>負責人行動電話：</label>
-            <input v-model="form.crmData.clientMobile" type="text" placeholder="09xx-xxx-xxx" />
-          </div>
-          <div class="form-group">
-            <label>內部業務追蹤備註：</label>
-            <input v-model="form.crmData.internalNotes" type="text" placeholder="僅限後台業務查閱的內部備註" />
-          </div>
-        </div>
-
-        <div class="form-actions-buttons">
-          <template v-if="isEditMode">
-            <button type="submit" class="btn-submit btn-update-mode">💾 確定並覆蓋雲端庫</button>
-            <button type="button" @click="cancelEditMode" class="btn-switch-to-add">✨ 放棄修改，切換回全新新增</button>
-          </template>
-          <template v-else>
-            <button type="submit" class="btn-submit">🚀 確認寫入 MongoDB 雲端庫</button>
-          </template>
-        </div>
-      </form>
-    </div>
-
-    <!-- 3. 下方戰情室大數據清單區域 -->
-    <div class="management-table-section">
-      <div class="table-toolbar">
-        <h3 class="section-subtitle">📋 全站案件即時維護清單</h3>
-        <div class="filter-controls">
-          <select v-model="filterStatus" class="status-filter-select">
-            <option value="all">🌐 檢視：全部案源</option>
-            <option value="selling">🟢 檢視：銷售中</option>
-            <option value="preparation">🟡 檢視：草稿隱藏</option>
-            <option value="closed">🏁 檢視：配對結案 (歷史歷史區)</option>
-          </select>
-          <input v-model="searchQuery" type="text" placeholder="🔍 輸入標題、編號搜尋..." class="search-input" />
-          <select v-model="sortBy" class="sort-select">
-            <option value="newest">📅 時間：由新到舊</option>
-            <option value="oldest">📅 時間：由舊到新</option>
-          </select>
-        </div>
-      </div>
-      
-      <div class="table-responsive">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>案件編號 (點擊看完整個資)</th>
-              <th>性質</th>
-              <th>案件標題 (前台櫥窗呈現)</th>
-              <th>資產種類</th>
-              <th>金額(萬)</th>
-              <th>目前狀態</th>
-              <th>安全防禦操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in filteredAndSortedCases" :key="item._id" :class="{ 'row-closed-style': item.caseStatus === 'closed', 'row-hidden-style': item.caseStatus === 'preparation', 'editing-active-row': currentEditingId === item._id }">
-              <td>
-                <button type="button" @click="openDetailModal(item)" class="btn-case-id-link">
-                  {{ item.caseId }}
-                </button>
-              </td>
-              <td>
-                <span :class="item.caseType === 'seller' ? 'badge-seller' : 'badge-buyer'">
-                  {{ item.caseType === 'seller' ? '出讓' : '買收' }}
-                </span>
-              </td>
-              <td class="text-left title-cell-container">
-                <span class="main-case-title">{{ item.title }}</span>
-                <span class="area-badge-text">📍 {{ item.targetArea }}</span>
-                <p class="core-need-preview" :title="item.coreNeed">{{ item.coreNeed }}</p>
-              </td>
-              <td>{{ item.leaseType }}</td>
-              <td>{{ item.price === 0 ? '電議' : item.price + '萬' }}</td>
-              <td>{{ statusTextMap[item.caseStatus] }}</td>
-              <td class="action-buttons">
-                <button v-if="item.caseStatus !== 'closed'" @click="bringBackToForm(item)" class="btn-action edit-btn">✏️ 修改</button>
-                <button v-if="item.caseStatus === 'selling'" @click="changeStatus(item._id, 'closed')" class="btn-action close-btn">🤝 結案</button>
-                <button v-if="item.caseStatus === 'selling'" @click="changeStatus(item._id, 'preparation')" class="btn-action hide-btn">👁️ 隱藏</button>
-                <button v-if="item.caseStatus === 'preparation'" @click="changeStatus(item._id, 'selling')" class="btn-action restore-btn">🚀 上架</button>
-                <button @click="deleteCase(item._id)" class="btn-action delete-btn">🗑️ 刪除</button>
-              </td>
-            </tr>
-            <tr v-if="filteredAndSortedCases.length === 0">
-              <td colspan="7" class="no-data-text">📭 當前篩選條件下無歷史案源數據</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 詳情查看彈窗 (Modal) -->
-    <div v-if="isModalOpen" class="kqc-modal-overlay" @click.self="closeDetailModal">
-      <div class="kqc-modal-content">
-        <div class="modal-header">
-          <h3>🔒 案件完整機密檔案查閱庫 (KQC-Internal)</h3>
-          <button @click="closeDetailModal" class="btn-close-modal">✖</button>
-        </div>
-        <div class="modal-body">
-          <table class="detail-modal-table">
-            <!-- 💡 核心優化點 2：補上 <tbody> 解決 Vite 控制台 tr child of table 結構錯誤警告 -->
-            <tbody>
-              <tr>
-                <th>案件編號 / 狀態</th>
-                <td><span class="text-gold">{{ activeDetail.caseId }}</span> / {{ statusTextMap[activeDetail.caseStatus] }}</td>
-              </tr>
-              <tr>
-                <th>案件標題 / 區域地區</th>
-                <td class="text-white font-bold">{{ activeDetail.title }} / 📍 {{ activeDetail.targetArea }}</td>
-              </tr>
-              <tr>
-                <th>性質 / 車種分類</th>
-                <td>{{ activeDetail.caseType === 'seller' ? '🟥 出讓 (Seller)' : '🟩 買收 (Buyer)' }} / {{ activeDetail.leaseType }} ({{ activeDetail.companyType }})</td>
-              </tr>
-              <tr>
-                <th>資本額 / 交易金額</th>
-                <td>資本額: {{ activeDetail.capitalAmount }} 萬 / 預算金額: {{ activeDetail.price === 0 ? '電議' : activeDetail.price + ' 萬' }}</td>
-              </tr>
-              <tr>
-                <th>前台精選櫥窗內文</th>
-                <td class="text-gray-desc">{{ activeDetail.coreNeed }}</td>
-              </tr>
-              <tr class="crm-section-row">
-                <th>CRM 客戶公司名稱</th>
-                <td class="text-gold font-bold">{{ activeDetail.crmData?.clientCompany || '未填寫' }}</td>
-              </tr>
-              <tr class="crm-section-row">
-                <th>CRM 聯絡負責人</th>
-                <td>{{ activeDetail.crmData?.clientName || '未填寫' }}</td>
-              </tr>
-              <tr class="crm-section-row">
-                <th>CRM 負責人電話</th>
-                <td>{{ activeDetail.crmData?.clientMobile || '未填寫' }}</td>
-              </tr>
-              <tr class="crm-section-row">
-                <th>內部專屬業務備註</th>
-                <td class="text-green-desc">{{ activeDetail.crmData?.internalNotes || '無內部備註' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="modal-footer">
-          <button @click="closeDetailModal" class="btn-modal-done">關閉隱私查閱視窗</button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { adminMarketplaceCasesApi, type AdminMarketplaceCase, type MarketplaceCaseInput, type MarketplacePriceType } from '@/api/adminMarketplaceCases'
+import { adminProductImagesApi, productImageUrl, type ProductBusinessCategory, type ProductImageRepresentativeSlot, type ProductTransactionType } from '@/api/adminProductImages'
 
-const casesList = ref<any[]>([])
-const searchQuery = ref('')
-const sortBy = ref('newest')
-const filterStatus = ref('all')
+const route = useRoute()
+const router = useRouter()
+const editingId = computed(() => typeof route.query.id === 'string' ? route.query.id : '')
+const isEditMode = computed(() => Boolean(editingId.value))
+const busy = ref(false)
+const feedback = ref('')
+const errors = reactive<Record<string, string>>({})
+const representativeSlots = ref<ProductImageRepresentativeSlot[]>([])
 
-const isEditMode = ref(false)
-const currentEditingId = ref<string | null>(null)
+const categories: ReadonlyArray<{ value: ProductBusinessCategory; label: string }> = [
+  { value: 'CA', label: 'CA｜甲種小客車' }, { value: 'CB', label: 'CB｜乙種小客車' },
+  { value: 'TX', label: 'TX｜計程車' }, { value: 'LT', label: 'LT｜小貨車' },
+  { value: 'MV', label: 'MV｜搬家公司' }, { value: 'FT', label: 'FT｜汽車貨運' },
+  { value: 'CT', label: 'CT｜貨櫃貨運' },
+]
+const transactionTypes: ReadonlyArray<{ value: ProductTransactionType; label: string }> = [
+  { value: 'BUY', label: 'BUY｜買家需求' }, { value: 'SELL', label: 'SELL｜精選待售' },
+]
+const targetAreas = ['北部地區', '中部地區', '南部地區', '東部地區'] as const
+const priceTypes: ReadonlyArray<{ value: MarketplacePriceType; label: string }> = [
+  { value: 'FIXED', label: '固定金額' }, { value: 'RANGE', label: '金額區間' },
+  { value: 'MAX', label: '最高金額' }, { value: 'APPROXIMATE', label: '約略金額' },
+]
 
-const isModalOpen = ref(false)
-const activeDetail = ref<any>({})
-
-const statusTextMap: Record<string, string> = {
-  'selling': '🟢 銷售中', 'preparation': '草稿隱藏', 'closed': '🏁 配對結案'
-}
-
-const getBlankForm = () => ({
-  caseId: '', caseType: 'seller', title: '', leaseType: '汽車貨運',
-  targetArea: '北部地區', // 💡 默認值防呆
-  companyType: '有限公司', capitalAmount: 0, price: 0, caseStatus: 'selling', 
-  coreNeed: '', 
-  crmData: { clientCompany: '', clientName: '', clientMobile: '', internalNotes: '' }
+/* PRODUCT-CASE-B2-B — Marketplace Create Form / canonical Marketplace fields only; CRM PII is intentionally absent. */
+const form = reactive({
+  businessCaseId: '', caseId: '系統建立後自動產生', businessCategory: 'FT' as ProductBusinessCategory,
+  transactionType: 'SELL' as ProductTransactionType, title: '', targetArea: '北部地區' as typeof targetAreas[number],
+  companyType: '有限公司', capitalAmount: 0, priceType: 'FIXED' as MarketplacePriceType,
+  amountWan: null as number | null, minWan: null as number | null, maxWan: null as number | null,
+  coreNeed: '', isPriority: false, marketplaceStatus: 'DRAFT', returnReason: null as string | null,
 })
 
-const form = ref(getBlankForm())
+const priceHeading = computed(() => form.transactionType === 'BUY' ? '預算' : '售價')
+const representative = computed(() => representativeSlots.value.find((slot) => slot.businessCategory === form.businessCategory && slot.transactionType === form.transactionType)?.productImage || null)
+const canPersist = computed(() => Boolean(form.businessCaseId) && !busy.value && (!isEditMode.value || ['DRAFT', 'RETURNED'].includes(form.marketplaceStatus)))
+const inputId = (name: string) => `marketplace-${name}`
 
-const computedStats = computed(() => {
-  const activeCases = casesList.value.filter(i => i.caseStatus === 'selling')
-  const sellerCount = activeCases.filter(i => i.caseType === 'seller').length
-  const buyerCount = activeCases.filter(i => i.caseType === 'buyer').length
-  const total = sellerCount + buyerCount
-  const demandRatio = total === 0 ? 50 : Math.round((buyerCount / total) * 100);
-  return { sellerCount, buyerCount, demandRatio }
+const toTwd = (wan: number | null) => wan == null ? null : wan * 10000
+const toWan = (twd: number | null) => twd == null ? null : twd / 10000
+
+/* PRODUCT-CASE-B2-B — Structured Price UI / 萬元 input is converted to integer TWD before API submission. */
+const validate = () => {
+  for (const key of Object.keys(errors)) delete errors[key]
+  if (!form.businessCaseId) errors.businessCaseId = '來源業務案件資料尚未開放，暫時無法建立新案件。'
+  if (!form.title.trim()) errors.title = '請輸入案件標題。'
+  const validWan = (value: number | null) => Number.isFinite(value) && Number.isInteger(toTwd(value)) && Number(value) >= 0
+  if (form.priceType === 'RANGE') {
+    if (!validWan(form.minWan) || !validWan(form.maxWan)) errors.price = '請輸入有效且非負數的最低與最高金額。'
+    else if (Number(form.minWan) > Number(form.maxWan)) errors.price = '最低金額不得高於最高金額。'
+  } else if (!validWan(form.amountWan)) errors.price = '請輸入有效且非負數的金額。'
+  return Object.keys(errors).length === 0
+}
+
+const payload = (): MarketplaceCaseInput => ({
+  businessCaseId: form.businessCaseId, businessCategory: form.businessCategory, transactionType: form.transactionType,
+  title: form.title.trim(), targetArea: form.targetArea, companyType: form.companyType,
+  capitalAmount: Number(form.capitalAmount), coreNeed: form.coreNeed.trim(), isPriority: form.isPriority,
+  priceType: form.priceType,
+  priceAmount: form.priceType === 'RANGE' ? null : toTwd(form.amountWan),
+  priceMin: form.priceType === 'RANGE' ? toTwd(form.minWan) : null,
+  priceMax: form.priceType === 'RANGE' ? toTwd(form.maxWan) : null,
 })
 
-const assetCodeMap: Record<string, string> = {
-  '甲種小客車': 'CA', '乙種小客車': 'CB', '計程車': 'TX', '小貨車': 'LT', '搬家公司': 'MV', '汽車貨運': 'FT', '貨櫃貨運': 'CT'
+const applyCase = (item: AdminMarketplaceCase) => {
+  Object.assign(form, { ...item, amountWan: toWan(item.priceAmount), minWan: toWan(item.priceMin), maxWan: toWan(item.priceMax) })
 }
 
-const updateCaseId = () => {
-  if (isEditMode.value) return 
-  const now = new Date()
-  const year = String(now.getFullYear()).slice(-2)
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const randomSerial = String(Math.floor(10 + Math.random() * 90))
-  const typeLetter = form.value.caseType === 'seller' ? 'S' : 'B'
-  const assetCode = assetCodeMap[form.value.leaseType] || 'FT'
-  form.value.caseId = `KQC-${typeLetter}${assetCode}${year}${month}${randomSerial}`
+const persistDraft = async () => {
+  if (!validate()) return null
+  const response = isEditMode.value
+    ? await adminMarketplaceCasesApi.update(editingId.value, payload())
+    : await adminMarketplaceCasesApi.create(payload())
+  applyCase(response.data)
+  return response.data
 }
 
-const refreshData = async () => {
+const save = async (submit: boolean) => {
+  if (busy.value) return
+  busy.value = true
+  feedback.value = ''
   try {
-    const list = await axios.get('http://localhost:3000/api/cases?isAdmin=true')
-    casesList.value = list.data.data
-  } catch (err) {
-    console.error('API 串接異常:', err)
-  }
+    /* PRODUCT-CASE-B2-B — Marketplace Submission / submission follows a successful server-created or updated DRAFT. */
+    const saved = await persistDraft()
+    if (!saved) return
+    if (submit) applyCase((await adminMarketplaceCasesApi.submit(saved.id)).data)
+    feedback.value = submit ? '案件已提交審核。' : '草稿已儲存。'
+    if (!isEditMode.value) await router.replace({ query: { ...route.query, id: saved.id } })
+  } catch (error) {
+    feedback.value = '儲存失敗，請確認欄位或稍後再試。'
+  } finally { busy.value = false }
 }
 
-onMounted(() => {
-  updateCaseId()
-  refreshData()
-})
-
-const filteredAndSortedCases = computed(() => {
-  let result = [...casesList.value]
-  if (filterStatus.value !== 'all') {
-    result = result.filter(i => i.caseStatus === filterStatus.value)
-  }
-  if (searchQuery.value.trim()) {
-    const q = searchQuery.value.toLowerCase()
-    result = result.filter(i => i.title.toLowerCase().includes(q) || i.caseId.toLowerCase().includes(q) || (i.coreNeed && i.coreNeed.toLowerCase().includes(q)))
-  }
-  result.sort((a, b) => sortBy.value === 'newest' ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-  return result
-})
-
-const openDetailModal = (item: any) => {
-  activeDetail.value = item
-  isModalOpen.value = true
+const load = async () => {
+  representativeSlots.value = (await adminProductImagesApi.getProductImageRepresentatives()).data.slots
+  if (editingId.value) applyCase((await adminMarketplaceCasesApi.detail(editingId.value)).data)
 }
-const closeDetailModal = () => {
-  isModalOpen.value = false
-  activeDetail.value = {}
-}
-
-const bringBackToForm = (item: any) => {
-  isEditMode.value = true
-  currentEditingId.value = item._id 
-  form.value = {
-    caseId: item.caseId,
-    caseType: item.caseType,
-    title: item.title,
-    leaseType: item.leaseType,
-    targetArea: item.targetArea || '北部地區', // 🌟 將原有區域資料帶回表單
-    companyType: item.companyType,
-    capitalAmount: item.capitalAmount,
-    price: item.price,
-    caseStatus: item.caseStatus,
-    coreNeed: item.coreNeed || '', 
-    crmData: item.crmData ? { ...item.crmData } : { clientCompany: '', clientName: '', clientMobile: '', internalNotes: '' }
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-const cancelEditMode = () => {
-  isEditMode.value = false
-  currentEditingId.value = null
-  form.value = getBlankForm()
-  updateCaseId()
-}
-
-const handleSubmit = async () => {
-  try {
-    if (isEditMode.value && currentEditingId.value) {
-      // =========================================================================
-      // 🔒 KQC 企業級資安防禦：修改模式資料深度清洗（Sanitization）
-      // =========================================================================
-      // 💡 核心關鍵：我們絕對不能把 _id、caseId 發送給後端做 $set 覆蓋，否則 MongoDB 會噴錯。
-      // 我們只提取管理員「允許修改」的動態業務欄位，這才是最乾淨、具備可維護性的作法！
-      const sanitizedPayload = {
-        title: form.value.title,
-        companyType: form.value.companyType,
-        capitalAmount: Number(form.value.capitalAmount),
-        price: Number(form.value.price),
-        caseStatus: form.value.caseStatus,
-        coreNeed: form.value.coreNeed, // 補回消失的詳細內文
-        targetArea: form.value.targetArea, // 補回消失的區域必填限制
-        crmData: {
-          clientCompany: form.value.crmData.clientCompany,
-          clientName: form.value.crmData.clientName,
-          clientMobile: form.value.crmData.clientMobile,
-          internalNotes: form.value.crmData.internalNotes
-        }
-      }
-
-      // 🌐 血管 3：透過 PATCH 動脈，精準傳送清洗後的乾淨包裹
-      await axios.patch(`http://localhost:3000/api/cases/${currentEditingId.value}`, sanitizedPayload)
-      alert('🎉 案源內容已順利覆蓋儲存！')
-      cancelEditMode()
-    } else {
-      // 正常全新寫入模式 (保持原有邏輯不變)
-      await axios.post('http://localhost:3000/api/cases', form.value)
-      alert('🎉 全新案源資料已成功寫入 MongoDB 雲端庫！')
-      form.value = getBlankForm()
-      updateCaseId()
-    }
-    refreshData()
-  } catch (err: any) {
-    if (isEditMode.value) {
-      alert(`❌ 案源更新覆蓋失敗！請檢查後端執行狀態。`)
-    } else {
-      alert(`❌ 全新案源資料新增失敗！請確認 API Server 與資料庫連線。`)
-    }
-    console.error('KQC-Debug-Log:', err)
-  }
-}
-
-const changeStatus = async (id: string, status: string) => {
-  await axios.patch(`http://localhost:3000/api/cases/${id}`, { caseStatus: status })
-  refreshData()
-}
-
-const deleteCase = async (id: string) => {
-  if (confirm('確定永久抹除此機密案源？')) {
-    await axios.delete(`http://localhost:3000/api/cases/${id}`)
-    refreshData()
-  }
-}
+watch(() => route.query.id, () => { if (editingId.value) void load() })
+onMounted(() => { void load() })
 </script>
 
-<style lang="scss" scoped>
-.admin-container { padding: 2rem; max-width: 1200px; margin: 0 auto; background: var(--bg-main); min-height: 100vh; color: var(--bg-main); font-family: sans-serif; }
-.title { color: var(--accent); text-align: center; font-weight: bold; margin-bottom: 2rem; }
-.stats-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-.stat-card { background: var(--primary); border-radius: 12px; padding: 1.5rem; text-align: center; border: 1px solid #334155; }
-.circle-progress { width: 70px; height: 70px; border: 4px solid var(--accent); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-.form-section { background: var(--primary); padding: 2rem; border-radius: 16px; border: 1px solid #334155; margin-bottom: 2rem; transition: all 0.3s ease; }
-.edit-mode-border { border: 2px dashed #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
-.form-title-text { font-size: 1.15rem; color: #fff; font-weight: bold; margin-bottom: 1.5rem; border-left: 4px solid var(--accent); padding-left: 0.5rem; }
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
-.crm-grid { background: rgba(15, 23, 42, 0.4); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--primary); margin-top: 0.5rem; }
-.sub-section-title { color: #94a3b8; font-size: 0.9rem; font-weight: bold; margin: 1.5rem 0 0.5rem 0; }
-.form-group { display: flex; flex-direction: column; margin-bottom: 1rem; label { font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.5rem; } input, select, textarea { background: var(--bg-main); border: 1px solid #334155; padding: 0.75rem; border-radius: 8px; color: #fff; font-size: 0.9rem; &:focus { border-color: var(--accent); outline: none; } } .disabled-input { opacity: 0.6; cursor: not-allowed; background: var(--primary); } textarea { resize: vertical; } }
-.full-width-group { grid-column: 1 / -1; }
-.form-actions-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; }
-.btn-submit { flex: 1; padding: 1rem; background: var(--accent); color: var(--bg-main); font-weight: bold; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; transition: background 0.2s; &:hover { background: #ca8a04; } }
-.btn-update-mode { background: #10b981; color: #fff; &:hover { background: #059669; } }
-.btn-switch-to-add { padding: 1rem 1.5rem; background: rgba(239, 68, 68, 0.15); color: var(--status-alert); font-weight: bold; font-size: 0.95rem; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; &:hover { background: var(--status-alert); color: #fff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); } }
-.management-table-section { background: var(--primary); border-radius: 16px; padding: 2rem; border: 1px solid #334155; }
-.table-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
-.filter-controls { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-.search-input, .sort-select, .status-filter-select { background: var(--bg-main); border: 1px solid #334155; padding: 0.6rem 1rem; border-radius: 8px; color: #fff; font-size: 0.9rem; }
-.status-filter-select { border-color: var(--accent); color: var(--accent); font-weight: bold; }
-.admin-table { width: 100%; border-collapse: collapse; th { background: var(--bg-main); padding: 1.25rem 1rem; color: #94a3b8; font-size: 0.9rem; }  td { padding: 1.25rem 1rem; border-bottom: 1px solid #334155; font-size: 0.9rem; vertical-align: middle; } .text-left { text-align: left; } }
-.title-cell-container { max-width: 320px; }
-.main-case-title { font-weight: bold; color: #fff; display: block; margin-bottom: 0.25rem; }
-.area-badge-text { font-size: 0.75rem; background: rgba(234, 179, 8, 0.1); color: var(--accent); padding: 0.15rem 0.4rem; border-radius: 4px; margin-right: 0.5rem; font-weight: bold; }
-.core-need-preview { font-size: 0.8rem; color: #64748b; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row-closed-style { background: rgba(30, 41, 59, 0.4); td { color: #64748b; } .main-case-title { color: #64748b; } }
-.row-hidden-style { background: rgba(234, 179, 8, 0.02); }
-.btn-case-id-link { background: none; border: none; color: var(--accent); font-weight: bold; font-family: monospace; cursor: pointer; text-decoration: underline; padding: 0.25rem 0.5rem; border-radius: 4px; transition: all 0.2s; &:hover { background: rgba(234, 179, 8, 0.15); color: #fde047; text-shadow: 0 0 8px rgba(234, 179, 8, 0.6); } }
-.badge-seller { background: rgba(239, 68, 68, 0.15); color: var(--status-alert); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-.badge-buyer { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-.action-buttons { display: flex; gap: 0.4rem; justify-content: center; }
-.btn-action { padding: 0.45rem 0.75rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 0.8rem; }
-.edit-btn { background: #0ea5e9; color: #fff; }
-.close-btn { background: #2563eb; color: #fff; }
-.hide-btn { background: #4b5563; color: #fff; }
-.restore-btn { background: #d97706; color: #fff; }
-.delete-btn { background: rgba(220, 38, 38, 0.15); color: var(--status-alert); border: 1px solid rgba(220, 38, 38, 0.25); &:hover { background: #dc2626; color: #fff; } }
+<template>
+  <main class="marketplace-form-page">
+    <header class="page-heading">
+      <div><p class="eyebrow">商品管理</p><h1>{{ isEditMode ? '編輯商品案件' : '建立商品案件' }}</h1><p>建立商品展示資料；提交後依審核流程發布。</p></div>
+      <span class="status-badge">{{ form.marketplaceStatus }}</span>
+    </header>
 
-.kqc-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-.kqc-modal-content { background: var(--primary); width: 90%; max-width: 650px; border-radius: 16px; border: 1px solid var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 1.5rem; }
-.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 0.75rem; h3 { color: var(--accent); margin: 0; font-size: 1.1rem; font-weight: bold; } }
-.btn-close-modal { background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; &:hover { color: #fff; } }
-.modal-body { margin-top: 1rem; max-height: 70vh; overflow-y: auto; }
-.detail-modal-table { width: 100%; border-collapse: collapse; th { width: 30%; background: var(--bg-main); color: #94a3b8; text-align: left; padding: 0.75rem 1rem; font-size: 0.85rem; border-bottom: 1px solid var(--primary); } td { background: #131d31; color: var(--bg-main); padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; border-bottom: 1px solid var(--primary); } .crm-section-row th { background: rgba(234, 179, 8, 0.1); color: var(--accent); } .crm-section-row td { background: rgba(234, 179, 8, 0.03); } .text-white { color: #fff; } .text-gray-desc { color: #cbd5e1; font-size: 0.85rem; line-height: 1.4; } .text-green-desc { color: #34d399; font-weight: bold; } }
-.modal-footer { margin-top: 1.5rem; display: flex; justify-content: flex-end; }
-.btn-modal-done { padding: 0.75rem 1.5rem; background: var(--accent); color: var(--bg-main); font-weight: bold; border-radius: 6px; border: none; cursor: pointer; &:hover { background: #ca8a04; } }
+    <p v-if="form.returnReason" class="return-notice" role="status"><strong>退回原因：</strong>{{ form.returnReason }}</p>
+    <p v-if="feedback" class="feedback" role="status" aria-live="polite">{{ feedback }}</p>
+
+    <form class="marketplace-form" @submit.prevent="save(false)">
+      <!-- PRODUCT-CASE-B2-B — BusinessCase Source Boundary / no fake CRM options or manual ObjectId entry. -->
+      <section class="form-card">
+        <h2>A. 來源業務案件</h2>
+        <label :for="inputId('business-case')">來源業務案件 *</label>
+        <select :id="inputId('business-case')" disabled aria-describedby="business-case-help"><option>{{ form.businessCaseId || '尚無可用資料來源' }}</option></select>
+        <p id="business-case-help" class="field-help">待業務管理案件資料來源開放後自動帶入</p>
+        <p v-if="errors.businessCaseId" class="field-error" role="alert">{{ errors.businessCaseId }}</p>
+      </section>
+
+      <section class="form-card">
+        <h2>B. 商品基本資料</h2>
+        <div class="field-grid">
+          <div><label :for="inputId('case-id')">案件編號</label><input :id="inputId('case-id')" :value="form.caseId" readonly /></div>
+          <div><label :for="inputId('title')">案件標題 *</label><input :id="inputId('title')" v-model="form.title" required /><p v-if="errors.title" class="field-error">{{ errors.title }}</p></div>
+          <div><label :for="inputId('category')">業務類別 *</label><select :id="inputId('category')" v-model="form.businessCategory"><option v-for="item in categories" :key="item.value" :value="item.value">{{ item.label }}</option></select></div>
+          <div><label :for="inputId('transaction')">交易類型 *</label><select :id="inputId('transaction')" v-model="form.transactionType"><option v-for="item in transactionTypes" :key="item.value" :value="item.value">{{ item.label }}</option></select></div>
+          <div><label :for="inputId('area')">區域分類 *</label><select :id="inputId('area')" v-model="form.targetArea"><option v-for="area in targetAreas" :key="area">{{ area }}</option></select></div>
+          <div><label :for="inputId('company-type')">公司類型</label><select :id="inputId('company-type')" v-model="form.companyType"><option>有限公司</option><option>股份有限公司</option><option>車行</option></select></div>
+          <div><label :for="inputId('capital')">資本額（TWD）</label><input :id="inputId('capital')" v-model.number="form.capitalAmount" type="number" min="0" /></div>
+        </div>
+      </section>
+
+      <!-- PRODUCT-CASE-B2-B-R1 — Browser Review Layout / capital stays basic data while price wording follows transaction intent. -->
+      <section class="form-card">
+        <h2>C. {{ priceHeading }}與條件</h2>
+        <div class="field-grid">
+          <div><label :for="inputId('price-type')">{{ priceHeading }}模式 *</label><select :id="inputId('price-type')" v-model="form.priceType"><option v-for="item in priceTypes" :key="item.value" :value="item.value">{{ item.label }}</option></select></div>
+          <template v-if="form.priceType === 'RANGE'">
+            <div><label :for="inputId('price-min')">最低金額（萬元）*</label><input :id="inputId('price-min')" v-model.number="form.minWan" type="number" min="0" step="0.0001" /></div>
+            <div><label :for="inputId('price-max')">最高金額（萬元）*</label><input :id="inputId('price-max')" v-model.number="form.maxWan" type="number" min="0" step="0.0001" /></div>
+          </template>
+          <div v-else><label :for="inputId('price-amount')">{{ priceHeading }}金額（萬元）*</label><input :id="inputId('price-amount')" v-model.number="form.amountWan" type="number" min="0" step="0.0001" /></div>
+          <label class="check-field"><input v-model="form.isPriority" type="checkbox" />設為優先展示案件</label>
+        </div>
+        <p v-if="errors.price" class="field-error" role="alert">{{ errors.price }}</p>
+      </section>
+
+      <!-- PRODUCT-CASE-B2-B — CRM PII Separation / public Marketplace copy contains no customer identity fields. -->
+      <section class="form-card">
+        <h2>D. 商品內容</h2>
+        <label :for="inputId('content')">核心需求／商品說明 *</label>
+        <textarea :id="inputId('content')" v-model="form.coreNeed" rows="7" required />
+      </section>
+
+      <!-- PRODUCT-CASE-B2-B — Representative Image Preview / slot authority remains category + transaction type. -->
+      <section class="form-card representative-card">
+        <h2>E. 代表圖片</h2>
+        <img v-if="representative" :src="productImageUrl(representative.imageUrl)" :alt="representative.altText" />
+        <div v-else class="image-empty">尚未設定代表圖片</div>
+        <p class="field-help">代表圖片由「商品照片」依業務類別與交易類型自動套用</p>
+      </section>
+
+      <footer class="form-actions">
+        <button type="button" class="secondary" @click="router.back()">取消</button>
+        <button type="submit" :disabled="!canPersist">儲存草稿</button>
+        <button type="button" :disabled="!canPersist" @click="save(true)">{{ form.marketplaceStatus === 'RETURNED' ? '重新提交審核' : '提交審核' }}</button>
+      </footer>
+    </form>
+  </main>
+</template>
+
+<style scoped lang="scss">
+.marketplace-form-page { max-width: 70rem; margin: 0 auto; padding: 2rem; color: #e5e7eb; }
+.page-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 1.5rem; h1 { margin: .15rem 0 .4rem; color: var(--accent); } p { margin: 0; color: #94a3b8; } }
+.eyebrow { font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; }.status-badge { padding: .4rem .7rem; border: 1px solid #475569; border-radius: 999px; font-size: .75rem; }
+.marketplace-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }.form-card { padding: 1.25rem; border: 1px solid #334155; border-radius: .9rem; background: var(--bg-card, #111827); h2 { margin: 0 0 1rem; font-size: 1rem; color: #f8fafc; } }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }.form-card > label, .field-grid label { display: block; margin-bottom: .4rem; color: #cbd5e1; font-size: .82rem; }
+input, select, textarea { width: 100%; box-sizing: border-box; border: 1px solid #475569; border-radius: .5rem; padding: .7rem .75rem; background: #0f172a; color: #f8fafc; &:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } &:disabled, &[readonly] { opacity: .7; cursor: not-allowed; } }
+textarea { resize: vertical; }.field-help { margin: .55rem 0 0; color: #94a3b8; font-size: .78rem; }.field-error { color: #fca5a5; font-size: .8rem; }.return-notice, .feedback { padding: .8rem 1rem; border-radius: .6rem; background: #422006; color: #fde68a; }
+.check-field { display: flex !important; gap: .55rem; align-items: center; align-self: end; input { width: auto; } }.representative-card img { width: 100%; aspect-ratio: 16 / 9; border-radius: .65rem; object-fit: cover; }.image-empty { display: grid; place-items: center; width: 100%; min-height: 7rem; border: 1px dashed #475569; border-radius: .65rem; color: #94a3b8; background: #0f172a; }
+.form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: .75rem; padding-top: 0; margin-top: -.25rem; button { border: 0; border-radius: .55rem; padding: .75rem 1.1rem; background: var(--accent); color: #111827; font-weight: 700; cursor: pointer; &:disabled { opacity: .45; cursor: not-allowed; } &.secondary { background: #334155; color: #f8fafc; } } }
+@media (max-width: 768px) { .marketplace-form-page { padding: 1rem; }.marketplace-form, .field-grid { grid-template-columns: 1fr; }.page-heading { flex-direction: column; }.form-actions { flex-direction: column-reverse; button { width: 100%; } } }
 </style>
