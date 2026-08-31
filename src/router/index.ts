@@ -103,9 +103,11 @@ const routes: RouteRecordRaw[] = [
         redirect: '/admin/cases/list',
         meta: { title: '案件管理', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] },
         children: [
-          // PRODUCT-CASE-B3 — Marketplace Route Authority / PLATFORM_MANAGER does not imply Marketplace access.
+          // PRODUCT-CASE-B3-E2E-R2 — ADMIN Creator Authority / PLATFORM_MANAGER does not imply Marketplace access.
           { path: 'list', name: 'CaseList', component: () => import('@/views/admin/cases/CaseListView.vue'), meta: { title: '商品列表', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] } },
-          { path: 'create', name: 'CaseCreate', component: () => import('@/views/admin/cases/CaseCreateView.vue'), meta: { title: '商品案件', capabilities: ['SALES', 'SALES_SUPERVISOR'] } },
+          // PRODUCT-CASE-B3-E2E-R9 — Reviewer Case Detail / direct refresh retains case identity while Backend detail remains scope authority.
+          { path: 'review/:id', name: 'CaseReview', component: () => import('@/views/admin/cases/CaseCreateView.vue'), meta: { title: '審核商品案件', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] } },
+          { path: 'create', name: 'CaseCreate', component: () => import('@/views/admin/cases/CaseCreateView.vue'), meta: { title: '商品案件', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] } },
           { path: 'photos', name: 'CasePhotos', component: () => import('@/views/admin/cases/CasePhotosView.vue'), meta: { title: '商品照片', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] } }
         ]
       },

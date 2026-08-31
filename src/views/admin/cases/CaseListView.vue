@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Dialog from 'primevue/dialog'
 import { adminMarketplaceCasesApi, type AdminMarketplaceCase, type MarketplaceStatus } from '@/api/adminMarketplaceCases'
 import { adminProductImagesApi, productImageUrl, type ProductBusinessCategory, type ProductImageRepresentativeSlot } from '@/api/adminProductImages'
 import { useAuthStore } from '@/stores/authStore'
@@ -18,10 +17,6 @@ const statusFilter = ref<'ALL' | MarketplaceStatus>('ALL')
 const transactionFilter = ref<'ALL' | 'BUY' | 'SELL'>('ALL')
 const categoryFilter = ref<'ALL' | ProductBusinessCategory>('ALL')
 const keyword = ref('')
-const returnVisible = ref(false)
-const returnTarget = ref<AdminMarketplaceCase | null>(null)
-const returnReason = ref('')
-const returnError = ref('')
 
 /* PRODUCT-CASE-B3 — Marketplace Status Presentation / canonical values retain explicit Traditional Chinese labels. */
 const statuses: ReadonlyArray<{ value: MarketplaceStatus; label: string }> = [
@@ -41,7 +36,10 @@ const actorId = computed(() => authStore.user?._id || '')
 const canPublish = computed(() => hasCapability(authStore.user, 'SALES_SUPERVISOR') || hasCapability(authStore.user, 'ADMIN'))
 const canReadRepresentativeSlots = computed(() => hasCapability(authStore.user, 'SALES_SUPERVISOR') || hasCapability(authStore.user, 'ADMIN'))
 const isCreator = (item: AdminMarketplaceCase) => Boolean(actorId.value) && item.createdBy === actorId.value
-const canReview = (item: AdminMarketplaceCase) => item.marketplaceStatus === 'PENDING_APPROVAL' && !isCreator(item) && hasCapability(authStore.user, item.requiredApproverCapability)
+/* PRODUCT-CASE-B3-E2E-R2 — Highest Authority Confirmation / required capability remains authoritative for every pending Case. */
+/* PRODUCT-CASE-B3-E2E-R2 — ADMIN Self Confirmation Exception / only ADMIN-required work exposes confirmation to its ADMIN creator. */
+const isAdminSelfConfirmation = (item: AdminMarketplaceCase) => isCreator(item) && item.requiredApproverCapability === 'ADMIN' && hasCapability(authStore.user, 'ADMIN')
+const canReview = (item: AdminMarketplaceCase) => item.marketplaceStatus === 'PENDING_APPROVAL' && hasCapability(authStore.user, item.requiredApproverCapability) && (!isCreator(item) || isAdminSelfConfirmation(item))
 
 const counts = computed(() => Object.fromEntries(statuses.map(({ value }) => [value, items.value.filter((item) => item.marketplaceStatus === value).length])))
 const filteredItems = computed(() => {
@@ -83,20 +81,12 @@ const transition = async (item: AdminMarketplaceCase, operation: () => Promise<{
   finally { mutatingId.value = '' }
 }
 const edit = (item: AdminMarketplaceCase) => router.push({ name: 'CaseCreate', query: { id: item.id } })
+/* PRODUCT-CASE-B3-E2E-R9 — Reviewer Case Detail / review begins on the server-loaded read-only surface. */
+const review = (item: AdminMarketplaceCase) => router.push({ name: 'CaseReview', params: { id: item.id } })
 const submit = (item: AdminMarketplaceCase) => transition(item, () => adminMarketplaceCasesApi.submit(item.id))
-const approve = (item: AdminMarketplaceCase) => { if (window.confirm(`確定通過並發布「${item.title}」？`)) void transition(item, () => adminMarketplaceCasesApi.approve(item.id)) }
 const unpublish = (item: AdminMarketplaceCase) => transition(item, () => adminMarketplaceCasesApi.unpublish(item.id))
 const republish = (item: AdminMarketplaceCase) => transition(item, () => adminMarketplaceCasesApi.republish(item.id))
 const close = (item: AdminMarketplaceCase) => { if (window.confirm(`確定將「${item.title}」結案？`)) void transition(item, () => adminMarketplaceCasesApi.close(item.id)) }
-
-/* PRODUCT-CASE-B3 — Return Review Flow / a non-empty reason is required before the canonical return request. */
-const openReturn = (item: AdminMarketplaceCase) => { returnTarget.value = item; returnReason.value = ''; returnError.value = ''; returnVisible.value = true }
-const returnForRevision = async () => {
-  if (!returnTarget.value || !returnReason.value.trim()) { returnError.value = '請填寫退回原因。'; return }
-  const target = returnTarget.value
-  await transition(target, () => adminMarketplaceCasesApi.returnForRevision(target.id, returnReason.value.trim()))
-  if (!errorMessage.value) returnVisible.value = false
-}
 
 onMounted(() => { void load() })
 </script>
@@ -126,8 +116,10 @@ onMounted(() => { void load() })
           <p v-if="item.marketplaceStatus === 'RETURNED' && item.returnReason" class="return-reason"><strong>退回原因：</strong>{{ item.returnReason }}</p>
           <!-- PRODUCT-CASE-B3 — Review Action Matrix / client hides impossible actions while Backend retains final authority. -->
           <footer class="actions">
-            <template v-if="['DRAFT', 'RETURNED'].includes(item.marketplaceStatus) && isCreator(item)"><button type="button" @click="edit(item)">編輯</button><button type="button" :disabled="mutatingId === item.id" @click="submit(item)">{{ item.marketplaceStatus === 'RETURNED' ? '重新提交審核' : '提交審核' }}</button></template>
-            <template v-if="canReview(item)"><button type="button" :disabled="mutatingId === item.id" @click="approve(item)">通過並發布</button><button type="button" class="secondary" :disabled="mutatingId === item.id" @click="openReturn(item)">退回修改</button></template>
+            <!-- PRODUCT-CASE-B3-E2E-R5 — Returned Case Resubmit Context / returned work re-enters the authoritative edit-and-save surface before resubmission. -->
+            <template v-if="item.marketplaceStatus === 'DRAFT' && isCreator(item)"><button type="button" @click="edit(item)">編輯</button><button type="button" :disabled="mutatingId === item.id" @click="submit(item)">提交審核</button></template>
+            <template v-else-if="item.marketplaceStatus === 'RETURNED' && isCreator(item)"><button type="button" @click="edit(item)">編輯退回案件</button></template>
+            <template v-if="canReview(item)"><button type="button" @click="review(item)">審核案件</button></template>
             <template v-if="item.marketplaceStatus === 'PUBLISHED' && canPublish"><button type="button" class="secondary" :disabled="mutatingId === item.id" @click="unpublish(item)">下架</button><button type="button" :disabled="mutatingId === item.id" @click="close(item)">結案</button></template>
             <template v-if="item.marketplaceStatus === 'UNPUBLISHED' && canPublish"><button type="button" :disabled="mutatingId === item.id" @click="republish(item)">重新發布</button><button type="button" class="secondary" :disabled="mutatingId === item.id" @click="close(item)">結案</button></template>
             <span v-if="item.marketplaceStatus === 'PENDING_APPROVAL' && !canReview(item)" class="waiting">等待授權審核者處理</span><span v-if="item.marketplaceStatus === 'CLOSED'" class="waiting">案件已結案</span>
@@ -136,11 +128,6 @@ onMounted(() => { void load() })
       </article>
     </section>
 
-    <Dialog v-model:visible="returnVisible" modal header="退回修改" :style="{ width: 'min(32rem, calc(100vw - 2rem))' }" @hide="returnError = ''">
-      <label for="marketplace-return-reason">退回原因 *</label><textarea id="marketplace-return-reason" v-model="returnReason" rows="5" aria-describedby="return-reason-error" />
-      <p id="return-reason-error" class="field-error" role="alert">{{ returnError }}</p>
-      <template #footer><button type="button" class="secondary" @click="returnVisible = false">取消</button><button type="button" :disabled="mutatingId === returnTarget?.id" @click="returnForRevision">確認退回</button></template>
-    </Dialog>
   </main>
 </template>
 

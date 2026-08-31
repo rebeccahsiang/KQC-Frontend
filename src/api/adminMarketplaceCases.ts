@@ -4,8 +4,8 @@ import type { ProductBusinessCategory, ProductTransactionType } from './adminPro
 export type MarketplacePriceType = 'FIXED' | 'RANGE' | 'MAX' | 'APPROXIMATE'
 export type MarketplaceStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'RETURNED' | 'PUBLISHED' | 'UNPUBLISHED' | 'CLOSED'
 export interface MarketplacePrice { priceType: MarketplacePriceType; priceAmount: number | null; priceMin: number | null; priceMax: number | null }
-export interface MarketplaceCaseInput extends MarketplacePrice { businessCaseId: string; businessCategory: ProductBusinessCategory; transactionType: ProductTransactionType; title: string; targetArea: '北部地區' | '中部地區' | '南部地區' | '東部地區'; companyType: string; capitalAmount: number; coreNeed: string; isPriority: boolean }
-export interface AdminMarketplaceCase extends MarketplaceCaseInput { id: string; caseId: string; marketplaceStatus: MarketplaceStatus; returnReason: string | null; createdBy: string; requiredApproverCapability: 'SALES_SUPERVISOR' | 'ADMIN' }
+export interface MarketplaceCaseInput extends MarketplacePrice { businessCaseId?: string | null; businessCategory: ProductBusinessCategory; transactionType: ProductTransactionType; title: string; targetArea: '北部地區' | '中部地區' | '南部地區' | '東部地區'; companyType: string; capitalAmount: number; coreNeed: string; isPriority: boolean }
+export interface AdminMarketplaceCase extends MarketplaceCaseInput { id: string; caseId: string; marketplaceStatus: MarketplaceStatus; returnReason: string | null; createdBy: string; createdByName?: string | null; updatedBy?: string | null; requiredApproverCapability: 'SALES_SUPERVISOR' | 'ADMIN'; submittedAt?: string | null; submittedBy?: string | null; submittedByName?: string | null; returnedAt?: string | null; returnedBy?: string | null; approvedAt?: string | null; approvedBy?: string | null; publishedAt?: string | null; publishedBy?: string | null; createdAt?: string | null; updatedAt?: string | null }
 interface Envelope<T> { success: true; data: T }
 const envelope = <T>(request: unknown) => request as Promise<Envelope<T>>
 

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
 const view = read('src/views/admin/cases/CaseListView.vue')
+const detail = read('src/views/admin/cases/CaseCreateView.vue')
 const api = read('src/api/adminMarketplaceCases.ts')
 const router = read('src/router/index.ts')
 const sidebar = read('src/config/sidebarMenu.ts')
@@ -23,11 +24,14 @@ test('six canonical statuses and Traditional Chinese labels remain explicit', ()
   }
 })
 
-/* PRODUCT-CASE-B3 — Review Action Matrix Contract / one-stage review remains creator-safe and capability-specific. */
-test('review actions require pending state, non-creator identity, and required capability', () => {
-  assert.match(view, /item\.marketplaceStatus === 'PENDING_APPROVAL' && !isCreator\(item\) && hasCapability\(authStore\.user, item\.requiredApproverCapability\)/)
-  assert.match(view, /通過並發布/)
-  assert.match(view, /退回修改/)
+/* PRODUCT-CASE-B3-E2E-R9 — Reviewer Case Detail / list exposes only the authorized entry while detail owns lifecycle decisions. */
+test('review entry requires pending state and required capability with only the ADMIN self-confirmation exception', () => {
+  assert.match(view, /item\.marketplaceStatus === 'PENDING_APPROVAL' && hasCapability\(authStore\.user, item\.requiredApproverCapability\)/)
+  assert.match(view, /!isCreator\(item\) \|\| isAdminSelfConfirmation\(item\)/)
+  assert.match(view, /isCreator\(item\) && item\.requiredApproverCapability === 'ADMIN' && hasCapability\(authStore\.user, 'ADMIN'\)/)
+  assert.match(view, /const review = \(item:[\s\S]*name: 'CaseReview'[\s\S]*params: \{ id: item\.id \}/)
+  assert.match(view, /<template v-if="canReview\(item\)"><button[^>]*@click="review\(item\)">審核案件<\/button><\/template>/)
+  assert.doesNotMatch(view, /@click="approve\(item\)"|@click="openReturn\(item\)"/)
   assert.match(view, /等待授權審核者處理/)
   assert.doesNotMatch(view, /APPROVED/)
 })
@@ -35,16 +39,20 @@ test('review actions require pending state, non-creator identity, and required c
 test('canonical transition endpoints cover return, approve, unpublish, republish, and close', () => {
   for (const path of ['return', 'approve', 'unpublish', 'republish', 'close']) assert.match(api, new RegExp(`/\\$\\{encodeURIComponent\\(id\\)\\}/${path}`))
   assert.match(api, /returnForRevision:[\s\S]*\{ reason \}/)
-  assert.match(view, /!returnReason\.value\.trim\(\)[\s\S]*請填寫退回原因/)
-  assert.match(view, /window\.confirm\(`確定通過並發布/)
+  assert.match(detail, /!returnReason\.value\.trim\(\)[\s\S]*請填寫退回原因/)
+  assert.match(detail, /window\.confirm\(`確定通過並發布/)
   assert.match(view, /replaceItem\(\(await operation\(\)\)\.data\)/)
 })
 
-test('DRAFT and RETURNED creator actions navigate to shared edit form and submit canonically', () => {
-  assert.match(view, /\['DRAFT', 'RETURNED'\]\.includes\(item\.marketplaceStatus\) && isCreator\(item\)/)
+test('DRAFT and RETURNED creator actions navigate to shared edit form while returned resubmit follows save', () => {
+  assert.match(view, /item\.marketplaceStatus === 'DRAFT' && isCreator\(item\)/)
+  assert.match(view, /item\.marketplaceStatus === 'RETURNED' && isCreator\(item\)/)
   assert.match(view, /router\.push\(\{ name: 'CaseCreate', query: \{ id: item\.id \} \}\)/)
   assert.match(view, /adminMarketplaceCasesApi\.submit\(item\.id\)/)
-  assert.match(view, /重新提交審核/)
+  const actionsStart = view.indexOf('PRODUCT-CASE-B3-E2E-R5 — Returned Case Resubmit Context')
+  const actions = view.slice(actionsStart, view.indexOf('<span v-if="item.marketplaceStatus === \'PENDING_APPROVAL\'', actionsStart))
+  assert.match(actions, /編輯退回案件/)
+  assert.doesNotMatch(actions, /RETURNED[\s\S]*@click="submit\(item\)"/)
 })
 
 test('publication action matrix is bounded and CLOSED remains read-only', () => {
@@ -78,9 +86,9 @@ test('list and create route/sidebar authority excludes PLATFORM_MANAGER', () => 
   const routerBoundary = router.slice(router.indexOf("{ path: 'list', name: 'CaseList'"), router.indexOf("{ path: 'photos', name: 'CasePhotos'"))
   const sidebarBoundary = sidebar.slice(sidebar.indexOf("{ id: 'case-create'"), sidebar.indexOf("{ id: 'messages'"))
   assert.match(routerBoundary, /CaseList[\s\S]*capabilities: \['SALES', 'SALES_SUPERVISOR', 'ADMIN'\]/)
-  assert.match(routerBoundary, /CaseCreate[\s\S]*capabilities: \['SALES', 'SALES_SUPERVISOR'\]/)
+  assert.match(routerBoundary, /CaseCreate[\s\S]*capabilities: \['SALES', 'SALES_SUPERVISOR', 'ADMIN'\]/)
   assert.match(sidebarBoundary, /case-list[\s\S]*capabilities: \['SALES', 'SALES_SUPERVISOR', 'ADMIN'\]/)
-  assert.match(sidebarBoundary, /case-create[\s\S]*capabilities: \['SALES', 'SALES_SUPERVISOR'\]/)
+  assert.match(sidebarBoundary, /case-create[\s\S]*capabilities: \['SALES', 'SALES_SUPERVISOR', 'ADMIN'\]/)
   assert.doesNotMatch(routerBoundary + sidebarBoundary, /PLATFORM_MANAGER|roles:\s*\['manager'/)
   assert.match(router, /name: 'CaseManagement'[\s\S]*capabilities: \['SALES', 'SALES_SUPERVISOR', 'ADMIN'\]/)
   assert.match(sidebar, /id: 'cases'[\s\S]*capabilities: \['SALES', 'SALES_SUPERVISOR', 'ADMIN'\]/)
@@ -90,8 +98,8 @@ test('list and create route/sidebar authority excludes PLATFORM_MANAGER', () => 
 test('loading, empty, filtered-empty, errors, labeled dialog, alt text, and responsive layout are protected', () => {
   for (const text of ['載入商品案件中', '目前沒有可管理的商品案件', '沒有符合篩選條件的商品案件', '商品案件載入失敗']) assert.match(view, new RegExp(text))
   assert.match(view, /role="alert"/)
-  assert.match(view, /header="退回修改"/)
-  assert.match(view, /for="marketplace-return-reason"/)
+  assert.match(detail, /header="退回修改"/)
+  assert.match(detail, /for="review-return-reason"/)
   assert.match(view, /:alt="`\$\{item\.title\} 代表圖片`"/)
   assert.match(view, /@media \(max-width: 640px\)[\s\S]*grid-template-columns: 1fr/)
 })

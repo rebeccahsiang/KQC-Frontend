@@ -68,13 +68,10 @@ onMounted(async () => {
               </li>
             </ul>
 
-            <!-- CTA 按鈕組 -->
+            <!-- PRODUCT-CASE-B3-E2E-R7 — Product Showcase Public CTA / the public Hero owns consultation only, never an admin/war-room entry. -->
             <div class="hero-ctas">
               <router-link to="/contact" class="btn-primary">
                 免費預約諮詢 →
-              </router-link>
-              <router-link to="/login" class="btn-secondary">
-                進入戰情室
               </router-link>
             </div>
           </div>

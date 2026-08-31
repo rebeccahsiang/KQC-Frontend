@@ -80,7 +80,7 @@ export const sidebarMenu: SidebarMenuItem[] = [
     id: 'cases', title: '商品管理', icon: 'lucide:gem', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'],
     children: [
       { id: 'case-photos', title: '商品照片', icon: 'lucide:image', path: '/admin/cases/photos', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] },
-      { id: 'case-create', title: '商品案件', icon: 'lucide:layers-plus', path: '/admin/cases/create', capabilities: ['SALES', 'SALES_SUPERVISOR'] },
+      { id: 'case-create', title: '商品案件', icon: 'lucide:layers-plus', path: '/admin/cases/create', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] },
       { id: 'case-list', title: '商品列表', icon: 'lucide:list-check', path: '/admin/cases/list', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] }
     ]
   },
