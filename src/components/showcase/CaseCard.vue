@@ -1,289 +1,33 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MarketplaceCase } from '@/types/case'
+import { publicMarketplaceImageUrl, type PublicMarketplaceCase } from '@/api/publicMarketplace'
 
-const props = defineProps<{
-  caseData: MarketplaceCase
-}>()
-
-const isBuyer = computed(() => props.caseData.case_type === 'buyer_request')
-
-const statusLabel = computed(() => {
-  const map: Record<string, string> = {
-    active: '媒合中',
-    completed: '已完成',
-    closed: '已關閉',
-  }
-  return map[props.caseData.status] || props.caseData.status
+const props = defineProps<{ caseData: PublicMarketplaceCase }>()
+const isBuyer = computed(() => props.caseData.transactionType === 'BUY')
+const categoryLabels: Record<PublicMarketplaceCase['businessCategory'], string> = { CA: '甲種小客車', CB: '乙種小客車', TX: '計程車', LT: '小貨車', MV: '搬家公司', FT: '汽車貨運', CT: '貨櫃貨運' }
+const money = (value: number | null) => value == null ? '—' : `${new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 4 }).format(value / 10000)} 萬`
+/* PRODUCT-CASE-B4 — Structured Price Presentation / all four modes read canonical integer-TWD fields only. */
+const structuredPrice = computed(() => {
+  const prefix = isBuyer.value ? '預算' : '售價'
+  if (props.caseData.priceType === 'RANGE') return `${prefix} ${money(props.caseData.priceMin).replace(' 萬', '')}～${money(props.caseData.priceMax)}`
+  if (props.caseData.priceType === 'MAX') return `${prefix} ${money(props.caseData.priceAmount)}以下`
+  if (props.caseData.priceType === 'APPROXIMATE') return `${prefix}約 ${money(props.caseData.priceAmount)}`
+  return `${prefix} ${money(props.caseData.priceAmount)}`
 })
-
-const formattedCapital = computed(() => {
-  if (!props.caseData.details?.capital_amount) return '面議'
-  return new Intl.NumberFormat('zh-TW', {
-    style: 'currency',
-    currency: 'TWD',
-    maximumFractionDigits: 0
-  }).format(props.caseData.details.capital_amount)
-})
-
-// 預設 Unsplash 圖片（穩定不跳動）
-const coverImage = computed(() => {
-  return props.caseData.cover_image || props.caseData.image_url || 
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80'
-})
+const capital = computed(() => new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', maximumFractionDigits: 0 }).format(props.caseData.capitalAmount || 0))
+const image = computed(() => props.caseData.representativeImage)
 </script>
 
 <template>
+  <!-- PRODUCT-CASE-B4 — Public Marketplace Privacy Boundary / the card binds only bounded public DTO fields. -->
   <article class="case-card" :aria-label="caseData.title">
-    <!-- ① 圖片區：高度精準 125px, object-fit: cover -->
-    <div class="card-img-wrapper">
-      <img
-        :src="coverImage"
-        :alt="caseData.title"
-        class="card-img"
-        loading="lazy"
-      />
-
-      <!-- 右上角：買家 / 賣家 Badge -->
-      <span
-        class="badge"
-        :class="isBuyer ? 'badge--buyer' : 'badge--seller'"
-      >
-        {{ isBuyer ? '🛒 買家需求' : '🏷️ 精選待售' }}
-      </span>
-
-      <!-- 左上角：狀態點 -->
-      <span class="status-dot" :class="'status--' + caseData.status" :title="statusLabel">
-        <span class="dot-inner"></span>
-        <span class="dot-label">{{ statusLabel }}</span>
-      </span>
-    </div>
-
-    <!-- ② 內容區 -->
-    <div class="card-content">
-      <!-- 案件編號 -->
-      <span class="case-number">{{ caseData.case_number }}</span>
-
-      <!-- 標題 -->
-      <h3 class="card-title" :title="caseData.title">{{ caseData.title }}</h3>
-
-      <!-- 詳細資訊 -->
-      <div class="card-details">
-        <div class="detail-row">
-          <span class="detail-label">目標區域</span>
-          <span class="detail-value">{{ caseData.details?.target_area || '全台' }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">資金 / 預算</span>
-          <span class="detail-value detail-value--highlight">{{ formattedCapital }}</span>
-        </div>
-      </div>
-
-      <!-- 核心需求摘要 -->
-      <p class="requirement-summary" :title="caseData.details?.requirement_core">
-        {{ caseData.details?.requirement_core }}
-      </p>
-
-      <!-- CTA 按鈕 -->
-      <button class="btn-view-detail" type="button">
-        查看案件細節 →
-      </button>
-    </div>
+    <!-- PRODUCT-CASE-B4 — Representative Image Resolution / image and alt text arrive with the public case DTO. -->
+    <div class="card-img-wrapper"><img v-if="image" :src="publicMarketplaceImageUrl(image.imageUrl)" :alt="image.altText || caseData.title" class="card-img" loading="lazy" /><div v-else class="card-image-placeholder" role="img" :aria-label="`${caseData.title}尚未設定代表圖片`"><span>KQC</span></div><span class="badge" :class="isBuyer ? 'badge--buyer' : 'badge--seller'">{{ isBuyer ? 'BUY｜買方需求' : 'SELL｜精選待售' }}</span></div>
+    <div class="card-content"><span class="case-number">{{ caseData.caseId }}</span><h3 class="card-title" :title="caseData.title">{{ caseData.title }}</h3><div class="card-details"><span>{{ categoryLabels[caseData.businessCategory] }}</span><span>{{ caseData.targetArea }}</span></div><div class="card-details"><span>{{ caseData.companyType }}</span><span>資本額 {{ capital }}</span></div><strong class="structured-price">{{ structuredPrice }}</strong><p class="requirement-summary">{{ caseData.coreNeed }}</p><!-- PRODUCT-CASE-B4 — Public Marketplace CTA / B5 is deferred, so both intents use the existing public consultation route. --><router-link class="btn-view-detail" to="/contact">{{ isBuyer ? '我有合適標的' : '我有興趣' }}</router-link></div>
   </article>
 </template>
 
 <style lang="scss" scoped>
-.case-card {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
-  height: 100%; /* 在 grid 中等高 */
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px -6px rgba(30, 41, 59, 0.12);
-  }
-}
-
-/* ① 圖片區 ---------------------------------- */
-.card-img-wrapper {
-  position: relative;
-  width: 100%;
-  height: 125px; /* 精準限定 125px */
-  overflow: hidden;
-  background-color: #f1f5f9;
-  flex-shrink: 0;
-
-  .card-img {
-    width: 100%;
-    height: 125px;
-    object-fit: cover; /* 3:2 比例呈現 */
-    display: block;
-    transition: transform 0.3s ease;
-  }
-
-  &:hover .card-img {
-    transform: scale(1.04);
-  }
-
-  /* 右上角：買賣家 Badge */
-  .badge {
-    position: absolute;
-    top: 8px;
-    right: 8px; /* 右上角 */
-    padding: 3px 8px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    border-radius: 20px;
-    backdrop-filter: blur(4px);
-    letter-spacing: 0.3px;
-
-    &--buyer {
-      background-color: #EAB308; /* 5% 琥珀璀璨金 */
-      color: #1E293B;
-    }
-
-    &--seller {
-      background-color: #1E293B; /* 25% 三爵鋼鐵藍 */
-      color: #ffffff;
-    }
-  }
-
-  /* 左上角：狀態點 */
-  .status-dot {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 2px 7px;
-    border-radius: 20px;
-    backdrop-filter: blur(4px);
-
-    .dot-inner {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .dot-label {
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: #334155;
-    }
-
-    &.status--active .dot-inner {
-      background-color: #10b981;
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
-      animation: status-pulse 2s infinite;
-    }
-
-    &.status--completed .dot-inner,
-    &.status--closed .dot-inner {
-      background-color: #94a3b8;
-    }
-  }
-}
-
-/* ② 內容區 ---------------------------------- */
-.card-content {
-  padding: 12px 14px 14px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 6px;
-}
-
-.case-number {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
-}
-
-.card-title {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: #1E293B;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.35;
-}
-
-.card-details {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-
-  .detail-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-
-    .detail-label {
-      color: #94a3b8;
-    }
-
-    .detail-value {
-      color: #334155;
-      font-weight: 500;
-
-      &--highlight {
-        color: #EAB308; /* 5% 琥珀璀璨金：金額高亮 */
-        font-weight: 700;
-      }
-    }
-  }
-}
-
-.requirement-summary {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.5;
-  min-height: 2.3em;
-}
-
-/* CTA 按鈕 */
-.btn-view-detail {
-  margin-top: auto;
-  width: 100%;
-  padding: 8px 0;
-  background-color: #1E293B; /* 25% 三爵鋼鐵藍 */
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
-
-  &:hover {
-    background-color: #334155;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-/* 動畫 */
-@keyframes status-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3); }
-  50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
-}
+.case-card { display: flex; height: 100%; overflow: hidden; flex-direction: column; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }.card-img-wrapper { position: relative; overflow: hidden; aspect-ratio: 16 / 9; background: #e2e8f0; }.card-img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .3s ease; }.card-img-wrapper:hover .card-img { transform: scale(1.04); }.card-image-placeholder { display: grid; width: 100%; height: 100%; place-items: center; color: #64748b; background: linear-gradient(135deg, #f8fafc, #e2e8f0); span { font-weight: 900; letter-spacing: .15em; } }.badge { position: absolute; top: .6rem; right: .6rem; padding: .25rem .55rem; border-radius: 999px; font-size: .7rem; font-weight: 750; backdrop-filter: blur(6px); }.badge--buyer { color: #1e293b; background: #eab308; }.badge--seller { color: #fff; background: #1e293b; }
+.card-content { display: flex; flex: 1; flex-direction: column; gap: .55rem; padding: .9rem; }.case-number { color: #64748b; font: .72rem 'Courier New', monospace; }.card-title { margin: 0; color: #1e293b; font-size: 1rem; }.card-details { display: flex; justify-content: space-between; gap: .75rem; color: #64748b; font-size: .78rem; }.structured-price { color: #a16207; }.requirement-summary { display: -webkit-box; min-height: 2.4em; margin: 0; overflow: hidden; color: #64748b; font-size: .8rem; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }.btn-view-detail { margin-top: auto; padding: .6rem; border-radius: .4rem; color: #fff; background: #1e293b; font-size: .84rem; font-weight: 650; text-align: center; text-decoration: none; &:hover { background: #334155; } &:focus-visible { outline: 2px solid #eab308; outline-offset: 2px; } }
 </style>

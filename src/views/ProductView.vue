@@ -16,11 +16,12 @@ const highlights = [
 const heroImageSrc = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=600&q=80'
 
 // 類型篩選
-const activeFilter = ref<'all' | 'buyer_request' | 'seller_listing'>('all')
+const activeFilter = ref<'ALL' | 'BUY' | 'SELL'>('ALL')
 
-const setFilter = (type: 'all' | 'buyer_request' | 'seller_listing') => {
+/* PRODUCT-CASE-B4 — Marketplace Transaction Filter / tabs map directly to the canonical public transactionType. */
+const setFilter = (type: 'ALL' | 'BUY' | 'SELL') => {
   activeFilter.value = type
-  caseStore.setFilters({ case_type: type })
+  caseStore.setFilters({ transactionType: type })
 }
 
 onMounted(async () => {
@@ -113,27 +114,27 @@ onMounted(async () => {
               <button
                 role="tab"
                 class="filter-tab"
-                :class="{ 'filter-tab--active': activeFilter === 'all' }"
-                :aria-selected="activeFilter === 'all'"
-                @click="setFilter('all')"
+                :class="{ 'filter-tab--active': activeFilter === 'ALL' }"
+                :aria-selected="activeFilter === 'ALL'"
+                @click="setFilter('ALL')"
               >
                 全部案件
               </button>
               <button
                 role="tab"
                 class="filter-tab"
-                :class="{ 'filter-tab--active': activeFilter === 'buyer_request' }"
-                :aria-selected="activeFilter === 'buyer_request'"
-                @click="setFilter('buyer_request')"
+                :class="{ 'filter-tab--active': activeFilter === 'BUY' }"
+                :aria-selected="activeFilter === 'BUY'"
+                @click="setFilter('BUY')"
               >
                 🛒 買家需求
               </button>
               <button
                 role="tab"
                 class="filter-tab"
-                :class="{ 'filter-tab--active': activeFilter === 'seller_listing' }"
-                :aria-selected="activeFilter === 'seller_listing'"
-                @click="setFilter('seller_listing')"
+                :class="{ 'filter-tab--active': activeFilter === 'SELL' }"
+                :aria-selected="activeFilter === 'SELL'"
+                @click="setFilter('SELL')"
               >
                 🏷️ 精選待售
               </button>
@@ -144,6 +145,7 @@ onMounted(async () => {
           <CaseShowcase
             :cases="caseStore.filteredCases"
             :loading="caseStore.isLoading"
+            :error="caseStore.error"
           />
         </div>
       </section>

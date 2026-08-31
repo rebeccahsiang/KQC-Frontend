@@ -28,10 +28,16 @@ test('promo, unused services, personas and insights keep explicit placeholder ow
   assert.match(read('src/components/home/HomeInsightsSection.vue'), /placeholderArticles/)
 })
 
-test('real cases remain isolated pending a product decision', () => {
+/* PRODUCT-CASE-B4-T1 — Homepage Marketplace Test Authority / HomeView consumes the canonical store instead of owning network access. */
+test('homepage Marketplace presentation uses the centralized public case authority', () => {
   const home = read('src/views/HomeView.vue')
-  assert.match(home, /axios\.get\(`\$\{apiBaseUrl\}\/api\/cases`\)/)
-  assert.match(home, /<HomeLegacyCasesSection :cases="casesData"/)
+  const store = read('src/stores/useCaseStore.ts')
+  assert.match(home, /import \{ useCaseStore \} from '@\/stores\/useCaseStore'/)
+  assert.match(home, /const caseStore = useCaseStore\(\)/)
+  assert.match(home, /caseStore\.fetchPublicCases\(\)/)
+  assert.match(home, /<HomeLegacyCasesSection :cases="caseStore\.cases" :loading="caseStore\.isLoading" :error="caseStore\.error"/)
+  assert.doesNotMatch(home, /axios\.get\(`\$\{apiBaseUrl\}\/api\/cases`\)|axios\.get\(['"]\/api\/cases/)
+  assert.match(store, /publicMarketplaceApi\.list\(\)/)
   assert.match(read('src/components/home/HomeLegacyCasesSection.vue'), /CaseShowcase/)
 })
 

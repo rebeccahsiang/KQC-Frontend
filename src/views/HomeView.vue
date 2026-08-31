@@ -12,13 +12,14 @@ import HomeInsightsSection from '@/components/home/HomeInsightsSection.vue'
 import HomeContactCtaSection from '@/components/home/HomeContactCtaSection.vue'
 import HomeLegacyCasesSection from '@/components/home/HomeLegacyCasesSection.vue'
 import HomeServiceDock from '@/components/home/HomeServiceDock.vue'
+import { useCaseStore } from '@/stores/useCaseStore'
 
 type ServicePanel = 'ai' | 'quick-service' | 'human'
 
 const themeStore = useThemeStore()
+const caseStore = useCaseStore()
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 const backendMessage = ref('正在連線到後端 API...')
-const casesData = ref<any[]>([])
 const textInput = ref('')
 const isLoading = ref(false)
 const activePanel = ref<ServicePanel | null>(null)
@@ -33,8 +34,7 @@ const handleAiMatch = async () => {
     isLoading.value = true
     const response = await axios.post(`${apiBaseUrl}/api/ai/match`, { textInput: textInput.value })
     if (response.data.success) {
-      casesData.value = response.data.data
-      backendMessage.value = `AI 已找到 ${response.data.count || casesData.value.length} 筆相關案件`
+      backendMessage.value = `AI 已找到 ${response.data.count || response.data.data?.length || 0} 筆相關案件`
     }
   } catch {
     backendMessage.value = 'AI 匹配服務暫時無法使用，請稍後再試。'
@@ -44,11 +44,11 @@ const handleAiMatch = async () => {
 }
 
 onMounted(async () => {
+  /* PRODUCT-CASE-B4 — Homepage Marketplace Authority / marketplace loading is independent from the legacy health surface. */
+  await caseStore.fetchPublicCases()
   try {
     const health = await axios.get(`${apiBaseUrl}/api/health`)
     backendMessage.value = health.data.message
-    const cases = await axios.get(`${apiBaseUrl}/api/cases`)
-    if (cases.data.success) casesData.value = cases.data.data
   } catch {
     backendMessage.value = '目前為離線瀏覽模式，仍可查看網站內容。'
   }
@@ -67,7 +67,7 @@ onMounted(async () => {
       <HomeServiceGuideSection :active-panel="activePanel" @open-panel="openServicePanel" />
       <HomePersonasSection />
       <HomeInsightsSection />
-      <HomeLegacyCasesSection :cases="casesData" />
+      <HomeLegacyCasesSection :cases="caseStore.cases" :loading="caseStore.isLoading" :error="caseStore.error" />
       <HomeContactCtaSection />
     </main>
     <HomeServiceDock :active-panel="activePanel" @update:active-panel="activePanel = $event" />
