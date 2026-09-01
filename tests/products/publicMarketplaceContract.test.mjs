@@ -8,6 +8,7 @@ const store = read('src/stores/useCaseStore.ts')
 const view = read('src/views/ProductView.vue')
 const card = read('src/components/showcase/CaseCard.vue')
 const showcase = read('src/components/showcase/CaseShowcase.vue')
+const intentModal = read('src/components/showcase/MarketplaceIntentModal.vue')
 const home = read('src/views/HomeView.vue')
 
 /* PRODUCT-CASE-B4 — Public Marketplace Authority / runtime owns only the bounded public endpoint without demo fallback. */
@@ -18,6 +19,8 @@ test('Product Showcase uses canonical public Marketplace data with no production
   assert.doesNotMatch(store + view, /INITIAL_DEMO_CASES|KQC-SFT260814|KQC-BCA260722|KQC-SMV260725|\/api\/admin\/cases/)
   assert.match(home, /caseStore\.fetchPublicCases\(\)/)
   assert.match(home, /:cases="caseStore\.cases"/)
+  assert.doesNotMatch(store + api, /PublicAdvertisement|publicAdvertisementsApi|advertisementSlots/)
+  assert.match(view, /:advertisements="publishedAdvertisements"/)
 })
 
 /* PRODUCT-CASE-B4 — Canonical Public DTO / presentation does not depend on internal Marketplace or CRM fields. */
@@ -30,9 +33,13 @@ test('public DTO and card consume the canonical privacy allowlist only', () => {
 /* PRODUCT-CASE-B4 — Marketplace Transaction Filter / legacy caseType cannot drive public tabs. */
 test('all BUY and SELL tabs filter through canonical transactionType', () => {
   assert.match(view, /ref<'ALL' \| 'BUY' \| 'SELL'>\('ALL'\)/)
+  assert.match(view, /const tabs: ReadonlyArray<\{ value: 'ALL' \| 'BUY' \| 'SELL'/)
+  assert.match(view, /\{ value: 'BUY', label:/)
+  assert.match(view, /\{ value: 'SELL', label:/)
+  assert.match(view, /const setFilter = \(type: 'ALL' \| 'BUY' \| 'SELL'\)/)
+  assert.match(view, /caseStore\.setFilters\(\{ transactionType: type \}\)/)
+  assert.match(view, /@click="setFilter\(tab\.value\)"/)
   assert.match(store, /item\.transactionType === filters\.value\.transactionType/)
-  assert.match(view, /setFilter\('BUY'\)/)
-  assert.match(view, /setFilter\('SELL'\)/)
   assert.doesNotMatch(store + view, /buyer_request|seller_listing|case_type|caseType/)
 })
 
@@ -54,11 +61,13 @@ test('card uses public representativeImage and a stable missing-slot placeholder
   assert.doesNotMatch(card + api, /adminProductImagesApi|getProductImageRepresentatives|productImageId/)
 })
 
-/* PRODUCT-CASE-B4 — Marketplace Empty/Error State and CTA / failures never become demo data or fake B5 success. */
-test('loading empty error and temporary consultation CTA are explicit', () => {
+/* PRODUCT-CASE-B4 — Marketplace Empty/Error State and R3 intent boundary / failures never become demo data or fake persistence. */
+test('loading empty error and presentation-only intent flow remain explicit', () => {
   assert.match(showcase, /v-if="loading"/)
   assert.match(showcase, /v-else-if="error"[\s\S]*role="alert"/)
-  assert.match(showcase, /v-else-if="!cases\.length"[\s\S]*目前尚無公開商品案件/)
-  assert.match(card, /to="\/contact">\{\{ isBuyer \? '我有合適標的' : '我有興趣' \}\}/)
-  assert.doesNotMatch(card, /Lead|submitIntent|localStorage|sessionStorage/)
+  assert.match(showcase, /v-else-if="!cases\.length && !marketplaceMode"[\s\S]*目前尚無公開商品案件/)
+  assert.match(card, /emit\('intent', caseData\)[\s\S]*我有合適的標的[\s\S]*我有興趣/)
+  assert.doesNotMatch(card, /to="\/contact"/)
+  assert.match(intentModal, /前端流程展示，不會送出資料或建立 CRM 紀錄/)
+  assert.doesNotMatch(card + intentModal, /Lead|fetch\(|axios|publicMarketplaceApi\./)
 })

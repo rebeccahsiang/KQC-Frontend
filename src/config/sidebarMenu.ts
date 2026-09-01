@@ -81,7 +81,10 @@ export const sidebarMenu: SidebarMenuItem[] = [
     children: [
       { id: 'case-photos', title: '商品照片', icon: 'lucide:image', path: '/admin/cases/photos', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] },
       { id: 'case-create', title: '商品案件', icon: 'lucide:layers-plus', path: '/admin/cases/create', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] },
-      { id: 'case-list', title: '商品列表', icon: 'lucide:list-check', path: '/admin/cases/list', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] }
+      { id: 'case-list', title: '商品列表', icon: 'lucide:list-check', path: '/admin/cases/list', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] },
+      { id: 'advertisement-photos', title: '廣告照片', icon: 'lucide:images', path: '/admin/cases/advertisement-photos', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] },
+      // PRODUCT-ADVERTISEMENT-R2B — Advertisement Case Admin Navigation
+      { id: 'advertisement-cases', title: '廣告案件', icon: 'lucide:badge-megaphone', path: '/admin/cases/advertisements', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] }
     ]
   },
   {

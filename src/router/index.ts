@@ -108,7 +108,10 @@ const routes: RouteRecordRaw[] = [
           // PRODUCT-CASE-B3-E2E-R9 — Reviewer Case Detail / direct refresh retains case identity while Backend detail remains scope authority.
           { path: 'review/:id', name: 'CaseReview', component: () => import('@/views/admin/cases/CaseCreateView.vue'), meta: { title: '審核商品案件', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] } },
           { path: 'create', name: 'CaseCreate', component: () => import('@/views/admin/cases/CaseCreateView.vue'), meta: { title: '商品案件', capabilities: ['SALES', 'SALES_SUPERVISOR', 'ADMIN'] } },
-          { path: 'photos', name: 'CasePhotos', component: () => import('@/views/admin/cases/CasePhotosView.vue'), meta: { title: '商品照片', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] } }
+          { path: 'photos', name: 'CasePhotos', component: () => import('@/views/admin/cases/CasePhotosView.vue'), meta: { title: '商品照片', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] } },
+          { path: 'advertisement-photos', name: 'AdvertisementPhotos', component: () => import('@/views/admin/cases/AdvertisementPhotosView.vue'), meta: { title: '廣告照片', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] } },
+          // PRODUCT-ADVERTISEMENT-R2B — Advertisement Case Route Authorization
+          { path: 'advertisements', name: 'AdvertisementCases', component: () => import('@/views/admin/cases/AdvertisementCasesView.vue'), meta: { title: '廣告案件', capabilities: ['SALES_SUPERVISOR', 'ADMIN'] } }
         ]
       },
       {

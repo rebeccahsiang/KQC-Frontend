@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AdminHeader: typeof import('./src/components/layout/AdminHeader.vue')['default']
     AdminLayout: typeof import('./src/components/layout/AdminLayout.vue')['default']
+    AdvertisementPreview: typeof import('./src/components/admin/advertisements/AdvertisementPreview.vue')['default']
     AiSearchBar: typeof import('./src/components/showcase/AiSearchBar.vue')['default']
     AppFooter: typeof import('./src/components/layout/AppFooter.vue')['default']
     AppHeader: typeof import('./src/components/layout/AppHeader.vue')['default']
@@ -63,6 +64,9 @@ declare module 'vue' {
     KqcTag: typeof import('./src/components/ui/KqcTag.vue')['default']
     KqcThemeToggle: typeof import('./src/components/ui/KqcThemeToggle.vue')['default']
     KqcToast: typeof import('./src/components/ui/KqcToast.vue')['default']
+    MarketplaceAdvertisementCard: typeof import('./src/components/showcase/MarketplaceAdvertisementCard.vue')['default']
+    MarketplaceIntentModal: typeof import('./src/components/showcase/MarketplaceIntentModal.vue')['default']
+    MarketplaceProcessInfo: typeof import('./src/components/showcase/MarketplaceProcessInfo.vue')['default']
     MetricsDashboard: typeof import('./src/components/admin/MetricsDashboard.vue')['default']
     PublicBreadcrumb: typeof import('./src/components/layout/PublicBreadcrumb.vue')['default']
     PublicFaqModal: typeof import('./src/components/public/PublicFaqModal.vue')['default']
