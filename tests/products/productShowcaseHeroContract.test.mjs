@@ -15,7 +15,10 @@ test('Product Showcase Hero uses the approved two-column baseline without fake m
   assert.match(heroCtas, /傳統產能的數位賦能：[\s\S]*打造 B2B 資產交易的科技戰情室/)
   assert.match(heroCtas, /輸入需求，例如：計程車、北部地區、貨車、委託買賣\.\.\.[\s\S]*AI 語意匹配/)
   assert.match(heroCtas, /快速描述需求，系統會協助整理相關案件。/)
-  assert.match(product, /freight-truck\.jpg/)
+  /* PRODUCT-SHOWCASE-BUGFIX-R4E-3 — Hero Image Stacking Context / local positioned layer protects SPA visibility. */
+  assert.match(product, /const heroTruckImage = new URL\('\.\.\/assets\/images\/categories\/freight-truck\.jpg', import\.meta\.url\)\.href/)
+  assert.match(heroCtas, /<img :src="heroTruckImage" alt="" \/>/)
+  assert.match(product, /\.hero-visual \{ position: relative; z-index: 1;/)
   assert.doesNotMatch(heroCtas, /<svg|unsplash/i)
   assert.match(heroCtas, /\{\{ caseStore\.cases\.length \}\}[\s\S]*公開標的/)
   assert.doesNotMatch(heroCtas, /filteredCases\.length[\s\S]*公開標的/)
