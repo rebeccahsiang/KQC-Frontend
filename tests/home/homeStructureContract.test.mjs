@@ -11,6 +11,7 @@ test('HomeView composes bounded homepage sections', () => {
     assert.match(home, new RegExp(`<${section}`))
   }
   assert.doesNotMatch(home, /HomeServicesSection/)
+  assert.doesNotMatch(home, /系統全端狀態|backendMessage|\/api\/health|system-status-pill/)
   assert.ok(home.indexOf('<HomePromoCarouselSection') < home.indexOf('<HomeServiceGuideSection'))
   assert.doesNotMatch(home, /<Swiper|accordionItems|customerTargets|latestInsights|bannerSlides/)
 })
@@ -21,11 +22,11 @@ test('industry weather remains owned by the existing card contract', () => {
   assert.doesNotMatch(section, /industryWeatherApi|sourceStatus|HOT|COOLING/)
 })
 
-test('promo, unused services, personas and insights keep explicit placeholder ownership', () => {
+test('promo, unused services and insights keep explicit placeholder ownership while personas use their bounded foundation', () => {
   assert.match(read('src/components/home/HomePromoCarouselSection.vue'), /placeholderPromos/)
   assert.match(read('src/components/home/HomeServicesSection.vue'), /placeholderServices/)
-  assert.match(read('src/components/home/HomePersonasSection.vue'), /placeholderPersonas/)
-  assert.match(read('src/components/home/HomeInsightsSection.vue'), /placeholderArticles/)
+  assert.match(read('src/components/home/HomePersonasSection.vue'), /const personas = \[/)
+  assert.match(read('src/components/home/HomeInsightsSection.vue'), /publicArticlesApi\.list/)
 })
 
 /* PRODUCT-CASE-B4-T1 — Homepage Marketplace Test Authority / HomeView consumes the canonical store instead of owning network access. */
@@ -38,7 +39,7 @@ test('homepage Marketplace presentation uses the centralized public case authori
   assert.match(home, /<HomeLegacyCasesSection :cases="caseStore\.cases" :loading="caseStore\.isLoading" :error="caseStore\.error"/)
   assert.doesNotMatch(home, /axios\.get\(`\$\{apiBaseUrl\}\/api\/cases`\)|axios\.get\(['"]\/api\/cases/)
   assert.match(store, /publicMarketplaceApi\.list\(\)/)
-  assert.match(read('src/components/home/HomeLegacyCasesSection.vue'), /CaseShowcase/)
+  assert.match(read('src/components/home/HomeLegacyCasesSection.vue'), /props\.cases\.slice\(0, 2\)/)
 })
 
 test('shared layout responsibilities do not return to HomeView', () => {

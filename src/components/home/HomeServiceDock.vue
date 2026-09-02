@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { Icon } from '@iconify/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePublicFaq } from '@/composables/usePublicFaq'
 import { publicContact } from '@/config/publicContact'
@@ -30,9 +31,9 @@ const route = useRoute()
 const router = useRouter()
 const { openFaq } = usePublicFaq()
 const dockItems: { id: ServicePanel; icon: string; label: string }[] = [
-  { id: 'ai', icon: '🤖', label: 'AI 助理' },
-  { id: 'quick-service', icon: '💬', label: '快速服務' },
-  { id: 'human', icon: '📞', label: '真人諮詢' },
+  { id: 'ai', icon: 'lucide:bot', label: 'AI 助理' },
+  { id: 'quick-service', icon: 'lucide:messages-square', label: '快速服務' },
+  { id: 'human', icon: 'lucide:phone-call', label: '真人諮詢' },
 ]
 const aiPrompts = ['不確定是否符合設立條件？', '想了解牌照買賣流程？', '想獲得 24 小時即時解答']
 // ============================================================
@@ -176,7 +177,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleEscape))
     <aside class="fixed-right-widget-panel" aria-label="浮動服務導覽">
       <div class="widget-icon-bar">
         <button v-for="item in dockItems" :key="item.id" type="button" class="widget-tab-btn" :class="{ active: props.activePanel === item.id }" :aria-expanded="props.activePanel === item.id" aria-controls="home-service-panel" @click="togglePanel(item.id)">
-          <span class="tab-icon" aria-hidden="true">{{ item.icon }}</span><span class="tab-label">{{ item.label }}</span>
+          <Icon :icon="item.icon" class="tab-icon" aria-hidden="true" /><span class="tab-label">{{ item.label }}</span>
         </button>
       </div>
     </aside>

@@ -11,19 +11,21 @@ test('desktop dock owns exactly three canonical service launchers', () => {
   const itemsBodyStart = dock.indexOf('= [', itemsStart) + 3
   const itemsBodyEnd = dock.indexOf(']\nconst aiPrompts', itemsBodyStart)
   const items = dock.slice(itemsBodyStart, itemsBodyEnd)
-  const launchers = [...items.matchAll(/\{ id: '([^']+)', icon: '[^']+', label: '([^']+)' \}/g)]
-    .map((match) => ({ id: match[1], label: match[2] }))
+  const launchers = [...items.matchAll(/\{ id: '([^']+)', icon: '([^']+)', label: '([^']+)' \}/g)]
+    .map((match) => ({ id: match[1], icon: match[2], label: match[3] }))
 
   assert.ok(itemsStart >= 0 && itemsBodyStart > itemsStart && itemsBodyEnd > itemsBodyStart)
   assert.deepEqual(launchers, [
-    { id: 'ai', label: 'AI 助理' },
-    { id: 'quick-service', label: '快速服務' },
-    { id: 'human', label: '真人諮詢' },
+    { id: 'ai', icon: 'lucide:bot', label: 'AI 助理' },
+    { id: 'quick-service', icon: 'lucide:messages-square', label: '快速服務' },
+    { id: 'human', icon: 'lucide:phone-call', label: '真人諮詢' },
   ])
   assert.equal((dock.match(/class="widget-tab-btn"/g) ?? []).length, 1)
   assert.doesNotMatch(dock, /home-service-panel__close[^>]*widget-tab-btn|home-service-panel__actions[^>]*widget-tab-btn/)
   assert.doesNotMatch(dock, /立即互動/)
   assert.match(dock, /type ServicePanel = 'ai' \| 'quick-service' \| 'human'/)
+  assert.match(dock, /<Icon :icon="item\.icon" class="tab-icon" aria-hidden="true"/)
+  assert.doesNotMatch(items, /🤖|💬|📞/)
   assert.doesNotMatch(dock, /ref<ServicePanel \| null>/)
 })
 
@@ -38,8 +40,10 @@ test('page cards and floating dock share the single Home-owned panel state', () 
   assert.match(home, /<HomeServiceDock :active-panel="activePanel" @update:active-panel="activePanel = \$event"/)
   assert.match(guide, /const serviceEntries:/)
   for (const entry of [
-    ["'ai'", 'AI 助理'], ["'quick-service'", '快速服務'], ["'human'", '真人諮詢'],
-  ]) assert.match(guide, new RegExp(`id: ${entry[0]}[^}]*label: '${entry[1]}'`))
+    ["'ai'", 'lucide:bot', 'AI 助理'], ["'quick-service'", 'lucide:messages-square', '快速服務'], ["'human'", 'lucide:phone-call', '真人諮詢'],
+  ]) assert.match(guide, new RegExp(`id: ${entry[0]}[^}]*icon: '${entry[1]}'[^}]*label: '${entry[2]}'`))
+  assert.match(guide, /<Icon :icon="entry\.icon" class="home-service-entry-card__icon" aria-hidden="true"/)
+  assert.doesNotMatch(guide.slice(guide.indexOf('const serviceEntries'), guide.indexOf('</script>')), /🤖|💬|📞/)
   assert.match(guide, /class="home-service-entry-card"/)
   assert.equal((guide.match(/class="home-service-entry-grid"/g) ?? []).length, 1)
   assert.match(guide, /<aside class="home-service-entry-column"[^>]*>[\s\S]*class="home-service-entry-grid"/)
@@ -118,11 +122,19 @@ test('old demo cards are removed with their exclusive wrapper', () => {
 })
 
 test('panel overlays desktop, stays hidden on mobile, and respects reduced motion', () => {
+  const dock = read('src/components/home/HomeServiceDock.vue')
   const styles = read('src/components/home/_homeSections.scss')
   const mobileStart = styles.lastIndexOf('@media (max-width: 768px)')
   const mobileEnd = styles.lastIndexOf('@media (max-width: 480px)')
   const mobile = styles.slice(mobileStart, mobileEnd)
   assert.match(styles, /\.home-service-panel\s*\{[^}]*position:\s*fixed;[^}]*bottom:\s*1\.5rem;/s)
+  assert.match(styles, /\.fixed-right-widget-panel\s*\{[^}]*position:\s*fixed;[^}]*right:\s*0;[^}]*top:\s*50%;[^}]*transform:\s*translateY\(-50%\);/s)
+  assert.match(styles, /&:hover, &:focus-within \{ transform: translateX\(-1px\) translateY\(calc\(-50% - 3px\)\) rotate\(-0\.2deg\); \}/)
+  assert.match(styles, /&:hover \.tab-icon, &:focus-visible \.tab-icon \{ animation: none; transform: translateY\(-2px\) scale\(1\.05\); \}/)
+  assert.match(styles, /\.tab-icon \{[^}]*animation: home-service-icon-idle 5s/s)
+  assert.match(styles, /\.home-service-entry-card__icon \{[^}]*animation: home-service-icon-idle 5s/s)
+  assert.match(styles, /\.widget-tab-btn:nth-child\(2\) \.tab-icon \{ animation-delay: -1\.7s; \}/)
+  assert.match(styles, /@keyframes home-service-icon-idle[\s\S]*transform:[^;}]*scale\(/)
   const motion = styles.match(/\.service-panel-enter-from[^}]*opacity:\s*0;[^}]*translateY\(([\d.]+)rem\)/s)
   assert.ok(motion && Number(motion[1]) >= 3)
   assert.match(styles, /\.service-panel-enter-active[^}]*0\.32s[^}]*cubic-bezier/s)
@@ -134,5 +146,9 @@ test('panel overlays desktop, stays hidden on mobile, and respects reduced motio
   assert.match(mobile, /\.home-service-guide\s*\{\s*grid-template-columns:\s*1fr;\s*\}/)
   assert.doesNotMatch(mobile, /\.home-service-entry-(?:column|grid|card)[^{]*\{[^}]*display:\s*none/s)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.service-panel-enter-active[^}]*transition:\s*none;/)
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.tab-icon, \.home-service-entry-card__icon \{ animation: none !important; \}/)
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.fixed-right-widget-panel:hover, \.fixed-right-widget-panel:focus-within \{ transform: translateY\(-50%\); \}/)
+  assert.doesNotMatch(dock, /@(?:mouse|pointer)move|addEventListener\(\s*['"](?:mouse|pointer)move['"]/i)
+  assert.doesNotMatch(dock, /(?:mouse|pointer)(?:X|Y|Coordinates|Position)/)
   assert.doesNotMatch(`${styles}\n${read('src/views/HomeView.vue')}`, /MobileServiceDock|BottomSheet|mobile-service-dock/)
 })
