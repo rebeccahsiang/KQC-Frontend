@@ -5,16 +5,31 @@ import { readFileSync } from 'node:fs'
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
 const product = read('src/views/ProductView.vue')
 const info = read('src/components/showcase/MarketplaceProcessInfo.vue')
+const servicePanel = read('src/components/showcase/MarketplaceServicePanel.vue')
 const intent = read('src/components/showcase/MarketplaceIntentModal.vue')
 const publicContract = read('src/api/publicMarketplace.ts')
 
 /* PRODUCT-SHOWCASE-UI-R4 — Main-column Information Placement / process content follows the grid without crossing the Sidebar. */
 test('Marketplace information stays inside product-area immediately after the case grid', () => {
-  const productArea = product.slice(product.indexOf('<div class="product-area">'), product.indexOf('</section>', product.indexOf('<div class="product-area">')))
+  const productArea = product.slice(product.indexOf('<div class="product-area">'), product.indexOf('</main>'))
   const sidebar = product.slice(product.indexOf('<aside class="marketplace-sidebar"'), product.indexOf('</aside>', product.indexOf('<aside class="marketplace-sidebar"')))
-  assert.match(productArea, /<CaseShowcase[\s\S]*<MarketplaceProcessInfo \/>/)
+  assert.match(productArea, /<MarketplaceServicePanel v-if="selectedService" :service="selectedService" \/>[\s\S]*<template v-else>[\s\S]*<section class="marketplace-case-region"[^>]*>[\s\S]*<CaseShowcase[\s\S]*<\/section>[\s\S]*<MarketplaceProcessInfo \/>[\s\S]*<\/template>/)
   assert.ok(productArea.indexOf('<CaseShowcase') < productArea.indexOf('<MarketplaceProcessInfo />'))
   assert.doesNotMatch(sidebar, /MarketplaceProcessInfo/)
+})
+
+test('stable Marketplace and transfer targets preserve the existing lower information authority', () => {
+  assert.match(product, /<section class="marketplace-case-region" aria-labelledby="marketplace-cases-title">[\s\S]*<header id="marketplace-cases" class="product-toolbar marketplace-anchor-target">/)
+  assert.match(product, /<h2 id="marketplace-cases-title">媒合商品案件<\/h2>/)
+  assert.match(info, /<section class="process-panel" aria-labelledby="application-process-title">[\s\S]*<header id="transfer-process" class="transfer-process-anchor">/)
+  assert.match(info, /<h3 id="application-process-title">申請流程<\/h3>/)
+})
+
+test('selected transport service uses one display-only main-column panel', () => {
+  for (const title of ['營業用車額買賣', '停車位證明申辦', '車險與產險顧問對接', '規劃中']) assert.match(`${product}\n${servicePanel}`, new RegExp(title))
+  assert.match(servicePanel, /defineProps<\{ service: MarketplaceServicePanelData \}>\(\)/)
+  assert.doesNotMatch(servicePanel, /useRoute|useRouter|RouterLink|fetch\(|axios|\/api\/|localStorage|sessionStorage|PublicMarketplaceCase|PublicAdvertisement/)
+  assert.match(product, /<MarketplaceServicePanel v-if="selectedService" :service="selectedService" \/>\s*<template v-else>/)
 })
 
 test('R4 owns the three advisory sections and exact five-stage application flow', () => {
@@ -48,8 +63,7 @@ test('timeline tracks bidirectional reading progress with cleanup and reduced-mo
 })
 
 test('compact consultant action replaces the large workspace CTA without changing its route', () => {
-  const toolbarStart = product.indexOf('<header class="product-toolbar">')
-  const toolbar = product.slice(toolbarStart, product.indexOf('</header>', toolbarStart))
+  const toolbar = product.match(/<header(?=[^>]*\bid="marketplace-cases")(?=[^>]*\bclass="[^"]*\bproduct-toolbar\b[^"]*")[^>]*>[\s\S]*?<\/header>/)?.[0] ?? ''
   assert.match(toolbar, /<router-link to="\/contact" class="consultant-entry">/)
   assert.match(toolbar, /lucide:messages-square[\s\S]*聯絡 KQC 顧問[\s\S]*精準媒合・加速成交[\s\S]*lucide:chevron-right/)
   assert.doesNotMatch(product, /class="marketplace-cta"|KQC MATCH/)

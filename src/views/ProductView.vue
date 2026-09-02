@@ -1,30 +1,79 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useRoute, useRouter } from 'vue-router'
 import CaseShowcase from '@/components/showcase/CaseShowcase.vue'
 import MarketplaceProcessInfo from '@/components/showcase/MarketplaceProcessInfo.vue'
+import MarketplaceServicePanel from '@/components/showcase/MarketplaceServicePanel.vue'
 import { useCaseStore } from '@/stores/useCaseStore'
 import { publicAdvertisementsApi, type PublicAdvertisement } from '@/api/publicAdvertisements'
 
 const heroTruckImage = new URL('../assets/images/categories/freight-truck.jpg', import.meta.url).href
 
+type ProductAnchorHash = '#marketplace-cases' | '#transfer-process'
+type PublicServiceId = 'commercial-vehicle-quota' | 'parking-space-application' | 'commercial-insurance-advisory'
+type MarketplaceServicePanelData = { id: PublicServiceId; title: string; summary: string; icon: string; planned?: boolean }
+type MarketplaceSidebarItem =
+  | { id: string; label: string; icon: string; type: 'anchor'; hash: ProductAnchorHash; planned?: false }
+  | { id: PublicServiceId; label: string; icon: string; type: 'service'; planned?: boolean }
+  | { id: string; label: string; icon: string; type: 'planned'; planned: true }
+
+const route = useRoute()
+const router = useRouter()
 const caseStore = useCaseStore()
 const publishedAdvertisements = ref<PublicAdvertisement[]>([])
 const activeFilter = ref<'ALL' | 'BUY' | 'SELL'>('ALL')
 const isMarketplaceSidebarCollapsed = ref(false)
 const expandedMarketplaceGroups = ref(new Set(['asset-matching', 'transport-operations']))
+const selectedServiceId = ref<PublicServiceId | null>(null)
 const tabs: ReadonlyArray<{ value: 'ALL' | 'BUY' | 'SELL'; label: string }> = [
   { value: 'ALL', label: '全部' }, { value: 'BUY', label: '買方需求' }, { value: 'SELL', label: '精選待售' },
 ]
-const marketplaceGroups = [
-  { id: 'asset-matching', title: '資產買賣媒合', icon: 'lucide:handshake', items: [['誠意｜買家委託', true], ['精選｜賣家案件', true], ['特約公證處', true], ['代書流程把關', true]] },
-  { id: 'transport-operations', title: '交通運輸運營服務', icon: 'lucide:truck', items: [['車位申請', true], ['營業車額代辦', true], ['專業車險與產險顧問對接', true]] },
-  { id: 'websites', title: '專屬形象網站', icon: 'lucide:monitor-smartphone', items: [['靜態網頁', false], ['動態網頁', false], ['後台管理', false]] },
-  { id: 'dispatch', title: '智慧派遣導入', icon: 'lucide:route', items: [['派遣平台建置', false], ['派遣平台導入', false]] },
-  { id: 'driver-recruiting', title: '司機召募', icon: 'lucide:contact-round', items: [['立即卡位黃金職缺', false], ['最新職缺', false]] },
-  { id: 'owner-services', title: '業主專區', icon: 'lucide:building-2', items: [['營業車額徵求', false], ['停車場徵求', false], ['方案 A：精選職缺刊登', false], ['方案 B：顧問委託招募', false], ['方案 C：企業專屬招募系統', false]] },
-  { id: 'industry-analysis', title: '產業分析報告', icon: 'lucide:chart-no-axes-column-increasing', items: [['企業價值評估報告', false], ['產業併購策略規劃', false], ['事業轉讓／承購顧問', false], ['協助制定中長期轉型策略規劃', false]] },
-] as const
+/* PRODUCT-SIDEBAR-R4F — Public Service Navigation / page-local IA separates anchors from presentation-only services. */
+const marketplaceGroups: ReadonlyArray<{ id: string; title: string; icon: string; items: readonly MarketplaceSidebarItem[] }> = [
+  { id: 'asset-matching', title: '運輸業買賣媒合', icon: 'lucide:handshake', items: [
+    { id: 'marketplace-cases', label: '商品案件', icon: 'lucide:layout-grid', type: 'anchor', hash: '#marketplace-cases' },
+    { id: 'transfer-process', label: '過戶流程', icon: 'lucide:list-checks', type: 'anchor', hash: '#transfer-process' },
+  ] },
+  { id: 'transport-operations', title: '交通運輸運營服務', icon: 'lucide:truck', items: [
+    { id: 'commercial-vehicle-quota', label: '營業用車額買賣', icon: 'lucide:badge-check', type: 'service' },
+    { id: 'parking-space-application', label: '停車位證明申辦', icon: 'lucide:square-parking', type: 'service' },
+    { id: 'commercial-insurance-advisory', label: '車險與產險顧問對接', icon: 'lucide:shield-check', type: 'service', planned: true },
+  ] },
+  /* PRODUCT-SIDEBAR-R4F-8F — Planned Information Architecture / deferred entries remain visible without route or workflow authority. */
+  { id: 'websites', title: '專屬形象網站', icon: 'lucide:monitor-smartphone', items: [
+    { id: 'static-website', label: '靜態網頁', icon: 'lucide:file-code-2', type: 'planned', planned: true },
+    { id: 'dynamic-website', label: '動態網頁', icon: 'lucide:panels-top-left', type: 'planned', planned: true },
+    { id: 'admin-management', label: '後台管理', icon: 'lucide:settings-2', type: 'planned', planned: true },
+  ] },
+  { id: 'dispatch', title: '智慧派遣導入', icon: 'lucide:route', items: [
+    { id: 'dispatch-platform-build', label: '派遣平台建置', icon: 'lucide:workflow', type: 'planned', planned: true },
+    { id: 'dispatch-platform-adoption', label: '派遣平台導入', icon: 'lucide:route', type: 'planned', planned: true },
+  ] },
+  { id: 'driver-recruiting', title: '司機召募', icon: 'lucide:contact-round', items: [
+    { id: 'driver-priority-opening', label: '立即卡位黃金職缺', icon: 'lucide:badge-check', type: 'planned', planned: true },
+    { id: 'driver-latest-openings', label: '最新職缺', icon: 'lucide:briefcase-business', type: 'planned', planned: true },
+  ] },
+  { id: 'owner-services', title: '業主專區', icon: 'lucide:building-2', items: [
+    { id: 'owner-quota-request', label: '營業車額徵求', icon: 'lucide:badge-plus', type: 'planned', planned: true },
+    { id: 'owner-parking-request', label: '停車場徵求', icon: 'lucide:square-parking', type: 'planned', planned: true },
+    { id: 'owner-recruitment-plan-a', label: '方案 A：精選職缺刊登', icon: 'lucide:list-plus', type: 'planned', planned: true },
+    { id: 'owner-recruitment-plan-b', label: '方案 B：顧問委託招募', icon: 'lucide:users-round', type: 'planned', planned: true },
+    { id: 'owner-recruitment-plan-c', label: '方案 C：企業專屬招募系統', icon: 'lucide:building-cog', type: 'planned', planned: true },
+  ] },
+  { id: 'industry-analysis', title: '產業分析報告', icon: 'lucide:chart-no-axes-column-increasing', items: [
+    { id: 'enterprise-valuation-report', label: '企業價值評估報告', icon: 'lucide:file-chart-column', type: 'planned', planned: true },
+    { id: 'industry-ma-strategy', label: '產業併購策略規劃', icon: 'lucide:git-merge', type: 'planned', planned: true },
+    { id: 'business-transfer-advisory', label: '事業轉讓／承購顧問', icon: 'lucide:handshake', type: 'planned', planned: true },
+    { id: 'transformation-strategy', label: '協助制定中長期轉型策略規劃', icon: 'lucide:chart-spline', type: 'planned', planned: true },
+  ] },
+]
+const publicServices: Record<PublicServiceId, MarketplaceServicePanelData> = {
+  'commercial-vehicle-quota': { id: 'commercial-vehicle-quota', title: '營業用車額買賣', icon: 'lucide:badge-check', summary: '協助營業用車額買賣媒合、需求確認與交易流程辦理，降低資訊落差與交易風險。' },
+  'parking-space-application': { id: 'parking-space-application', title: '停車位證明申辦', icon: 'lucide:square-parking', summary: '協助確認停車位證明需求、準備申辦資料及後續行政流程。' },
+  'commercial-insurance-advisory': { id: 'commercial-insurance-advisory', title: '車險與產險顧問對接', icon: 'lucide:shield-check', summary: '未來將提供車險與產險需求的顧問對接資訊。', planned: true },
+}
+const selectedService = computed(() => selectedServiceId.value ? publicServices[selectedServiceId.value] : null)
 
 /* PRODUCT-SHOWCASE-UI-R2D — Marketplace Group Accordion / local state preserves independent group expansion. */
 const isMarketplaceGroupExpanded = (id: string) => expandedMarketplaceGroups.value.has(id)
@@ -35,6 +84,28 @@ const toggleMarketplaceGroup = (id: string) => {
   expandedMarketplaceGroups.value = next
 }
 
+const approvedProductHashes = new Set<ProductAnchorHash>(['#marketplace-cases', '#transfer-process'])
+const isApprovedProductHash = (value: string): value is ProductAnchorHash => approvedProductHashes.has(value as ProductAnchorHash)
+/* PRODUCT-SIDEBAR-R4F — Local Hash Coordination / ProductView alone owns its two stable public targets. */
+const scrollToProductHash = async (hash: string) => {
+  if (!isApprovedProductHash(hash)) return
+  await nextTick()
+  const target = document.querySelector<HTMLElement>(hash)
+  if (!target) return
+  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  target.scrollIntoView({ behavior, block: 'start' })
+}
+const activateSidebarItem = async (item: MarketplaceSidebarItem) => {
+  if (item.type === 'planned') return
+  if (item.type === 'service') { selectedServiceId.value = item.id; return }
+  selectedServiceId.value = null
+  if (route.hash === item.hash) await scrollToProductHash(item.hash)
+  else await router.push({ name: 'Products', query: route.query, hash: item.hash })
+}
+const isSidebarItemActive = (item: MarketplaceSidebarItem) => item.type === 'service'
+  ? selectedServiceId.value === item.id
+  : item.type === 'anchor' && selectedServiceId.value === null && route.hash === item.hash
+
 /* PRODUCT-CASE-B4 — Marketplace Transaction Filter / R2 retains canonical transactionType as the only tab authority. */
 const setFilter = (type: 'ALL' | 'BUY' | 'SELL') => { activeFilter.value = type; caseStore.setFilters({ transactionType: type }) }
 /* PRODUCT-ADVERTISEMENT-R3 — Public Advertisement Fetch / supplemental creative failure never affects canonical Case browsing. */
@@ -42,7 +113,12 @@ const fetchPublicAdvertisements = async () => {
   try { publishedAdvertisements.value = (await publicAdvertisementsApi.list()).data }
   catch { publishedAdvertisements.value = [] }
 }
-onMounted(() => { void caseStore.fetchPublicCases(); void fetchPublicAdvertisements() })
+watch(() => route.hash, (hash) => {
+  if (!isApprovedProductHash(hash)) return
+  selectedServiceId.value = null
+  void scrollToProductHash(hash)
+}, { flush: 'post' })
+onMounted(() => { void caseStore.fetchPublicCases(); void fetchPublicAdvertisements(); void scrollToProductHash(route.hash) })
 </script>
 
 <template>
@@ -81,23 +157,36 @@ onMounted(() => { void caseStore.fetchPublicCases(); void fetchPublicAdvertiseme
             <Icon :icon="isMarketplaceGroupExpanded(group.id) ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="service-group__chevron" aria-hidden="true" />
           </button>
           <div v-else class="service-group__compact-icon" aria-hidden="true"><Icon :icon="group.icon" /></div>
-          <ul v-if="!isMarketplaceSidebarCollapsed" v-show="isMarketplaceGroupExpanded(group.id)" :id="`marketplace-group-${group.id}`" class="service-group__children"><li v-for="item in group.items" :key="item[0]" :class="{ 'is-current': item[1] }"><span>{{ item[0] }}</span><small v-if="!item[1]">規劃中</small></li></ul>
+          <ul v-if="!isMarketplaceSidebarCollapsed" v-show="isMarketplaceGroupExpanded(group.id)" :id="`marketplace-group-${group.id}`" class="service-group__children">
+            <li v-for="item in group.items" :key="item.id" :class="{ 'is-current': isSidebarItemActive(item) }">
+              <button type="button" class="service-item-button" :class="{ 'is-active': isSidebarItemActive(item), 'is-planned': item.type === 'planned' }" :aria-current="isSidebarItemActive(item) ? 'location' : undefined" :disabled="item.type === 'planned'" @click="activateSidebarItem(item)">
+                <Icon :icon="item.icon" aria-hidden="true" /><span>{{ item.label }}</span><small v-if="item.planned">規劃中</small>
+              </button>
+            </li>
+          </ul>
         </div>
       </aside>
 
       <div class="product-area">
-        <header class="product-toolbar">
-          <div><p>PUBLIC MARKETPLACE</p><div class="title-row"><h2>媒合商品案件</h2><span>{{ caseStore.filteredCases.length }} 筆</span></div></div>
-          <div class="filter-tabs" role="tablist" aria-label="商品案件分類"><button v-for="tab in tabs" :key="tab.value" type="button" role="tab" :class="{ active: activeFilter === tab.value }" :aria-selected="activeFilter === tab.value" @click="setFilter(tab.value)">{{ tab.label }}</button></div>
-          <!-- PRODUCT-SHOWCASE-UI-R4A — Compact Consultant Entry / reuses the existing public contact route without a new workflow. -->
-          <router-link to="/contact" class="consultant-entry">
-            <Icon icon="lucide:messages-square" aria-hidden="true" />
-            <span><strong>聯絡 KQC 顧問</strong><small>精準媒合・加速成交</small></span>
-            <Icon icon="lucide:chevron-right" aria-hidden="true" />
-          </router-link>
-        </header>
-        <CaseShowcase :cases="caseStore.filteredCases" :advertisements="publishedAdvertisements" :loading="caseStore.isLoading" :error="caseStore.error" marketplace-mode />
-        <MarketplaceProcessInfo />
+        <!-- PRODUCT-SIDEBAR-R4F-7 — Main Content Switch / local service presentation replaces rather than trails Marketplace content. -->
+        <MarketplaceServicePanel v-if="selectedService" :service="selectedService" />
+        <template v-else>
+          <section class="marketplace-case-region" aria-labelledby="marketplace-cases-title">
+            <!-- PRODUCT-SIDEBAR-R4F-3 — Marketplace Heading Anchor / the stable hash begins at the visible Marketplace toolbar. -->
+            <header id="marketplace-cases" class="product-toolbar marketplace-anchor-target">
+              <div><p>PUBLIC MARKETPLACE</p><div class="title-row"><h2 id="marketplace-cases-title">媒合商品案件</h2><span>{{ caseStore.filteredCases.length }} 筆</span></div></div>
+              <div class="filter-tabs" role="tablist" aria-label="商品案件分類"><button v-for="tab in tabs" :key="tab.value" type="button" role="tab" :class="{ active: activeFilter === tab.value }" :aria-selected="activeFilter === tab.value" @click="setFilter(tab.value)">{{ tab.label }}</button></div>
+              <!-- PRODUCT-SHOWCASE-UI-R4A — Compact Consultant Entry / reuses the existing public contact route without a new workflow. -->
+              <router-link to="/contact" class="consultant-entry">
+                <Icon icon="lucide:messages-square" aria-hidden="true" />
+                <span><strong>聯絡 KQC 顧問</strong><small>精準媒合・加速成交</small></span>
+                <Icon icon="lucide:chevron-right" aria-hidden="true" />
+              </router-link>
+            </header>
+            <CaseShowcase :cases="caseStore.filteredCases" :advertisements="publishedAdvertisements" :loading="caseStore.isLoading" :error="caseStore.error" marketplace-mode />
+          </section>
+          <MarketplaceProcessInfo />
+        </template>
       </div>
 
     </section>
@@ -111,11 +200,17 @@ onMounted(() => { void caseStore.fetchPublicCases(); void fetchPublicAdvertiseme
 .workspace { display: grid; max-width: 90rem; margin: 0 auto; padding: 1.5rem 2rem 4rem; align-items: start; grid-template-columns: 16rem minmax(0, 1fr); gap: 1.25rem; transition: grid-template-columns .25s ease; }.workspace.sidebar-collapsed { grid-template-columns: 4.75rem minmax(0, 1fr); }.marketplace-sidebar { width: 16rem; padding: .85rem; overflow: hidden; box-sizing: border-box; border: 1px solid #dce4eb; border-radius: .65rem; background: #fff; transition: width .25s ease; }.marketplace-sidebar.collapsed { width: 4.75rem; }.marketplace-sidebar__header { display: flex; min-height: 2rem; margin-bottom: .35rem; align-items: center; justify-content: space-between; gap: .5rem; }.marketplace-sidebar__header h2 { margin: 0; color: #26364a; font-size: .88rem; white-space: nowrap; }.sidebar-collapse-button { display: grid; width: 1.9rem; height: 1.9rem; flex: 0 0 1.9rem; place-items: center; border: 1px solid #d5dee6; border-radius: .42rem; color: #405367; background: #f6f8fa; cursor: pointer; }.sidebar-collapse-button:hover { border-color: #97701c; color: #795914; }.sidebar-collapse-button:focus-visible { outline: 3px solid rgba(151,112,28,.3); outline-offset: 2px; }.sidebar-collapse-button svg { width: 1rem; height: 1rem; }.marketplace-sidebar.collapsed .marketplace-sidebar__header { justify-content: center; }.service-group { padding: .65rem 0; border-top: 1px solid #edf1f4; h3 { display: flex; margin: 0 0 .4rem; align-items: center; gap: .5rem; color: #34465b; font-size: .7rem; line-height: 1.35; } h3 svg { width: 1rem; height: 1rem; flex: 0 0 1rem; color: #97701c; } ul { display: grid; margin: 0; padding: 0 0 0 1.5rem; gap: .28rem; list-style: none; } li { display: flex; align-items: flex-start; justify-content: space-between; gap: .3rem; color: #8792a0; font-size: .64rem; line-height: 1.35; } li.is-current { color: #405367; font-weight: 650; } li.is-current::before { width: .28rem; height: .28rem; margin-top: .3rem; flex: 0 0 auto; border-radius: 50%; background: #c58b18; content: ''; } li span { flex: 1; } li small { color: #a6aeb8; font-size: .55rem; white-space: nowrap; } }.marketplace-sidebar.collapsed .service-group { display: grid; min-height: 2.5rem; padding: .35rem 0; place-items: center; }.marketplace-sidebar.collapsed .service-group h3 { width: 2.35rem; height: 2.35rem; margin: 0; justify-content: center; border-radius: .5rem; background: #f5f7f9; }.marketplace-sidebar.collapsed .service-group h3 svg { width: 1.15rem; height: 1.15rem; }.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); border: 0; white-space: nowrap; }
 /* PRODUCT-SHOWCASE-UI-R2D — Sidebar Typography Hierarchy / Admin-scale group controls and readable service entries. */
 .service-group__toggle { display: flex; width: 100%; min-height: 2.5rem; padding: .55rem .65rem; align-items: center; gap: .7rem; border: 0; border-radius: .55rem; color: #34465b; background: transparent; font: inherit; font-size: .82rem; font-weight: 600; line-height: 1.35; text-align: left; cursor: pointer; }.service-group__toggle:hover { color: #172b43; background: #f1f5f8; }.service-group__toggle:focus-visible { outline: 3px solid rgba(151,112,28,.3); outline-offset: 1px; }.service-group__toggle span { min-width: 0; flex: 1; }.service-group__icon { width: 1.125rem; height: 1.125rem; flex: 0 0 1.125rem; color: #97701c; }.service-group__chevron { width: .95rem; height: .95rem; flex: 0 0 .95rem; color: #708092; }.service-group .service-group__children { display: grid; margin: .25rem 0 .2rem 1.2rem; padding: .2rem 0 .2rem .85rem; gap: .16rem; border-left: 1px solid #dce4eb; list-style: none; }.service-group .service-group__children li { min-height: 2rem; padding: .38rem .5rem; align-items: center; border-radius: .4rem; color: #657386; font-size: .76rem; line-height: 1.4; }.service-group .service-group__children li.is-current { color: #34465b; background: #f6f8fa; font-weight: 650; }.service-group .service-group__children li.is-current::before { margin-top: 0; }.service-group .service-group__children li small { font-size: .64rem; }.service-group__compact-icon { display: grid; width: 2.35rem; height: 2.35rem; place-items: center; border-radius: .5rem; color: #97701c; background: #f5f7f9; }.service-group__compact-icon svg { width: 1.15rem; height: 1.15rem; }
+/* PRODUCT-SIDEBAR-R4F — Accessible Sidebar Items / controls own focus and active state without BUY/SELL coupling. */
+.service-group .service-group__children li { display: block; padding: 0; }.service-group .service-group__children li.is-current::before { content: none; }.service-item-button { display: flex; width: 100%; min-height: 2.25rem; padding: .42rem .5rem; align-items: center; gap: .48rem; border: 0; border-radius: .4rem; color: #657386; background: transparent; font: inherit; font-size: .76rem; line-height: 1.4; text-align: left; cursor: pointer; }.service-item-button > svg { width: .9rem; height: .9rem; flex: 0 0 .9rem; color: #97701c; }.service-item-button > span { min-width: 0; flex: 1; }.service-item-button small { color: #8b6a20; white-space: nowrap; }.service-item-button:hover { color: #34465b; background: #f6f8fa; }.service-item-button.is-active { color: #244f62; background: #eaf4f7; font-weight: 750; }.service-item-button:focus-visible { outline: 3px solid rgba(36,113,136,.28); outline-offset: 1px; }
+.service-item-button.is-planned{color:#8995a3;cursor:not-allowed}.service-item-button.is-planned:hover{color:#8995a3;background:transparent}.service-item-button.is-planned>svg{color:#a8b1bc}.service-item-button.is-planned small{color:#8b6a20}
+.marketplace-case-region { min-width: 0; }.marketplace-anchor-target { scroll-margin-top: 8rem; }
 .product-toolbar { display: grid; margin-bottom: 1rem; align-items: center; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); gap: 1rem; }.product-toolbar p { margin: 0 0 .25rem; color: #97701c; font-size: .58rem; font-weight: 850; letter-spacing: .12em; }.title-row { display: flex; align-items: center; gap: .55rem; h2 { margin: 0; font-size: 1.3rem; } span { padding: .14rem .45rem; border: 1px solid #d9e1e8; border-radius: 999px; color: #6b7787; background: #fff; font-size: .63rem; } }.filter-tabs { display: flex; max-width: 100%; padding: .22rem; overflow-x: auto; justify-self: center; border: 1px solid #d7e0e7; border-radius: .5rem; background: #e9eef2; }.filter-tabs button { min-height: 2rem; padding: .35rem .7rem; border: 0; border-radius: .36rem; color: #657286; background: transparent; font: inherit; font-size: .68rem; font-weight: 750; white-space: nowrap; cursor: pointer; }.filter-tabs button.active { color: #fff; background: #213148; }.filter-tabs button:focus-visible { outline: 2px solid #b78118; outline-offset: -2px; }
 /* PRODUCT-SHOWCASE-UI-R4A — Compact Consultant Entry / header action replaces the former large workspace CTA. */
 .consultant-entry { display: flex; min-height: 2.8rem; padding: .4rem .6rem; align-items: center; justify-self: end; gap: .55rem; border: 1px solid #b8cbd4; border-radius: .55rem; color: #24455a; background: #fff; box-shadow: 0 4px 12px rgba(25,72,91,.05); text-decoration: none; }.consultant-entry > svg { width: 1rem; height: 1rem; flex: 0 0 1rem; color: #247188; }.consultant-entry span { display: grid; gap: .08rem; }.consultant-entry strong { font-size: .7rem; line-height: 1.25; }.consultant-entry small { color: #718093; font-size: .58rem; line-height: 1.25; }.consultant-entry:hover { border-color: #247188; background: #f7fbfc; }.consultant-entry:focus-visible { outline: 3px solid rgba(36,113,136,.25); outline-offset: 2px; }
 @media (max-width: 960px) { .product-toolbar { grid-template-columns: minmax(0, 1fr) auto; }.filter-tabs { grid-row: 2; grid-column: 1 / -1; justify-self: start; } }
-@media (max-width: 820px) { .hero-inner { min-height: auto; padding: 2rem 1rem; grid-template-columns: 1fr; }.hero-copy h1 strong { white-space: normal; }.hero-visual { min-height: 17rem; }.workspace, .workspace.sidebar-collapsed { padding: 1.25rem 1rem 3rem; grid-template-columns: 1fr; }.marketplace-sidebar { width: 100%; max-height: 16rem; overflow-y: auto; }.marketplace-sidebar.collapsed { width: 4.75rem; }.product-toolbar { align-items: stretch; grid-template-columns: 1fr; }.filter-tabs { width: 100%; box-sizing: border-box; grid-row: auto; grid-column: auto; justify-self: stretch; }.filter-tabs button { flex: 1 0 auto; }.consultant-entry { box-sizing: border-box; justify-self: stretch; } }
+@media (max-width: 820px) { .hero-inner { min-height: auto; padding: 2rem 1rem; grid-template-columns: 1fr; }.hero-copy h1 strong { white-space: normal; }.hero-visual { min-height: 17rem; }.workspace, .workspace.sidebar-collapsed { padding: 1.25rem 1rem 3rem; grid-template-columns: 1fr; }.marketplace-sidebar { width: 100%; max-height: 16rem; overflow-y: auto; }.marketplace-sidebar.collapsed { width: 4.75rem; }.product-toolbar { align-items: stretch; grid-template-columns: 1fr; }.filter-tabs { width: 100%; box-sizing: border-box; grid-row: auto; grid-column: auto; justify-self: stretch; }.filter-tabs button { flex: 1 0 auto; }.consultant-entry { box-sizing: border-box; justify-self: stretch; }.marketplace-anchor-target { scroll-margin-top: 5rem; } }
 @media (max-width: 520px) { .hero-copy h1 { font-size: 2rem; }.demand-entry { padding: .65rem; align-items: stretch; flex-direction: column; }.demand-action { min-height: 2.8rem; border-radius: .35rem; justify-content: center; }.hero-visual { min-height: 13rem; }.public-total { right: .7rem; bottom: .7rem; }.marketplace-sidebar { max-height: 13rem; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+/* PRODUCT-SIDEBAR-R4F-8E — Desktop Service Navigation / the existing Sidebar stays within the Product workspace. */
+@media (min-width: 821px) { .marketplace-sidebar { position: sticky; top: 6.5rem; align-self: start; max-height: calc(100vh - 8rem); overflow-y: auto; } }
 </style>

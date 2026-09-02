@@ -27,9 +27,9 @@ test('Product Showcase Hero uses the approved two-column baseline without fake m
 })
 
 test('locked marketplace sidebar and compact consultation entry add no fake workflows', () => {
-  for (const heading of ['資產買賣媒合', '交通運輸運營服務', '專屬形象網站', '智慧派遣導入', '司機召募', '業主專區', '產業分析報告']) assert.match(product, new RegExp(heading))
-  const toolbarStart = product.indexOf('<header class="product-toolbar">')
-  const toolbar = product.slice(toolbarStart, product.indexOf('</header>', toolbarStart))
+  for (const heading of ['運輸業買賣媒合', '交通運輸運營服務']) assert.match(product, new RegExp(heading))
+  assert.doesNotMatch(product, /資產買賣媒合/)
+  const toolbar = product.match(/<header(?=[^>]*\bid="marketplace-cases")(?=[^>]*\bclass="[^"]*\bproduct-toolbar\b[^"]*")[^>]*>[\s\S]*?<\/header>/)?.[0] ?? ''
   assert.match(toolbar, /<router-link to="\/contact" class="consultant-entry">/)
   assert.match(toolbar, /聯絡 KQC 顧問/)
   assert.match(toolbar, /精準媒合・加速成交/)

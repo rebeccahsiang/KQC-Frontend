@@ -13,7 +13,7 @@ const store = read('src/stores/useCaseStore.ts')
 
 /* PRODUCT-SHOWCASE-UI-R4C — Sliding Row Pagination / six real-first slots advance by one three-card row. */
 test('Marketplace owns a six-slot window with a three-case sliding step', () => {
-  assert.match(product, /<h2>媒合商品案件<\/h2>/)
+  assert.match(product, /<h2\b[^>]*>\s*媒合商品案件\s*<\/h2>/)
   assert.match(product, /<CaseShowcase[^>]*marketplace-mode/)
   assert.match(showcase, /const WINDOW_SIZE = 6/)
   assert.match(showcase, /const STEP_SIZE = 3/)

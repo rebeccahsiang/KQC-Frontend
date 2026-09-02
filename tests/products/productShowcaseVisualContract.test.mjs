@@ -29,8 +29,10 @@ test('Marketplace sidebar follows Admin expanded and collapsed dimensions with i
 })
 
 /* PRODUCT-SHOWCASE-UI-R2D — Marketplace Sidebar Accordion / canonical defaults and accessible local controls. */
-test('seven Marketplace groups use independent accessible accordions with Admin-scale hierarchy', () => {
-  for (const label of ['資產買賣媒合', '交通運輸運營服務', '專屬形象網站', '智慧派遣導入', '司機召募', '業主專區', '產業分析報告']) assert.match(product, new RegExp(label))
+test('completed and planned Marketplace groups use independent accessible accordions with bounded child controls', () => {
+  for (const label of ['運輸業買賣媒合', '交通運輸運營服務', '商品案件', '過戶流程', '營業用車額買賣', '停車位證明申辦', '車險與產險顧問對接']) assert.match(product, new RegExp(label))
+  assert.equal((product.match(/title: '(?:運輸業買賣媒合|交通運輸運營服務|專屬形象網站|智慧派遣導入|司機召募|業主專區|產業分析報告)'/g) ?? []).length, 7)
+  for (const obsolete of ['資產買賣媒合', '誠意｜買家委託', '精選｜賣家案件', '特約公證處', '代書流程把關']) assert.doesNotMatch(product, new RegExp(obsolete))
   assert.match(product, /expandedMarketplaceGroups = ref\(new Set\(\['asset-matching', 'transport-operations'\]\)\)/)
   assert.match(product, /toggleMarketplaceGroup\(group\.id\)/)
   assert.match(product, /:aria-expanded="isMarketplaceGroupExpanded\(group\.id\)"/)
@@ -38,6 +40,8 @@ test('seven Marketplace groups use independent accessible accordions with Admin-
   assert.match(product, /lucide:chevron-up[\s\S]*lucide:chevron-down/)
   assert.match(product, /service-group__toggle[\s\S]*font-size: \.82rem/)
   assert.match(product, /service-group__children li[\s\S]*font-size: \.76rem/)
+  assert.match(product, /<button type="button" class="service-item-button"[\s\S]*:aria-current="isSidebarItemActive\(item\) \? 'location' : undefined"[\s\S]*@click="activateSidebarItem\(item\)"/)
+  assert.match(product, /v-if="!isMarketplaceSidebarCollapsed" v-show="isMarketplaceGroupExpanded\(group\.id\)"/)
   assert.match(product, /v-else class="service-group__compact-icon"/)
   assert.doesNotMatch(product, /localStorage|sessionStorage/)
 })

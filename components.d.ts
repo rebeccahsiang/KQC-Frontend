@@ -67,6 +67,7 @@ declare module 'vue' {
     MarketplaceAdvertisementCard: typeof import('./src/components/showcase/MarketplaceAdvertisementCard.vue')['default']
     MarketplaceIntentModal: typeof import('./src/components/showcase/MarketplaceIntentModal.vue')['default']
     MarketplaceProcessInfo: typeof import('./src/components/showcase/MarketplaceProcessInfo.vue')['default']
+    MarketplaceServicePanel: typeof import('./src/components/showcase/MarketplaceServicePanel.vue')['default']
     MetricsDashboard: typeof import('./src/components/admin/MetricsDashboard.vue')['default']
     PublicBreadcrumb: typeof import('./src/components/layout/PublicBreadcrumb.vue')['default']
     PublicFaqModal: typeof import('./src/components/public/PublicFaqModal.vue')['default']
