@@ -92,6 +92,7 @@ export const sidebarMenu: SidebarMenuItem[] = [
     children: [
       { id: 'emails', title: 'Email 紀錄', icon: 'lucide:mail', path: '/admin/messages/emails', capabilities: ['ADMIN'] },
       { id: 'ai-faq', title: '智能客服對答', icon: 'lucide:bot', path: '/admin/messages/ai-faq', capabilities: ['ADMIN'] },
+      { id: 'contact-inquiries', title: '聯絡我們諮詢', icon: 'lucide:inbox', path: '/admin/messages/contact-inquiries', capabilities: ['ADMIN'] },
       { id: 'human-consultations', title: '真人諮詢需求', icon: 'lucide:phone-call', path: '/admin/messages/human-consultations', capabilities: ['ADMIN'] }
     ]
   }
