@@ -12,6 +12,7 @@ const privacy = read('src/components/contact/ContactPrivacyDialog.vue')
 const needs = read('src/components/contact/ContactNeedsForm.vue')
 const trust = read('src/components/contact/ContactTrustPanel.vue')
 const success = read('src/components/contact/ContactSuccessState.vue')
+const publicContactApi = read('src/api/publicContactInquiries.ts')
 
 test('CONTACT-R1A keeps the canonical Contact route and local four-state flow', () => {
   assert.match(router, /path: '\/contact', name: 'Contact'/)
@@ -49,12 +50,12 @@ test('dynamic questions preserve service mapping and distinct completion/contact
   assert.match(needs, /v-for="question in questions"/)
 })
 
-test('real LINE support and demo-safe success add no persistence, CRM, or fake inquiry authority', () => {
+test('real LINE support remains and persisted success adds no CRM or client-owned inquiry authority', () => {
   assert.match(trust, /src="\/images\/services\/kqc-line-official-qr\.png"/)
   assert.match(trust, /alt="KQC LINE 官方帳號 QR Code"/)
-  assert.match(success, /正式送出功能將於後續系統串接後啟用。/)
-  const contactBoundary = [view, config, selection, profile, needs, trust, success].join('\n')
-  assert.doesNotMatch(contactBoundary, /from ['"]@\/api\/|axios\.|fetch\s*\(|crmApi\.|humanConsultationApi\.|INQ-|localStorage\.|sessionStorage\./)
+  assert.doesNotMatch(success, /正式送出功能將於後續系統串接後啟用。/)
+  const contactBoundary = [view, config, selection, profile, needs, trust, success, publicContactApi].join('\n')
+  assert.doesNotMatch(contactBoundary, /crmApi\.|CrmLead|adminContact|localStorage\.|sessionStorage\./)
 })
 
 test('CONTACT-R1A-1 uses the approved local consultant visual and explicit dark-panel contrast', () => {
@@ -97,4 +98,28 @@ test('CONTACT-R1A-3 privacy explanation is interactive and independent from requ
   assert.match(privacy, /event\.key === 'Escape'/)
   assert.doesNotMatch(privacy, /privacyAccepted|emit\('update'|checked\s*=/)
   assert.match(view, /if \(!profile\.privacyAccepted\) errors\.privacyAccepted/)
+})
+
+test('CONTACT-R1B-1 submits only bounded form authority and waits for persistence before success', () => {
+  assert.match(publicContactApi, /'\/public\/contact-inquiries'/)
+  assert.match(publicContactApi, /import api from ['"]\.\/axios['"]/)
+  assert.match(publicContactApi, /await api\.post<Envelope<\{ inquiry: PublicContactInquiryCreated \}>>/)
+  assert.match(publicContactApi, /return response\.data\.inquiry/)
+  assert.doesNotMatch(publicContactApi, /response\.status|response\.data\.data/)
+  assert.match(view, /await publicContactInquiriesApi\.create\(/)
+  assert.match(view, /createdInquiry\.value = await[\s\S]*isComplete\.value = true/)
+  assert.match(view, /if \(isSubmitting\.value\) return/)
+  assert.match(needs, /:disabled="submitting"[\s\S]*:aria-busy="submitting"/)
+  assert.match(view, /serviceTypes: \[\.\.\.selectedServices\.value\][\s\S]*privacyAccepted: true, answers/)
+  const payloadBoundary = publicContactApi.slice(publicContactApi.indexOf('export interface PublicContactInquiryPayload'), publicContactApi.indexOf('export interface PublicContactInquiryCreated'))
+  assert.doesNotMatch(payloadBoundary, /inquiryNo:|source:|assignedTo:|assignedAt:|privacyAcceptedAt:|status:/)
+})
+
+test('CONTACT-R1B-1 failure remains retryable on Step 3 without clearing entered state', () => {
+  const catchBoundary = view.slice(view.indexOf('} catch {'), view.indexOf('} finally {'))
+  assert.match(catchBoundary, /submitError\.value = '目前無法送出您的諮詢需求/)
+  assert.doesNotMatch(catchBoundary, /isComplete\.value = true|selectedServices\.value =|Object\.assign\(profile|needsAnswers\[/)
+  assert.match(view, /finally \{\s*isSubmitting\.value = false/)
+  assert.match(success, /您的諮詢需求已成功送出/)
+  assert.match(success, /諮詢編號：\{\{ inquiryNo \}\}/)
 })

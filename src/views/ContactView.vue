@@ -7,6 +7,7 @@ import ContactServiceSelection from '@/components/contact/ContactServiceSelectio
 import ContactStepper from '@/components/contact/ContactStepper.vue'
 import ContactSuccessState from '@/components/contact/ContactSuccessState.vue'
 import ContactTrustPanel from '@/components/contact/ContactTrustPanel.vue'
+import { publicContactInquiriesApi, type PublicContactInquiryCreated } from '@/api/publicContactInquiries'
 import { questionsForServices, type ContactProfileData, type ContactServiceCode } from '@/config/contactServices'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -21,6 +22,9 @@ const needsAnswers = reactive<Record<string, string>>({})
 const sourceUrl = ref('')
 const workflowPanel = ref<HTMLElement | null>(null)
 const isPrivacyDialogOpen = ref(false)
+const isSubmitting = ref(false)
+const submitError = ref('')
+const createdInquiry = ref<PublicContactInquiryCreated | null>(null)
 const profile = reactive<ContactProfileData>({
   salutation: '', name: '', companyName: '', jobTitle: '', mobile: '', email: '', lineId: '', privacyAccepted: false,
 })
@@ -82,8 +86,9 @@ const updateAnswer = (key: string, value: string) => {
   delete needsErrors.value[key]
 }
 
-// CONTACT-R1A — Demo-safe Completion / validates locally without API, CRM, or persistence authority.
+// CONTACT-R1B-1 — Contact Submission / only a persisted public 201 response unlocks the completion state.
 const completeLocally = async () => {
+  if (isSubmitting.value) return
   const errors: Record<string, string> = {}
   questions.value.forEach((question) => {
     const answer = (needsAnswers[question.key] || '').trim()
@@ -92,8 +97,24 @@ const completeLocally = async () => {
   })
   needsErrors.value = errors
   if (Object.keys(errors).length) return
-  isComplete.value = true
-  await focusWorkflow()
+  submitError.value = ''
+  isSubmitting.value = true
+  try {
+    const publicProfile = {
+      salutation: profile.salutation, name: profile.name, companyName: profile.companyName,
+      jobTitle: profile.jobTitle, mobile: profile.mobile, email: profile.email, lineId: profile.lineId
+    }
+    const answers = Object.fromEntries(questions.value.map(({ key }) => [key, needsAnswers[key] || '']))
+    createdInquiry.value = await publicContactInquiriesApi.create({
+      serviceTypes: [...selectedServices.value], profile: { ...publicProfile }, privacyAccepted: true, answers
+    })
+    isComplete.value = true
+    await focusWorkflow()
+  } catch {
+    submitError.value = '目前無法送出您的諮詢需求，請稍後再試，或直接透過電話／LINE 與我們聯繫。'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 const focusLineSupport = () => document.querySelector<HTMLElement>('#contact-line-support')?.focus()
 </script>
@@ -117,8 +138,8 @@ const focusLineSupport = () => document.querySelector<HTMLElement>('#contact-lin
         <ContactStepper v-if="!isComplete" :current-step="currentStep" :complete="false" />
         <ContactServiceSelection v-if="!isComplete && currentStep === 1" :selected="selectedServices" :error="selectionError" @toggle="toggleService" @next="continueFromServices" />
         <ContactProfileForm v-else-if="!isComplete && currentStep === 2" :profile="profile" :errors="profileErrors" @update="updateProfile" @privacy="isPrivacyDialogOpen = true" @back="changeStep(1)" @next="validateProfile" />
-        <ContactNeedsForm v-else-if="!isComplete && currentStep === 3" :questions="questions" :answers="needsAnswers" :errors="needsErrors" @update="updateAnswer" @back="changeStep(2)" @complete="completeLocally" />
-        <ContactSuccessState v-else @line="focusLineSupport" />
+        <ContactNeedsForm v-else-if="!isComplete && currentStep === 3" :questions="questions" :answers="needsAnswers" :errors="needsErrors" :submitting="isSubmitting" :submit-error="submitError" @update="updateAnswer" @back="changeStep(2)" @complete="completeLocally" />
+        <ContactSuccessState v-else :inquiry-no="createdInquiry?.inquiryNo || ''" @line="focusLineSupport" />
       </section>
       <ContactTrustPanel :step="isComplete ? 4 : currentStep" />
     </div>

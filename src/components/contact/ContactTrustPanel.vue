@@ -23,7 +23,7 @@ const supportByStep: Record<number, SupportContent> = {
     { icon: 'lucide:clock-3', title: '聯繫時程', description: '可填寫希望 KQC 與您聯繫的時間或急迫程度。' },
     { icon: 'lucide:notebook-pen', title: '補充資訊', description: '如有其他背景或特殊需求，可一併提供給顧問參考。' },
   ] },
-  4: { eyebrow: 'THANK YOU', heading: '感謝您的諮詢', intro: '您的需求資料已完成本頁流程整理，後續聯繫將依正式系統能力辦理。', features: [
+  4: { eyebrow: 'THANK YOU', heading: '感謝您的諮詢', intro: '您的諮詢需求已成功送出；後續將依您提供的聯絡方式與需求內容進行聯繫。', features: [
     { icon: 'lucide:contact', title: '確認聯絡資訊', description: '如需立即聯繫，也可直接使用電話或 LINE 官方帳號。' },
     { icon: 'lucide:clipboard-check', title: '保留需求摘要', description: '本頁可協助您確認先前填寫的諮詢內容。' },
     { icon: 'lucide:messages-square', title: '直接聯繫 KQC', description: '如有急迫需求，可直接與 KQC 顧問聯繫。' },
