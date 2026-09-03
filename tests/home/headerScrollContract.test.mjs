@@ -66,8 +66,13 @@ test('search is navigation assistance and announcement remains separate', () => 
   assert.doesNotMatch(header, /lucide:mic|mic-btn|SpeechRecognition|handleVoiceInput|語音輸入/)
   assert.match(header, /placeholder="輸入需求，快速找到適合的服務"/)
   assert.match(header, /class="market-ticker-wrapper"/)
-  assert.match(header, /平台公告、產業提醒與新服務資訊將顯示於此/)
-  assert.doesNotMatch(header, /axios|fetch\(|\/api\//)
+  assert.match(header, /import \{ getPublicMarquees \} from '@\/api\/marquees'/)
+  assert.match(header, /const MARQUEE_FALLBACK = '平台公告、產業提醒與新服務資訊將顯示於此。'/)
+  assert.match(header, /await getPublicMarquees\(\)/)
+  assert.match(header, /content\.length \? content\.join\('　•　'\) : MARQUEE_FALLBACK/)
+  assert.match(header, /catch \{\s*tickerText\.value = MARQUEE_FALLBACK/s)
+  assert.match(header, /<span class="ticker-text">\s*\{\{ tickerText \}\}/s)
+  assert.doesNotMatch(header, /axios|fetch\(/)
 })
 
 test('theme, account and capability-aware admin entries remain present', () => {

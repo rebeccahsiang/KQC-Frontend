@@ -6,6 +6,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import { useCaseStore } from '@/stores/useCaseStore'
 import { useAuthStore } from '@/stores/authStore' // 1. 匯入 Auth Store
 import { usePublicFaq } from '@/composables/usePublicFaq'
+import { getPublicMarquees } from '@/api/marquees'
 
 // 型別宣告 (Types Definition)
 interface NavItem {
@@ -20,6 +21,19 @@ const caseStore = useCaseStore()
 const mobileNavigationOpen = ref(false)
 const authStore = useAuthStore() // 2. 實例化 authStore (徹底修復 Template 紅字)
 const { openFaq } = usePublicFaq()
+const MARQUEE_FALLBACK = '平台公告、產業提醒與新服務資訊將顯示於此。'
+const tickerText = ref(MARQUEE_FALLBACK)
+
+// MARQUEE-R1 — Public Header Marquee / ordered public data degrades safely to the existing neutral fallback.
+const loadPublicMarquees = async (): Promise<void> => {
+  try {
+    const response = await getPublicMarquees()
+    const content = response.data.marquees.map((item) => item.content.trim()).filter(Boolean)
+    tickerText.value = content.length ? content.join('　•　') : MARQUEE_FALLBACK
+  } catch {
+    tickerText.value = MARQUEE_FALLBACK
+  }
+}
 
 // 頁面滾動監聽：超過 50px 觸發 A 區塊平滑折疊收合
 const isCompact = ref(false)
@@ -34,6 +48,7 @@ const handleScroll = (): void => {
 
 onMounted(() => {
   handleScroll()
+  void loadPublicMarquees()
   window.addEventListener('scroll', handleScroll, { passive: true })
   // Public headers wait on the existing session hydrator so capability-based
   // account actions never render from an unsettled or locally reconstructed identity.
@@ -91,7 +106,7 @@ const handleSearch = (): void => {
           </span>
           <div class="ticker-content">
             <span class="ticker-text">
-              平台公告、產業提醒與新服務資訊將顯示於此。
+              {{ tickerText }}
             </span>
           </div>
         </div>

@@ -91,7 +91,7 @@ const routes: RouteRecordRaw[] = [
         redirect: '/admin/frontend/marquee',
         meta: { title: '前台管理', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
         children: [
-          { path: 'marquee', name: 'MarqueeManage', component: () => import('@/views/admin/frontend/MarqueeView.vue'), meta: { title: '跑馬燈管理', roles: ['admin'] } },
+          { path: 'marquee', name: 'MarqueeManage', component: () => import('@/views/admin/frontend/MarqueeView.vue'), meta: { title: '跑馬燈管理', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
           // D2G-B — Carousel Image Admin Management route.
           { path: 'carousel-images', name: 'CarouselImagesManage', component: () => import('@/views/admin/frontend/CarouselImagesView.vue'), meta: { title: '輪播圖片', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
           { path: 'banner', redirect: '/admin/frontend/carousel-images' }
