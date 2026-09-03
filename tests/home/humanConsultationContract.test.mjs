@@ -23,19 +23,20 @@ test('direct call is independent from service selection and uses public phone co
   const dock = read('src/components/home/HomeServiceDock.vue')
   const config = read('src/config/publicContact.ts')
   const envExample = read('.env.example')
-  const directCall = dock.match(/<a :href="publicContact\.consultationPhoneHref"[^>]*>直接撥打<\/a>/)?.[0] ?? ''
+  const directCall = dock.match(/<a v-if="publicContact\.consultationPhoneHref" :href="publicContact\.consultationPhoneHref">直接撥打<\/a>/)?.[0] ?? ''
 
   assert.ok(directCall)
   assert.doesNotMatch(directCall, /selectedServices/)
   assert.doesNotMatch(directCall, /@click/)
   assert.doesNotMatch(directCall, /router/)
   assert.doesNotMatch(directCall, /(?:^|\s)disabled(?:\s|=|>|$)/)
-  assert.match(directCall, /:aria-disabled="!publicContact\.consultationPhoneHref"/)
-  assert.match(directCall, /:tabindex="publicContact\.consultationPhoneHref \? undefined : -1"/)
+  assert.match(directCall, /v-if="publicContact\.consultationPhoneHref"/)
   assert.match(config, /import\.meta\.env\.VITE_PUBLIC_CONSULTATION_PHONE/)
+  assert.match(config, /const consultationPhone = import\.meta\.env\.VITE_PUBLIC_CONSULTATION_PHONE\?\.trim\(\) \|\| ''/)
   assert.match(config, /consultationPhoneHref: consultationPhone \? `tel:\$\{consultationPhone\}` : ''/)
-  assert.match(envExample, /^VITE_PUBLIC_CONSULTATION_PHONE=0908939319$/m)
-  assert.doesNotMatch(dock, /0908939319|tel:0908939319/)
+  assert.match(envExample, /^VITE_PUBLIC_CONSULTATION_PHONE=$/m)
+  assert.match(envExample, /^VITE_API_BASE_URL=$/m)
+  assert.doesNotMatch(`${dock}\n${config}\n${envExample}`, /tel:(?:undefined|null)|DEFAULT_PUBLIC_CONSULTATION_PHONE|\b09\d{8}\b/)
 })
 
 test('callback requires a service and remains a local same-panel flow', () => {

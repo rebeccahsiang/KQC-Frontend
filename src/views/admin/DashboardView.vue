@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import api from '@/api/axios'
 
 const casesList = ref<any[]>([])
 const searchQuery = ref('')
@@ -77,8 +77,8 @@ const updateCaseId = () => {
 
 const refreshData = async () => {
   try {
-    const list = await axios.get('http://localhost:3000/api/cases?isAdmin=true')
-    casesList.value = list.data.data
+    const list = await api.get<any>('/cases?isAdmin=true')
+    casesList.value = list.data
   } catch (err) {
     console.error('API 串接異常:', err)
   }
@@ -162,12 +162,12 @@ const handleSubmit = async () => {
       }
 
       // 🌐 血管 3：透過 PATCH 動脈，精準傳送清洗後的乾淨包裹
-      await axios.patch(`http://localhost:3000/api/cases/${currentEditingId.value}`, sanitizedPayload)
+      await api.patch(`/cases/${currentEditingId.value}`, sanitizedPayload)
       alert('🎉 案源內容已順利覆蓋儲存！')
       cancelEditMode()
     } else {
       // 正常全新寫入模式 (保持原有邏輯不變)
-      await axios.post('http://localhost:3000/api/cases', form.value)
+      await api.post('/cases', form.value)
       alert('🎉 全新案源資料已成功寫入 MongoDB 雲端庫！')
       form.value = getBlankForm()
       updateCaseId()
@@ -184,13 +184,13 @@ const handleSubmit = async () => {
 }
 
 const changeStatus = async (id: string, status: string) => {
-  await axios.patch(`http://localhost:3000/api/cases/${id}`, { caseStatus: status })
+  await api.patch(`/cases/${id}`, { caseStatus: status })
   refreshData()
 }
 
 const deleteCase = async (id: string) => {
   if (confirm('確定永久抹除此機密案源？')) {
-    await axios.delete(`http://localhost:3000/api/cases/${id}`)
+    await api.delete(`/cases/${id}`)
     refreshData()
   }
 }

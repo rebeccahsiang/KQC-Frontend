@@ -208,7 +208,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleEscape))
             </fieldset>
             <p v-if="serviceValidation" id="human-service-error" class="human-consultation-error" role="alert">{{ serviceValidation }}</p>
             <div class="human-contact-actions" aria-label="聯絡方式">
-              <a :href="publicContact.consultationPhoneHref" :aria-disabled="!publicContact.consultationPhoneHref" :tabindex="publicContact.consultationPhoneHref ? undefined : -1">直接撥打</a>
+              <a v-if="publicContact.consultationPhoneHref" :href="publicContact.consultationPhoneHref">直接撥打</a>
               <button type="button" :aria-describedby="serviceValidation ? 'human-service-error' : undefined" @click="openCallbackForm">請與我聯絡</button>
             </div>
           </template>
