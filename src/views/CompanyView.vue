@@ -60,10 +60,10 @@ const nextValue = () => brandValueSwiper.value?.slideNext()
         </div>
       </section>
 
-      <!-- ABOUT-R1B — Brand Film / native controls preserve user playback authority and honest MOV fallback. -->
+      <!-- ABOUT-R1B — Brand Film / native controls preserve user playback authority with browser-compatible MP4. -->
       <section class="company-film" aria-labelledby="film-title">
-        <div class="company-section-heading"><span class="company-section-label">KQC STORY</span><h2 id="film-title">用一分鐘，認識我們想做的事</h2><p>從理解產業，到理解每一位經營者所處的階段，我們希望用更清楚的方式，連結需求、專業與下一步。</p></div>
-        <div class="company-film__frame"><video controls playsinline preload="metadata"><source src="/videos/about/about-brand.mov" type="video/quicktime">目前瀏覽器無法播放此影片。</video></div>
+        <div class="company-section-heading"><span class="company-section-label">KQC STORY</span><h2 id="film-title">用一分鐘，認識我們想做的事</h2><p>從理解產業到理解每位經營者所處的階段，我們希望用更清楚的方式，連結需求、專業與下一步。</p></div>
+        <div class="company-film__frame"><video controls playsinline preload="metadata"><source src="/videos/about/about-brand.mp4" type="video/mp4">目前瀏覽器無法播放此影片。</video></div>
       </section>
 
       <!-- ABOUT-R1A — Industry Expertise / approved imagery supports evidence-free capability statements. -->
@@ -121,8 +121,8 @@ const nextValue = () => brandValueSwiper.value?.slideNext()
 .company-section-heading { max-width: 44rem; margin: 0 auto 1.6rem; text-align: center; }
 .company-section-heading > p { margin: 0; color: #627386; line-height: 1.65; }
 .company-section-heading > strong { display: block; margin: -0.15rem 0 0.7rem; color: #a57818; font-size: clamp(1rem, 1.8vw, 1.2rem); }
-.company-film__frame { width: min(100%, 68rem); margin-inline: auto; overflow: hidden; border: 1px solid #d6e0e7; border-radius: 1rem; background: #0f2238; box-shadow: 0 16px 38px rgba(23, 43, 67, 0.13); }
-.company-film video { display: block; width: 100%; max-height: 38rem; background: #0f2238; }
+.company-film__frame { width: min(100%, 55rem); aspect-ratio: 16 / 9; margin-inline: auto; overflow: hidden; border: 1px solid #d6e0e7; border-radius: 1.25rem; background: #0f2238; box-shadow: 0 16px 38px rgba(23, 43, 67, 0.13); }
+.company-film video { display: block; width: 100%; height: 100%; object-fit: contain; background: #0f2238; }
 .company-pillar { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); align-items: center; gap: clamp(2rem, 4vw, 4rem); }
 .company-pillar--reverse { grid-template-columns: minmax(0, 0.98fr) minmax(0, 1.02fr); }
 .company-pillar__media { width: min(100%, 41rem); aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid #d9e2e9; border-radius: 1rem; background: #dce8ed; box-shadow: 0 14px 34px rgba(23, 43, 67, 0.11); }

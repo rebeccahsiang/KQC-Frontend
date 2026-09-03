@@ -36,8 +36,11 @@ test('approved image and native Brand Film authorities are exact', () => {
   for (const asset of ['industry-insight.png', 'professional-matching.png', 'risk-control.png', 'digital-thinking.png', 'cross-industry-resources.png', 'full-journey-support.png']) assert.match(view, new RegExp(`image: '/images/about/${asset.replace('.', '\\.')}'`))
   assert.equal((view.match(/<img\b/g) ?? []).length, 4)
   assert.match(view, /<video controls playsinline preload="metadata">/)
-  assert.match(view, /<source src="\/videos\/about\/about-brand\.mov" type="video\/quicktime">目前瀏覽器無法播放此影片。/)
+  assert.match(view, /<source src="\/videos\/about\/about-brand\.mp4" type="video\/mp4">目前瀏覽器無法播放此影片。/)
   assert.doesNotMatch(view, /<video[^>]*\b(?:autoplay|loop)\b|https?:\/\/|data:image/)
+  assert.match(view, /\.company-film__frame \{[^}]*width: min\(100%, 55rem\)[^}]*aspect-ratio: 16 \/ 9[^}]*margin-inline: auto[^}]*overflow: hidden[^}]*border-radius: 1\.25rem/s)
+  assert.match(view, /\.company-film video \{[^}]*display: block[^}]*width: 100%[^}]*height: 100%[^}]*object-fit: contain/s)
+  assert.doesNotMatch(view, /\.company-film video \{[^}]*object-fit: cover/s)
 })
 
 test('advisory process and existing closing route authority remain unchanged', () => {
