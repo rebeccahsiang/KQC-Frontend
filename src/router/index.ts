@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 
 import { useAuthStore } from '@/stores/authStore'
 import { adminLandingPath, hasAnyCapability, type Capability } from '@/config/capabilities'
@@ -135,7 +135,7 @@ const routes: RouteRecordRaw[] = [
 const productOwnedHashes = new Set(['#marketplace-cases', '#transfer-process'])
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior: (to) => {
     if (to.name === 'Products' && productOwnedHashes.has(to.hash)) return false
