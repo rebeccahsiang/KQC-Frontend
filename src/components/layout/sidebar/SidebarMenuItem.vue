@@ -95,7 +95,7 @@ const activate = () => {
 }
 .menu-icon { width: 18px; height: 18px; flex: 0 0 18px; color: #facc15; }
 .active .menu-icon { color: #172033; }
-.menu-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-title { flex: 1; overflow: hidden; color: inherit; text-overflow: ellipsis; white-space: nowrap; }
 .reserved-badge { padding: 2px 6px; border: 1px solid color-mix(in srgb, var(--bg-thumb) 32%, transparent); border-radius: 999px; color: color-mix(in srgb, var(--bg-thumb) 70%, transparent); font-size: 0.62rem; white-space: nowrap; }
 .chevron { width: 15px; height: 15px; transition: transform 0.18s ease; }
 .chevron.open { transform: rotate(180deg); }

@@ -41,20 +41,20 @@ onMounted(loadMarquees)
     <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
     <Message v-if="feedback" severity="success" :closable="false" role="status">{{ feedback }}</Message>
     <p v-if="loading" role="status" class="text-slate-300">正在載入跑馬燈公告…</p>
-    <div v-else class="bg-[var(--primary)]/60 border border-slate-700/50 rounded-xl p-6 shadow-xl space-y-4">
+    <div v-else class="marquee-list bg-[var(--primary)]/60 border border-slate-700/50 rounded-xl p-6 shadow-xl space-y-4">
       <p v-if="!marquees.length" class="text-slate-300 text-center">目前尚無跑馬燈公告。</p>
-      <div v-for="item in marquees" :key="item.id" class="flex items-center justify-between p-4 bg-slate-800/80 rounded-lg border border-slate-700/40">
+      <div v-for="item in marquees" :key="item.id" class="marquee-row flex items-center justify-between p-4 bg-slate-800/80 rounded-lg border border-slate-700/40">
         <div class="flex items-center gap-3">
-          <span class="text-xs px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 rounded font-mono">
+          <span class="marquee-status text-xs px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 rounded font-mono">
             {{ item.status === 'ACTIVE' ? '啟用' : '停用' }} · {{ item.sortOrder }}
           </span>
-          <span class="text-sm text-slate-200">{{ item.content }}</span>
+          <span class="marquee-content text-sm text-slate-200">{{ item.content }}</span>
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" class="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-amber-400 rounded transition-colors" title="編輯" :disabled="mutating || Boolean(deletingId)" @click="openEdit(item)">
+          <button type="button" class="marquee-action marquee-action--edit p-1.5 hover:bg-slate-700 text-slate-400 hover:text-amber-400 rounded transition-colors" title="編輯" :disabled="mutating || Boolean(deletingId)" @click="openEdit(item)">
             <Icon icon="lucide:edit-3" class="w-4 h-4" />
           </button>
-          <button type="button" class="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-rose-400 rounded transition-colors" title="刪除" :disabled="mutating || Boolean(deletingId)" @click="removeMarquee(item)">
+          <button type="button" class="marquee-action marquee-action--delete p-1.5 hover:bg-slate-700 text-slate-400 hover:text-rose-400 rounded transition-colors" title="刪除" :disabled="mutating || Boolean(deletingId)" @click="removeMarquee(item)">
             <Icon icon="lucide:trash-2" class="w-4 h-4" />
           </button>
         </div>
@@ -72,5 +72,12 @@ onMounted(loadMarquees)
 </template>
 
 <style scoped>
+.marquee-list { color: #e2e8f0; }
+.marquee-row { color: #e2e8f0; }
+.marquee-status { color: var(--accent); }
+.marquee-content { color: #e2e8f0; }
+.marquee-action { color: #94a3b8; }
+.marquee-action--edit:hover { color: #fbbf24; }
+.marquee-action--delete:hover { color: #fb7185; }
 .marquee-form,.marquee-form label { display: grid; gap: .5rem; }.marquee-form footer { display: flex; justify-content: flex-end; gap: .5rem; }.marquee-form small { color: var(--text-muted); }
 </style>

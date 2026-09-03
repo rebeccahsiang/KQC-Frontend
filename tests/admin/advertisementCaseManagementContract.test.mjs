@@ -14,7 +14,7 @@ const sidebar = read('src/config/sidebarMenu.ts')
 test('Advertisement Case sidebar and route allow only SALES_SUPERVISOR and ADMIN', () => {
   const menu = sidebar.match(/\{ id: 'advertisement-cases'[^}]+\}/)?.[0] || ''
   const route = router.match(/\{ path: 'advertisements'[^}]+\}/)?.[0] || ''
-  assert.match(menu, /title: '廣告案件'/); assert.match(menu, /lucide:badge-megaphone/)
+  assert.match(menu, /title: '廣告案件'/); assert.match(menu, /lucide:megaphone/)
   assert.match(route, /AdvertisementCasesView\.vue/)
   for (const boundary of [menu, route]) {
     assert.match(boundary, /capabilities: \['SALES_SUPERVISOR', 'ADMIN'\]/)

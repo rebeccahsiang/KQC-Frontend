@@ -61,6 +61,12 @@ div[class*="primeui-license"],
   display: none !important;
 }
 
+.p-button-label {
+  margin-bottom: 0;
+  color: inherit;
+  line-height: inherit;
+}
+
 // 6. 全站共用卡片與容器基底 (Design System Base Containers)
 .card-surface {
   background-color: var(--bg-card);

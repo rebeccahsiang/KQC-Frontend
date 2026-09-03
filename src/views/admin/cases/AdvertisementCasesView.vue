@@ -140,7 +140,7 @@ onMounted(loadAll)
   <main class="advertisement-admin">
     <header class="page-header">
       <div><p class="eyebrow">ADVERTISEMENT MANAGEMENT</p><h1>廣告案件</h1><p>以圖片、主標題、精簡文案與行動按鈕建立廣告素材，並依正式流程提交與發布。</p></div>
-      <Button label="建立廣告" icon="lucide:plus" @click="openCreate" />
+      <Button label="建立廣告" icon="pi pi-plus" @click="openCreate" />
     </header>
     <div class="toolbar"><label>篩選狀態<Select v-model="statusFilter" :options="statusOptions" option-label="label" option-value="value" /></label></div>
     <Message v-if="loadError" severity="error" :closable="false"><span role="alert">{{ loadError }}</span><Button label="重新載入" text @click="loadAll" /></Message>
