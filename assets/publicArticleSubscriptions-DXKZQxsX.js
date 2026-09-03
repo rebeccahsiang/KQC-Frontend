@@ -1,1 +1,0 @@
-import{t as e}from"./axios-CCJmxm5Z.js";var t={state:()=>e.get(`/public/article-subscriptions/state`),subscribe:t=>e.post(`/public/article-subscriptions/subscribe`,{email:t}),verify:t=>e.post(`/public/article-subscriptions/verify`,{token:t}),unsubscribe:()=>e.post(`/public/article-subscriptions/unsubscribe`,{})};export{t};
