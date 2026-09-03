@@ -1,0 +1,1 @@
+var e=`/KQC-Frontend/assets/kqc-line-official-qr-Dw6kxSNj.png`;export{e as t};
