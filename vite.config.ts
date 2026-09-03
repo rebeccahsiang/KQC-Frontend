@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: './',
+  base: '/KQC-Frontend/',
   plugins: [
     vue(),
     tailwindcss(),

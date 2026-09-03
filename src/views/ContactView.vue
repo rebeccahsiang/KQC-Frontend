@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import consultantSupportImage from '@/assets/images/contact/kqc-consultant-support.png'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import ContactNeedsForm from '@/components/contact/ContactNeedsForm.vue'
 import ContactPrivacyDialog from '@/components/contact/ContactPrivacyDialog.vue'
@@ -129,7 +130,7 @@ const focusLineSupport = () => document.querySelector<HTMLElement>('#contact-lin
         <span>從事業媒合、營運數位化到專業網絡支援，讓 KQC 顧問先了解您的需求。</span>
       </div>
       <div class="contact-hero__visual">
-        <img src="/images/contact/kqc-consultant-support.png" alt="KQC 專業顧問提供一對一諮詢服務">
+        <img :src="consultantSupportImage" alt="KQC 專業顧問提供一對一諮詢服務">
       </div>
     </header>
     <!-- CONTACT-R1A-2 — Public Container Alignment / Contact follows the established 90rem public-page authority. -->

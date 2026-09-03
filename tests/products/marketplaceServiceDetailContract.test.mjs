@@ -31,8 +31,10 @@ test('parking detail owns prechecks process documents timing LINE and partnershi
 })
 
 test('approved PDF and QR binaries use real same-origin download and image semantics', () => {
-  assert.match(panel, /authorizationPdf: '\/downloads\/授權刻印同意書\.pdf'/)
-  assert.match(panel, /lineQr: '\/images\/services\/kqc-line-official-qr\.png'/)
+  assert.match(panel, /import authorizationConsentPdf from '@\/assets\/downloads\/授權刻印同意書\.pdf'/)
+  assert.match(panel, /import lineOfficialQrImage from '@\/assets\/images\/services\/kqc-line-official-qr\.png'/)
+  assert.match(panel, /authorizationPdf: authorizationConsentPdf/)
+  assert.match(panel, /lineQr: lineOfficialQrImage/)
   assert.match(panel, /<a :href="parkingAssets\.authorizationPdf" download class="resource-action">/)
   assert.match(panel, /<img :src="parkingAssets\.lineQr" alt="KQC LINE 官方帳號 QR Code">/)
   assert.doesNotMatch(panel, /官方 QR Code 準備中|檔案準備中/)
@@ -61,6 +63,6 @@ test('service mode aligns at the main-column top without changing approved ancho
 test('dark service strips explicitly preserve readable foreground contrast and real asset authority', () => {
   assert.match(panel, /\.support-card h3,\.timing-card h3,\.final-cta h3\{color:#fff\}/)
   assert.match(panel, /\.support-card p,\.timing-card p\{color:#e7f1f4\}/)
-  assert.match(panel, /lineQr: '\/images\/services\/kqc-line-official-qr\.png'/)
-  assert.match(panel, /authorizationPdf: '\/downloads\/授權刻印同意書\.pdf'/)
+  assert.match(panel, /lineQr: lineOfficialQrImage/)
+  assert.match(panel, /authorizationPdf: authorizationConsentPdf/)
 })

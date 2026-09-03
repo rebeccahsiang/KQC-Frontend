@@ -7,6 +7,16 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/effect-cards'
 import 'swiper/css/pagination'
+import aboutHeroImage from '@/assets/images/about/about-hero.png'
+import businessJourneyImage from '@/assets/images/about/business-journey.png'
+import crossIndustryResourcesImage from '@/assets/images/about/cross-industry-resources.png'
+import digitalThinkingImage from '@/assets/images/about/digital-thinking.png'
+import fullJourneySupportImage from '@/assets/images/about/full-journey-support.png'
+import industryExpertiseImage from '@/assets/images/about/industry-expertise.png'
+import industryInsightImage from '@/assets/images/about/industry-insight.png'
+import professionalMatchingImage from '@/assets/images/about/professional-matching.png'
+import riskControlImage from '@/assets/images/about/risk-control.png'
+import aboutBrandVideo from '@/assets/videos/about/about-brand.mp4'
 
 const industryCapabilities = [
   { icon: 'lucide:truck', label: '交通運輸產業需求理解' },
@@ -24,12 +34,12 @@ const supportSteps = [
   { number: '03', icon: 'lucide:route', title: '陪伴執行', description: '從評估到後續執行，讓每一步更清楚、更安心。' },
 ] as const
 const brandValues = [
-  { image: '/images/about/industry-insight.png', icon: 'lucide:chart-no-axes-combined', title: '產業洞察', lead: '懂技術，更懂交通運輸產業真正面對的問題。', description: '深耕交通運輸產業，從靠行生態、牌照法規到營運管理與市場需求，以產業視角整理複雜資訊，協助經營者更清楚地判斷下一步。' },
-  { image: '/images/about/professional-matching.png', icon: 'lucide:handshake', title: '專業媒合', lead: '精準連結需求，讓事業價值找到合適的承接者。', description: '透過產業網絡與需求理解，協助有意出售的業主與誠意買家進行媒合，提升溝通與交易效率。' },
-  { image: '/images/about/risk-control.png', icon: 'lucide:shield-check', title: '風險把關', lead: '專業把關，讓重要決定更安心。', description: '透過產業法規理解、交易資訊整理與必要的專業協作，協助客戶掌握重要事項，降低複雜交易過程中的不確定性。' },
-  { image: '/images/about/digital-thinking.png', icon: 'lucide:monitor-cog', title: '數位思維', lead: '用數據與科技，讓決策更有依據。', description: '將數據分析與數位工具融入市場判斷、企業價值評估與需求媒合，讓重要決策建立在更清楚的資訊基礎上。' },
-  { image: '/images/about/cross-industry-resources.png', icon: 'lucide:network', title: '跨界資源', lead: '串聯產業資源，開創更多合作可能。', description: '依照不同經營需求，串聯交通運輸上下游與跨領域專業資源，協助企業建立合作橋樑，探索新的商業可能。' },
-  { image: '/images/about/full-journey-support.png', icon: 'lucide:route', title: '全程陪伴', lead: '陪伴的，不只是一筆交易，而是一段事業。', description: '從理解需求、整理方向到後續執行，我們以夥伴關係陪伴客戶面對事業傳承、轉型與下一階段的重要決定。' },
+  { image: industryInsightImage, icon: 'lucide:chart-no-axes-combined', title: '產業洞察', lead: '懂技術，更懂交通運輸產業真正面對的問題。', description: '深耕交通運輸產業，從靠行生態、牌照法規到營運管理與市場需求，以產業視角整理複雜資訊，協助經營者更清楚地判斷下一步。' },
+  { image: professionalMatchingImage, icon: 'lucide:handshake', title: '專業媒合', lead: '精準連結需求，讓事業價值找到合適的承接者。', description: '透過產業網絡與需求理解，協助有意出售的業主與誠意買家進行媒合，提升溝通與交易效率。' },
+  { image: riskControlImage, icon: 'lucide:shield-check', title: '風險把關', lead: '專業把關，讓重要決定更安心。', description: '透過產業法規理解、交易資訊整理與必要的專業協作，協助客戶掌握重要事項，降低複雜交易過程中的不確定性。' },
+  { image: digitalThinkingImage, icon: 'lucide:monitor-cog', title: '數位思維', lead: '用數據與科技，讓決策更有依據。', description: '將數據分析與數位工具融入市場判斷、企業價值評估與需求媒合，讓重要決策建立在更清楚的資訊基礎上。' },
+  { image: crossIndustryResourcesImage, icon: 'lucide:network', title: '跨界資源', lead: '串聯產業資源，開創更多合作可能。', description: '依照不同經營需求，串聯交通運輸上下游與跨領域專業資源，協助企業建立合作橋樑，探索新的商業可能。' },
+  { image: fullJourneySupportImage, icon: 'lucide:route', title: '全程陪伴', lead: '陪伴的，不只是一筆交易，而是一段事業。', description: '從理解需求、整理方向到後續執行，我們以夥伴關係陪伴客戶面對事業傳承、轉型與下一階段的重要決定。' },
 ] as const
 
 const brandValueSwiper = ref<SwiperInstance | null>(null)
@@ -44,7 +54,7 @@ const nextValue = () => brandValueSwiper.value?.slideNext()
     <!-- ABOUT-R1B — Brand Hero Visual / the approved image is the sole visible headline authority. -->
     <header class="company-hero" aria-labelledby="company-title">
       <h1 id="company-title" class="company-sr-only">我們不只理解交易，更理解一段事業的重量</h1>
-      <div class="company-hero__frame"><img src="/images/about/about-hero.png" alt="三爵資訊 KQC 品牌主視覺"></div>
+      <div class="company-hero__frame"><img :src="aboutHeroImage" alt="三爵資訊 KQC 品牌主視覺"></div>
     </header>
 
     <div class="company-shell company-content">
@@ -63,19 +73,19 @@ const nextValue = () => brandValueSwiper.value?.slideNext()
       <!-- ABOUT-R1B — Brand Film / native controls preserve user playback authority with browser-compatible MP4. -->
       <section class="company-film" aria-labelledby="film-title">
         <div class="company-section-heading"><span class="company-section-label">KQC STORY</span><h2 id="film-title">用一分鐘，認識我們想做的事</h2><p>從理解產業到理解每位經營者所處的階段，我們希望用更清楚的方式，連結需求、專業與下一步。</p></div>
-        <div class="company-film__frame"><video controls playsinline preload="metadata"><source src="/videos/about/about-brand.mp4" type="video/mp4">目前瀏覽器無法播放此影片。</video></div>
+        <div class="company-film__frame"><video controls playsinline preload="metadata"><source :src="aboutBrandVideo" type="video/mp4">目前瀏覽器無法播放此影片。</video></div>
       </section>
 
       <!-- ABOUT-R1A — Industry Expertise / approved imagery supports evidence-free capability statements. -->
       <section class="company-pillar" aria-labelledby="industry-title">
-        <div class="company-pillar__media"><img src="/images/about/industry-expertise.png" alt="三爵資訊專業團隊討論交通運輸營運與產業資料"></div>
+        <div class="company-pillar__media"><img :src="industryExpertiseImage" alt="三爵資訊專業團隊討論交通運輸營運與產業資料"></div>
         <div class="company-pillar__copy"><span class="company-section-label">INDUSTRY EXPERTISE</span><h2 id="industry-title">我們懂這個產業</h2><p>交通運輸業的每一項決策，往往不只是單純的買與賣。從營業資格、車輛與場地，到公司營運、法規、成本與市場需求，每一個環節都彼此牽動。</p><p>三爵資訊希望把複雜的產業資訊整理得更清楚，讓經營者在重要決策前，能更快掌握問題、理解選項，找到適合自己的方向。</p><ul class="company-points"><li v-for="item in industryCapabilities" :key="item.label"><Icon :icon="item.icon" aria-hidden="true" /><span>{{ item.label }}</span></li></ul></div>
       </section>
 
       <!-- ABOUT-R1A — Business Journey / long-term partnership without unverifiable claims. -->
       <section class="company-pillar company-pillar--reverse" aria-labelledby="journey-title">
         <div class="company-pillar__copy"><span class="company-section-label">BUSINESS JOURNEY</span><h2 id="journey-title">我們陪的是一段事業</h2><p>對經營者而言，一家公司往往不只是一項資產。它可能是一生累積的成果，也可能是一位新經營者準備開始的下一段旅程。</p><p>因此，我們重視的不只是案件是否完成，而是先理解每一位客戶所處的階段與真正需求，再協助整理交易、營運與後續所需的專業資源。</p><p>無論是準備交棒、尋找新機會，或希望讓既有事業走向下一個階段，我們希望成為客戶可以長期信任的產業夥伴。</p><ul class="company-points"><li v-for="item in journeyValues" :key="item.label"><Icon :icon="item.icon" aria-hidden="true" /><span>{{ item.label }}</span></li></ul></div>
-        <div class="company-pillar__media"><img src="/images/about/business-journey.png" alt="三爵資訊顧問與客戶討論交通運輸事業規劃"></div>
+        <div class="company-pillar__media"><img :src="businessJourneyImage" alt="三爵資訊顧問與客戶討論交通運輸事業規劃"></div>
       </section>
 
       <!-- ABOUT-R1A — Advisory Process / three compact steps explain the service relationship. -->

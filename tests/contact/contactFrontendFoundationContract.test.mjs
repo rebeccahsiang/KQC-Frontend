@@ -51,7 +51,8 @@ test('dynamic questions preserve service mapping and distinct completion/contact
 })
 
 test('real LINE support remains and persisted success adds no CRM or client-owned inquiry authority', () => {
-  assert.match(trust, /src="\/images\/services\/kqc-line-official-qr\.png"/)
+  assert.match(trust, /import lineOfficialQrImage from '@\/assets\/images\/services\/kqc-line-official-qr\.png'/)
+  assert.match(trust, /<img :src="lineOfficialQrImage"/)
   assert.match(trust, /alt="KQC LINE 官方帳號 QR Code"/)
   assert.doesNotMatch(success, /正式送出功能將於後續系統串接後啟用。/)
   const contactBoundary = [view, config, selection, profile, needs, trust, success, publicContactApi].join('\n')
@@ -59,7 +60,8 @@ test('real LINE support remains and persisted success adds no CRM or client-owne
 })
 
 test('CONTACT-R1A-1 uses the approved local consultant visual and explicit dark-panel contrast', () => {
-  assert.match(view, /<img src="\/images\/contact\/kqc-consultant-support\.png" alt="KQC 專業顧問提供一對一諮詢服務">/)
+  assert.match(view, /import consultantSupportImage from '@\/assets\/images\/contact\/kqc-consultant-support\.png'/)
+  assert.match(view, /<img :src="consultantSupportImage" alt="KQC 專業顧問提供一對一諮詢服務">/)
   assert.doesNotMatch(view, /https?:\/\/[^'"\s]+(?:consult|support)/i)
   assert.match(view, /\.contact-hero\{[^}]*grid-template-columns:/)
   const mobileRulesStart = view.indexOf('@media(max-width:640px)')
@@ -69,7 +71,7 @@ test('CONTACT-R1A-1 uses the approved local consultant visual and explicit dark-
   assert.match(trust, /\.trust-panel h2\{[^}]*color:#fff/)
   assert.match(trust, /\.trust-panel li strong\{color:#fff/)
   assert.match(trust, /\.trust-panel li small\{color:#d5e5ea/)
-  assert.match(trust, /src="\/images\/services\/kqc-line-official-qr\.png"/)
+  assert.match(trust, /<img :src="lineOfficialQrImage"/)
 })
 
 test('CONTACT-R1A-2 aligns to public width authority and raises local readability', () => {
@@ -86,7 +88,7 @@ test('CONTACT-R1A-3 keeps support contextual while exposing approved phone and u
   for (const heading of ['一對一專業顧問諮詢', '留下方便聯繫的方式', '讓顧問更快掌握需求', '感謝您的諮詢']) assert.match(trust, new RegExp(heading))
   assert.match(trust, /\(03\) 275-5094/)
   assert.match(trust, /href="tel:032755094"/)
-  assert.match(trust, /src="\/images\/services\/kqc-line-official-qr\.png"/)
+  assert.match(trust, /<img :src="lineOfficialQrImage"/)
 })
 
 test('CONTACT-R1A-3 privacy explanation is interactive and independent from required consent', () => {

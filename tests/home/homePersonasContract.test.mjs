@@ -12,14 +12,14 @@ const personaStyles = styles.slice(styles.indexOf('/* HOME-R1C'), styles.indexOf
 test('heading and exactly six locked persona situations are present', () => {
   assert.match(persona, /lucide:users-round[\s\S]*我們服務的對象/)
   assert.match(persona, /我們始終以客戶為先/)
-  const entries = [...persona.matchAll(/\{ title: '([^']+)', description: '([^']+)', image: '([^']+)' \}/g)].map(([, title, description, image]) => ({ title, description, image }))
+  const entries = [...persona.matchAll(/\{ title: '([^']+)', description: '([^']+)', image: (\w+) \}/g)].map(([, title, description, image]) => ({ title, description, image }))
   assert.deepEqual(entries, [
-    { title: '退休傳承', description: '想把多年事業安心交棒', image: '/images/home/personas/retirement-succession.png' },
-    { title: '經營業主', description: '想讓公司經營得更穩更有效率', image: '/images/home/personas/business-owner.png' },
-    { title: '準備創業', description: '想進入運輸產業，卻不知道從哪開始', image: '/images/home/personas/startup-founder.png' },
-    { title: '轉型升級', description: '想導入網站、系統與數位工具', image: '/images/home/personas/digital-transformation.png' },
-    { title: '停車場業者', description: '有場地資源，希望找合作機會', image: '/images/home/personas/parking-operator.png' },
-    { title: '駕駛夥伴們', description: '尋找工作、車隊或合作機會', image: '/images/home/personas/professional-driver.png' },
+    { title: '退休傳承', description: '想把多年事業安心交棒', image: 'retirementSuccessionImage' },
+    { title: '經營業主', description: '想讓公司經營得更穩更有效率', image: 'businessOwnerImage' },
+    { title: '準備創業', description: '想進入運輸產業，卻不知道從哪開始', image: 'startupFounderImage' },
+    { title: '轉型升級', description: '想導入網站、系統與數位工具', image: 'digitalTransformationImage' },
+    { title: '停車場業者', description: '有場地資源，希望找合作機會', image: 'parkingOperatorImage' },
+    { title: '駕駛夥伴們', description: '尋找工作、車隊或合作機會', image: 'professionalDriverImage' },
   ])
 })
 
@@ -27,7 +27,7 @@ test('persona presentation uses six semantic images without duplicated placehold
   assert.match(persona, /import \{ Icon \} from '@iconify\/vue'/)
   assert.match(persona, /<Icon icon="lucide:users-round" aria-hidden="true"/)
   assert.match(persona, /<img :src="persona\.image" :alt="persona\.title" \/>/)
-  assert.equal((persona.match(/\/images\/home\/personas\//g) ?? []).length, 6)
+  assert.equal((persona.match(/from '@\/assets\/images\/home\/personas\//g) ?? []).length, 6)
   assert.match(styles, /\.home-persona__visual img\s*\{[^}]*display:\s*block;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*aspect-ratio:\s*1;[^}]*object-fit:\s*contain;/s)
   assert.doesNotMatch(persona, /persona\.icon|home-persona__laurel|home-persona__seal|<svg/)
   assert.doesNotMatch(personaStyles, /home-persona__laurel|home-persona__seal|inset:\s*0 0 0/)

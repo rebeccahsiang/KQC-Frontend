@@ -32,11 +32,18 @@ test('Hero, origin and existing pillars retain approved brand content', () => {
 })
 
 test('approved image and native Brand Film authorities are exact', () => {
-  for (const asset of ['about-hero.png', 'industry-expertise.png', 'business-journey.png']) assert.match(view, new RegExp(`src="/images/about/${asset.replace('.', '\\.')}"`))
-  for (const asset of ['industry-insight.png', 'professional-matching.png', 'risk-control.png', 'digital-thinking.png', 'cross-industry-resources.png', 'full-journey-support.png']) assert.match(view, new RegExp(`image: '/images/about/${asset.replace('.', '\\.')}'`))
+  const imageImports = [
+    ['aboutHeroImage', 'about-hero.png'], ['industryExpertiseImage', 'industry-expertise.png'], ['businessJourneyImage', 'business-journey.png'],
+    ['industryInsightImage', 'industry-insight.png'], ['professionalMatchingImage', 'professional-matching.png'], ['riskControlImage', 'risk-control.png'],
+    ['digitalThinkingImage', 'digital-thinking.png'], ['crossIndustryResourcesImage', 'cross-industry-resources.png'], ['fullJourneySupportImage', 'full-journey-support.png'],
+  ]
+  for (const [binding, asset] of imageImports) assert.match(view, new RegExp(`import ${binding} from '@/assets/images/about/${asset.replace('.', '\\.')}'`))
+  for (const binding of ['aboutHeroImage', 'industryExpertiseImage', 'businessJourneyImage']) assert.match(view, new RegExp(`:src="${binding}"`))
+  for (const binding of ['industryInsightImage', 'professionalMatchingImage', 'riskControlImage', 'digitalThinkingImage', 'crossIndustryResourcesImage', 'fullJourneySupportImage']) assert.match(view, new RegExp(`image: ${binding}`))
   assert.equal((view.match(/<img\b/g) ?? []).length, 4)
   assert.match(view, /<video controls playsinline preload="metadata">/)
-  assert.match(view, /<source src="\/videos\/about\/about-brand\.mp4" type="video\/mp4">目前瀏覽器無法播放此影片。/)
+  assert.match(view, /import aboutBrandVideo from '@\/assets\/videos\/about\/about-brand\.mp4'/)
+  assert.match(view, /<source :src="aboutBrandVideo" type="video\/mp4">目前瀏覽器無法播放此影片。/)
   assert.doesNotMatch(view, /<video[^>]*\b(?:autoplay|loop)\b|https?:\/\/|data:image/)
   assert.match(view, /\.company-film__frame \{[^}]*width: min\(100%, 55rem\)[^}]*aspect-ratio: 16 \/ 9[^}]*margin-inline: auto[^}]*overflow: hidden[^}]*border-radius: 1\.25rem/s)
   assert.match(view, /\.company-film video \{[^}]*display: block[^}]*width: 100%[^}]*height: 100%[^}]*object-fit: contain/s)
@@ -54,14 +61,14 @@ test('advisory process and existing closing route authority remain unchanged', (
 
 test('brand-value deck owns exactly six canonical image values in approved order', () => {
   const valuesSource = view.slice(view.indexOf('const brandValues'), view.indexOf('const brandValueSwiper'))
-  const values = [...valuesSource.matchAll(/\{ image: '([^']+)', icon: '(lucide:[^']+)', title: '([^']+)', lead: '([^']+)', description: '([^']+)' \}/g)]
+  const values = [...valuesSource.matchAll(/\{ image: (\w+), icon: '(lucide:[^']+)', title: '([^']+)', lead: '([^']+)', description: '([^']+)' \}/g)]
   assert.deepEqual(values.map(([, image, icon, title]) => ({ image, icon, title })), [
-    { image: '/images/about/industry-insight.png', icon: 'lucide:chart-no-axes-combined', title: '產業洞察' },
-    { image: '/images/about/professional-matching.png', icon: 'lucide:handshake', title: '專業媒合' },
-    { image: '/images/about/risk-control.png', icon: 'lucide:shield-check', title: '風險把關' },
-    { image: '/images/about/digital-thinking.png', icon: 'lucide:monitor-cog', title: '數位思維' },
-    { image: '/images/about/cross-industry-resources.png', icon: 'lucide:network', title: '跨界資源' },
-    { image: '/images/about/full-journey-support.png', icon: 'lucide:route', title: '全程陪伴' },
+    { image: 'industryInsightImage', icon: 'lucide:chart-no-axes-combined', title: '產業洞察' },
+    { image: 'professionalMatchingImage', icon: 'lucide:handshake', title: '專業媒合' },
+    { image: 'riskControlImage', icon: 'lucide:shield-check', title: '風險把關' },
+    { image: 'digitalThinkingImage', icon: 'lucide:monitor-cog', title: '數位思維' },
+    { image: 'crossIndustryResourcesImage', icon: 'lucide:network', title: '跨界資源' },
+    { image: 'fullJourneySupportImage', icon: 'lucide:route', title: '全程陪伴' },
   ])
   assert.equal(values.length, 6)
   for (const text of ['懂技術，更懂交通運輸產業真正面對的問題。', '精準連結需求，讓事業價值找到合適的承接者。', '專業把關，讓重要決定更安心。', '用數據與科技，讓決策更有依據。', '串聯產業資源，開創更多合作可能。', '陪伴的，不只是一筆交易，而是一段事業。']) assert.match(valuesSource, new RegExp(text))

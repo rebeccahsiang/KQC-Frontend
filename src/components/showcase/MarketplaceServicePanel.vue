@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import authorizationConsentPdf from '@/assets/downloads/授權刻印同意書.pdf'
+import lineOfficialQrImage from '@/assets/images/services/kqc-line-official-qr.png'
 
 interface MarketplaceServicePanelData {
   id: 'commercial-vehicle-quota' | 'parking-space-application' | 'commercial-insurance-advisory'
@@ -30,8 +32,8 @@ const parkingDocuments = ['運輸業營業執照', '公司登記核准函', '變
 
 // PRODUCT-SIDEBAR-R4F-8D — Real Asset Activation / approved same-origin binaries are direct presentation authority.
 const parkingAssets = {
-  authorizationPdf: '/downloads/授權刻印同意書.pdf',
-  lineQr: '/images/services/kqc-line-official-qr.png',
+  authorizationPdf: authorizationConsentPdf,
+  lineQr: lineOfficialQrImage,
 } as const
 </script>
 

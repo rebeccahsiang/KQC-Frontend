@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import lineOfficialQrImage from '@/assets/images/services/kqc-line-official-qr.png'
 
 interface SupportFeature { icon: string; title: string; description: string }
 interface SupportContent { eyebrow: string; heading: string; intro: string; features: readonly SupportFeature[] }
@@ -39,7 +40,7 @@ const content = computed(() => supportByStep[props.step] || supportByStep[1])
     <!-- CONTACT-R1A-3 — Official Contact Methods / approved telephone and unchanged LINE QR remain direct alternatives. -->
     <div class="contact-methods">
       <section class="phone-support" aria-labelledby="contact-phone-title"><Icon icon="lucide:phone-call" aria-hidden="true" /><div><strong id="contact-phone-title">電話諮詢</strong><a href="tel:032755094">(03) 275-5094</a><small>需要直接說明需求，也可來電與 KQC 顧問聯繫。</small></div></section>
-      <section class="line-support" aria-labelledby="contact-line-title"><div><strong id="contact-line-title">LINE 官方帳號</strong><small>也可掃描 QR Code 與 KQC 聯繫。</small></div><img src="/images/services/kqc-line-official-qr.png" alt="KQC LINE 官方帳號 QR Code"></section>
+      <section class="line-support" aria-labelledby="contact-line-title"><div><strong id="contact-line-title">LINE 官方帳號</strong><small>也可掃描 QR Code 與 KQC 聯繫。</small></div><img :src="lineOfficialQrImage" alt="KQC LINE 官方帳號 QR Code"></section>
     </div>
   </aside>
 </template>
