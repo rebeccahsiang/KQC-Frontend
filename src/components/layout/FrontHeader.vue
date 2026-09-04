@@ -61,7 +61,7 @@ onUnmounted(() => {
 
 // 導覽選單定義
 const navItems: NavItem[] = [
-  { name: '產品櫥窗', path: '/products' },
+  { name: '商品櫥窗', path: '/products' },
   { name: '我們公司', path: '/company' },
   { name: '產業洞察', path: '/insights' },
   { name: '聯絡我們', path: '/contact' },

@@ -8,7 +8,7 @@ import MarketplaceServicePanel from '@/components/showcase/MarketplaceServicePan
 import { useCaseStore } from '@/stores/useCaseStore'
 import { publicAdvertisementsApi, type PublicAdvertisement } from '@/api/publicAdvertisements'
 
-const heroTruckImage = new URL('../assets/images/categories/freight-truck.jpg', import.meta.url).href
+const heroTruckImage = new URL('../assets/images/categories/freight-truck.png', import.meta.url).href
 
 type ProductAnchorHash = '#marketplace-cases' | '#transfer-process'
 type PublicServiceId = 'commercial-vehicle-quota' | 'parking-space-application' | 'commercial-insurance-advisory'
