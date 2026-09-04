@@ -4,6 +4,11 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Paginator, { type PageState } from 'primevue/paginator'
 import Skeleton from 'primevue/skeleton'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { A11y, Navigation, Pagination } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
 import { publicArticleCoverUrl, publicArticlesApi, type PublicArticleCategory, type PublicArticleListItem } from '@/api/publicArticles'
 import { publicArticleSubscriptionsApi } from '@/api/publicArticleSubscriptions'
 
@@ -12,6 +17,8 @@ import { publicArticleSubscriptionsApi } from '@/api/publicArticleSubscriptions'
 // WEB-1F-D2B
 // ============================================================
 const PAGE_SIZE = 8
+const FEATURED_PAGE_SIZE = 100
+const featuredModules = [A11y, Navigation, Pagination]
 const filters: ReadonlyArray<{ label: string; category?: PublicArticleCategory }> = [
   { label: '全部文章' },
   { label: '經營管理', category: 'BUSINESS_MANAGEMENT' },
@@ -38,6 +45,7 @@ const activeCategory = ref<PublicArticleCategory | undefined>(categoryFromQuery(
 const page = ref(1)
 const total = ref(0)
 const articles = ref<PublicArticleListItem[]>([])
+const featuredArticles = ref<PublicArticleListItem[]>([])
 const loading = ref(false)
 const initialLoadComplete = ref(false)
 const errorMessage = ref('')
@@ -46,7 +54,38 @@ const verificationFeedback = ref('')
 const verificationBusy = ref(false)
 let verificationStarted = false
 const articleScrollTarget = ref<HTMLElement | null>(null)
+const categoryNavTarget = ref<HTMLElement | null>(null)
 let articleScrollHandled = false
+let articleNavigationScrollEpoch = 0
+let pendingCategoryScroll: { epoch: number; category: PublicArticleCategory | undefined } | null = null
+
+const nextAnimationFrame = () => new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
+const scrollToArticleListAnchor = async (epoch: number) => {
+  await nextTick()
+  await nextAnimationFrame()
+  await nextAnimationFrame()
+  if (epoch !== articleNavigationScrollEpoch || !categoryNavTarget.value) return
+  const navRect = categoryNavTarget.value.getBoundingClientRect()
+  const headerRect = document.querySelector<HTMLElement>('.kqc-sticky-header')?.getBoundingClientRect()
+  const headerBottom = Math.max(headerRect?.bottom ?? 0, 0)
+  const desiredGap = 28
+  const targetTop = window.scrollY + navRect.top - headerBottom - desiredGap
+  window.scrollTo({ top: Math.max(0, targetTop), behavior: 'auto' })
+  await nextAnimationFrame()
+  if (epoch !== articleNavigationScrollEpoch || !categoryNavTarget.value) return
+  const settledHeaderRect = document.querySelector<HTMLElement>('.kqc-sticky-header')?.getBoundingClientRect()
+  const expectedTop = Math.max(settledHeaderRect?.bottom ?? 0, 0) + desiredGap
+  const finalNavTop = categoryNavTarget.value.getBoundingClientRect().top
+  const correction = finalNavTop - expectedTop
+  if (Math.abs(correction) > 3) window.scrollTo({ top: Math.max(0, window.scrollY + correction), behavior: 'auto' })
+}
+const scrollToArticleListHash = async () => {
+  await nextTick()
+  window.requestAnimationFrame(() => {
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    articleScrollTarget.value?.scrollIntoView({ behavior, block: 'start' })
+  })
+}
 
 const loadArticles = async () => {
   const epoch = ++requestEpoch
@@ -65,22 +104,46 @@ const loadArticles = async () => {
     }
   }
 }
+const loadFeaturedArticles = async () => {
+  const collected: PublicArticleListItem[] = []
+  try {
+    let featuredPage = 1
+    let totalPages = 1
+    do {
+      const response = await publicArticlesApi.list({ page: featuredPage, limit: FEATURED_PAGE_SIZE, featured: true })
+      collected.push(...response.data.articles.filter((article) => article.isFeatured === true))
+      totalPages = response.data.pagination.totalPages
+      featuredPage += 1
+    } while (featuredPage <= totalPages)
+    featuredArticles.value = collected
+  } catch {
+    featuredArticles.value = []
+  }
+}
 // ============================================================
 // Industry Insights — Article Category Filter
 // WEB-1F-D2B: no category parameter represents 全部文章.
 // ============================================================
 // D2H — Category Route Synchronization / tabs update Vue Router while preserving unrelated query state.
-const selectCategory = (category?: PublicArticleCategory) => {
+const selectCategory = async (category?: PublicArticleCategory) => {
+  const scrollEpoch = ++articleNavigationScrollEpoch
   if (activeCategory.value === category) {
-    if (page.value !== 1) { page.value = 1; void loadArticles() }
+    if (page.value !== 1) { page.value = 1; await loadArticles() }
+    await scrollToArticleListAnchor(scrollEpoch)
     return
   }
   const query = { ...route.query }
   if (category) query.category = category
   else delete query.category
-  void router.push({ name: 'Insights', query, hash: route.hash })
+  pendingCategoryScroll = { epoch: scrollEpoch, category }
+  await router.push({ name: 'Insights', query, hash: route.hash })
 }
-const changePage = (event: PageState) => { page.value = Math.max(1, event.page + 1); void loadArticles() }
+const changePage = async (event: PageState) => {
+  const scrollEpoch = ++articleNavigationScrollEpoch
+  page.value = Math.max(1, event.page + 1)
+  await loadArticles()
+  await scrollToArticleListAnchor(scrollEpoch)
+}
 const formatDate = (value: string | null) => value
   ? new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value))
   : '日期待定'
@@ -104,8 +167,9 @@ const verifySubscription = async () => {
   }
 }
 // D2H — Route / Stale Response Guard / route changes reuse the existing request epoch authority.
-watch(() => route.query.category, (value) => {
+watch(() => route.query.category, async (value) => {
   const category = categoryFromQuery(value)
+  const scrollRequest = pendingCategoryScroll?.category === category ? pendingCategoryScroll : null
   if (value !== undefined && category === undefined) {
     const query = { ...route.query }
     delete query.category
@@ -114,7 +178,11 @@ watch(() => route.query.category, (value) => {
   if (activeCategory.value === category && page.value === 1) return
   activeCategory.value = category
   page.value = 1
-  void loadArticles()
+  await loadArticles()
+  if (scrollRequest) {
+    if (pendingCategoryScroll === scrollRequest) pendingCategoryScroll = null
+    await scrollToArticleListAnchor(scrollRequest.epoch)
+  }
 })
 onMounted(async () => {
   await verifySubscription()
@@ -123,16 +191,11 @@ onMounted(async () => {
     delete query.category
     await router.replace({ name: 'Insights', query, hash: route.hash })
   }
-  await loadArticles()
+  await Promise.all([loadArticles(), loadFeaturedArticles()])
   // D2H-R2 — One-shot Scroll Coordination / reactive list, pagination, and category updates never pull the visitor back.
   if (!articleScrollHandled && route.hash === '#insights-articles') {
     articleScrollHandled = true
-    await nextTick()
-    window.requestAnimationFrame(() => {
-      // D2H-R2 — Reduced Motion / Header Offset / CSS owns clearance while motion preference owns animation.
-      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
-      articleScrollTarget.value?.scrollIntoView({ behavior, block: 'start' })
-    })
+    await scrollToArticleListHash()
   }
 })
 </script>
@@ -146,8 +209,19 @@ onMounted(async () => {
          WEB-1F-D2B
          ============================================================ -->
     <!-- D2H-R2 — Insights Article Scroll Target / groups complete tabs with the immediately following Article results. -->
+    <section v-if="featuredArticles.length" class="featured-articles" aria-labelledby="featured-articles-title">
+      <h2 id="featured-articles-title">精選文章</h2>
+      <Swiper class="featured-articles__carousel" :modules="featuredModules" :slides-per-view="1" :loop="featuredArticles.length > 1" :navigation="featuredArticles.length > 1" :pagination="featuredArticles.length > 1 ? { clickable: true } : false" :watch-overflow="true">
+        <SwiperSlide v-for="article in featuredArticles" :key="article.id">
+          <RouterLink :to="`/insights/${article.slug}`" class="featured-article-card">
+            <div class="featured-article-card__media"><img v-if="article.coverImage" :src="publicArticleCoverUrl(article.coverImage)" :alt="`${article.title}封面`"><div v-else class="featured-article-card__fallback" aria-hidden="true"><span>KQC</span></div></div>
+            <div class="featured-article-card__body"><time :datetime="article.publishedAt || undefined">{{ formatDate(article.publishedAt) }}</time><h3>{{ article.title }}</h3><p>{{ article.summary }}</p></div>
+          </RouterLink>
+        </SwiperSlide>
+      </Swiper>
+    </section>
     <div id="insights-articles" ref="articleScrollTarget" class="insights-article-region">
-    <nav class="article-filters" aria-label="文章分類">
+    <nav ref="categoryNavTarget" class="article-filters" aria-label="文章分類">
       <div class="article-filters__inner">
         <button v-for="filter in filters" :key="filter.label" type="button" :class="{ active: activeCategory === filter.category }" :aria-pressed="activeCategory === filter.category" @click="selectCategory(filter.category)">{{ filter.label }}</button>
       </div>
@@ -186,6 +260,21 @@ onMounted(async () => {
 .insights-hero > p:last-child { margin: $kqc-spacing-lg 0 0; color: var(--text-muted); font-size: $kqc-type-body-emphasis; line-height: 1.7; }
 .subscription-verification { margin: 0 0 $kqc-spacing-xl; padding: $kqc-spacing-md $kqc-spacing-lg; border-inline-start: 3px solid var(--accent-active); background: color-mix(in srgb, var(--accent-active) 7%, transparent); color: var(--text-main); line-height: 1.6; }
 /* D2H-R2-2 — Scroll Offset Visual Tuning / balances complete tab visibility with a compact Hero remainder. */
+.featured-articles { margin-bottom: $kqc-spacing-2xl; }
+.featured-articles > h2 { margin: 0 0 $kqc-spacing-lg; color: var(--text-main); font-size: clamp(1.5rem, 3vw, 2rem); }
+.featured-articles__carousel { padding: 0 3.5rem 2.5rem; }
+.featured-article-card { display: grid; max-width: 64rem; margin-inline: auto; overflow: hidden; grid-template-columns: minmax(0, 1.55fr) minmax(18rem, .85fr); border: 1px solid var(--border-grey); border-radius: $kqc-radius-xl; background: var(--bg-card); color: inherit; text-decoration: none; }
+.featured-article-card:hover, .featured-article-card:focus-visible { border-color: var(--accent-active); }
+.featured-article-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-active) 30%, transparent); outline-offset: 2px; }
+.featured-article-card__media { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: var(--bg-main); }
+.featured-article-card__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.featured-article-card__fallback { display: grid; width: 100%; height: 100%; place-items: center; background: linear-gradient(135deg, color-mix(in srgb, var(--accent-active) 12%, var(--bg-main)), var(--bg-card)); color: var(--text-muted); font-weight: 800; letter-spacing: .16em; }
+.featured-article-card__body { display: flex; min-width: 0; padding: clamp(1.25rem, 3vw, 2.5rem); justify-content: center; flex-direction: column; gap: $kqc-spacing-sm; }
+.featured-article-card__body time { color: var(--text-muted); font-size: $kqc-type-metadata; }
+.featured-article-card__body h3 { margin: 0; color: var(--text-main); font-size: clamp(1.25rem, 2.5vw, 2rem); line-height: 1.35; }
+.featured-article-card__body p { display: -webkit-box; overflow: hidden; margin: 0; color: var(--text-muted); line-height: 1.7; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.featured-articles__carousel :deep(.swiper-button-prev), .featured-articles__carousel :deep(.swiper-button-next) { color: var(--accent-active); }
+.featured-articles__carousel :deep(.swiper-pagination-bullet-active) { background: var(--accent-active); }
 .insights-article-region { scroll-margin-top: 10.5rem; }
 .article-filters { max-width: 100%; margin-bottom: $kqc-spacing-2xl; padding-bottom: $kqc-spacing-xs; overflow-x: auto; scrollbar-width: thin; }
 .article-filters__inner { display: flex; width: max-content; min-width: 100%; justify-content: center; gap: $kqc-spacing-sm; }
@@ -215,6 +304,6 @@ onMounted(async () => {
 .article-refresh-status { margin: $kqc-spacing-md 0 0; color: var(--text-muted); font-size: $kqc-type-metadata; text-align: center; }
 :deep(.p-paginator) { margin-top: $kqc-spacing-2xl; background: transparent; }
 @media (max-width: $breakpoint-lg) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: $breakpoint-sm) { .insights-view { width: min(100% - 1.25rem, 90rem); } .insights-article-region { scroll-margin-top: 5rem; } .article-grid { grid-template-columns: minmax(0, 1fr); } .article-card__meta { align-items: flex-start; flex-direction: column; } }
+@media (max-width: $breakpoint-sm) { .insights-view { width: min(100% - 1.25rem, 90rem); } .featured-articles__carousel { padding-inline: 0; } .featured-article-card { grid-template-columns: minmax(0, 1fr); } .featured-articles__carousel :deep(.swiper-button-prev), .featured-articles__carousel :deep(.swiper-button-next) { display: none; } .insights-article-region { scroll-margin-top: 5rem; } .article-grid { grid-template-columns: minmax(0, 1fr); } .article-card__meta { align-items: flex-start; flex-direction: column; } }
 @media (prefers-reduced-motion: reduce) { .article-card__media img { transition: none; } .article-card:hover .article-card__media img, .article-card:focus-visible .article-card__media img { transform: none; } }
 </style>

@@ -26,9 +26,9 @@ export const publicArticleCoverUrl = (path: string) => {
   return /^https?:\/\//i.test(apiBase) ? new URL(path, apiBase).toString() : path
 }
 export const publicArticlesApi = {
-  list: ({ page, limit, category }: { page: number; limit: number; category?: PublicArticleCategory }) =>
+  list: ({ page, limit, category, featured }: { page: number; limit: number; category?: PublicArticleCategory; featured?: boolean }) =>
     api.get<Envelope<PublicArticleListResponse>>('/public/articles', {
-      params: { page, limit, ...(category ? { category } : {}) },
+      params: { page, limit, ...(category ? { category } : {}), ...(featured !== undefined ? { featured } : {}) },
     }),
   detail: (slug: string) =>
     api.get<Envelope<{ article: PublicArticleDetail }>>(`/public/articles/${encodeURIComponent(slug)}`),

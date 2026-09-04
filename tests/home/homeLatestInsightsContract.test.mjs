@@ -13,7 +13,7 @@ const styles = read('src/components/home/_homeSections.scss')
 test('Home requests only the newest two real public Article records', () => {
   assert.match(section, /publicArticlesApi\.list\(\{ page: 1, limit: 2 \}\)/)
   assert.match(section, /response\.data\.articles\.slice\(0, 2\)/)
-  assert.match(api, /list: \(\{ page, limit, category \}/)
+  assert.match(api, /list: \(\{ page, limit, category, featured \}/)
   assert.doesNotMatch(section, /2026 交通運輸產業市場觀察|交通運輸業的 AI 應用方向|2026-transportation-industry-market-outlook|ai-applications-in-transportation-industry/)
 })
 
