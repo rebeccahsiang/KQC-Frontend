@@ -170,7 +170,7 @@ onMounted(loadAll)
           <label>精簡說明<Textarea v-model="form.shortDescription" maxlength="300" rows="3" required /><small>{{ form.shortDescription.length }}/300</small></label>
           <div class="field-row"><label>CTA 按鈕文字<InputText v-model="form.ctaLabel" maxlength="60" required /></label><label>CTA 站內目的地<Select v-model="form.ctaDestination" :options="destinationOptions" option-label="label" option-value="value" required /><small>僅允許 KQC 站內路徑。</small></label></div>
           <div class="field-row"><label>版面樣式<Select v-model="form.layoutStyle" :options="layoutOptions" option-label="label" option-value="value" /></label><label>字體風格<Select v-model="form.typographyStyle" :options="typographyOptions" option-label="label" option-value="value" /></label></div>
-          <div class="field-row"><label>文字色調<Select v-model="form.textTone" :options="toneOptions" option-label="label" option-value="value" /></label><label>顯示順序<InputNumber v-model="form.sortOrder" :min="0" :max="100000" :step="1" :min-fraction-digits="0" :max-fraction-digits="0" /></label></div>
+          <div class="field-row"><label>標題色調<Select v-model="form.textTone" :options="toneOptions" option-label="label" option-value="value" /></label><label>顯示順序<InputNumber v-model="form.sortOrder" :min="0" :max="100000" :step="1" :min-fraction-digits="0" :max-fraction-digits="0" /></label></div>
           <Message v-if="operationError" severity="error" :closable="false"><span role="alert">{{ operationError }}</span></Message>
           <footer><Button type="button" label="取消" text @click="editorVisible = false" /><Button type="submit" label="儲存草稿" :loading="mutating" :disabled="mutating" /></footer>
         </div>
