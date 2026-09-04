@@ -44,7 +44,7 @@ test('Homepage owns a separate accessible Swiper with bounded autoplay behavior'
   assert.match(carousel, /:centered-slides="hasMultiple"/)
   assert.match(carousel, /960: \{ slidesPerView: (?:1\.[1-9]|[2-9])/)
   assert.match(carousel, /:slides-per-view="hasMultiple \? 1\.08 : 1"/); assert.match(carousel, /delay: 5000/); assert.match(carousel, /disableOnInteraction: false/)
-  assert.match(carousel, /:navigation="hasMultiple"/); assert.match(carousel, /:pagination="hasMultiple \? \{ clickable: true \} : false"/)
+  assert.match(carousel, /:loop="hasMultiple"/); assert.match(carousel, /:navigation="hasMultiple"/); assert.match(carousel, /:pagination="hasMultiple \? \{ clickable: true \} : false"/)
   assert.match(carousel, /hasMultiple && !reducedMotion/); assert.match(carousel, /prefers-reduced-motion: reduce/)
   assert.match(carousel, /v-if="loading \|\| visibleImages\.length"/); assert.match(carousel, /@error="markUnavailable\(image\.id\)"/)
   assert.match(carousel, /960: \{ slidesPerView: 2\.05, spaceBetween: 0 \}/)
