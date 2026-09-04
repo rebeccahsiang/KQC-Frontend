@@ -29,15 +29,20 @@ test('desktop dock owns exactly three canonical service launchers', () => {
   assert.doesNotMatch(dock, /ref<ServicePanel \| null>/)
 })
 
-test('page cards and floating dock share the single Home-owned panel state', () => {
+test('page cards and the single PublicLayout dock share one provided panel state', () => {
   const home = read('src/views/HomeView.vue')
+  const layout = read('src/components/layout/PublicLayout.vue')
+  const context = read('src/composables/publicServicePanel.ts')
   const guide = read('src/components/home/HomeServiceGuideSection.vue')
   const dock = read('src/components/home/HomeServiceDock.vue')
-  const combined = `${home}\n${guide}\n${dock}`
+  const combined = `${home}\n${layout}\n${context}\n${guide}\n${dock}`
 
-  assert.equal((combined.match(/ref<ServicePanel \| null>\(null\)/g) ?? []).length, 1)
+  assert.equal((combined.match(/ref<PublicServicePanel \| null>\(null\)/g) ?? []).length, 1)
+  assert.match(layout, /provide\(publicServicePanelKey, \{ activePanel, openServicePanel \}\)/)
+  assert.match(home, /inject\(publicServicePanelKey\)!/)
   assert.match(home, /<HomeServiceGuideSection :active-panel="activePanel" @open-panel="openServicePanel"/)
-  assert.match(home, /<HomeServiceDock :active-panel="activePanel" @update:active-panel="activePanel = \$event"/)
+  assert.match(layout, /<HomeServiceDock v-if="showFloatingServiceNavigation" :active-panel="activePanel" @update:active-panel="activePanel = \$event"/)
+  assert.doesNotMatch(home, /HomeServiceDock/)
   assert.match(guide, /const serviceEntries:/)
   for (const entry of [
     ["'ai'", 'lucide:bot', 'AI 助理'], ["'quick-service'", 'lucide:messages-square', '快速服務'], ["'human'", 'lucide:phone-call', '真人諮詢'],
@@ -49,6 +54,18 @@ test('page cards and floating dock share the single Home-owned panel state', () 
   assert.match(guide, /<aside class="home-service-entry-column"[^>]*>[\s\S]*class="home-service-entry-grid"/)
   assert.match(guide, /@click="emit\('open-panel', entry\.id\)"/)
   assert.equal((combined.match(/id="home-service-panel"/g) ?? []).length, 1)
+})
+
+test('PublicLayout route allowlist covers only the approved public pages', () => {
+  const layout = read('src/components/layout/PublicLayout.vue')
+  const router = read('src/router/index.ts')
+  assert.match(layout, /new Set\(\['Home', 'Products', 'Insights', 'InsightDetail', 'Company'\]\)/)
+  assert.match(layout, /floatingServiceRouteNames\.has\(String\(route\.name\)\)/)
+  for (const [name, path] of [['Home', '/'], ['Products', '/products'], ['Insights', '/insights'], ['InsightDetail', '/insights/:slug'], ['Company', '/company']]) {
+    assert.match(router, new RegExp(`path: '${path.replace('/', '\\/')}'[^\\n]*name: '${name}'`))
+  }
+  for (const excluded of ['Contact', 'Login', 'VerifyEmail', 'AcceptInvitation', 'ChangePassword', 'MemberSessions', 'AdminLanding']) assert.doesNotMatch(layout, new RegExp(`'${excluded}'`))
+  assert.match(layout, /watch\(showFloatingServiceNavigation, \(visible\) => \{ if \(!visible\) activePanel\.value = null \}\)/)
 })
 
 test('dock and panel are separate accessible surfaces with deterministic closing', () => {

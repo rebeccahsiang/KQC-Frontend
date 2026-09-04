@@ -49,14 +49,16 @@ test('shared layout responsibilities do not return to HomeView', () => {
 
 test('service dock remains desktop-only without a mobile replacement', () => {
   const home = read('src/views/HomeView.vue')
+  const layout = read('src/components/layout/PublicLayout.vue')
   const styles = read('src/components/home/_homeSections.scss')
   const mobileStyles = styles.slice(
     styles.lastIndexOf('@media (max-width: 768px)'),
     styles.lastIndexOf('@media (max-width: 480px)'),
   )
 
-  assert.equal((home.match(/<HomeServiceDock\b/g) ?? []).length, 1)
+  assert.equal((layout.match(/<HomeServiceDock\b/g) ?? []).length, 1)
+  assert.equal((home.match(/<HomeServiceDock\b/g) ?? []).length, 0)
   assert.match(styles, /\.fixed-right-widget-panel\s*\{[^}]*display:\s*flex;/s)
   assert.match(mobileStyles, /\.fixed-right-widget-panel\s*\{\s*display:\s*none;\s*\}/)
-  assert.doesNotMatch(home, /MobileServiceDock|BottomServiceDock/)
+  assert.doesNotMatch(`${home}\n${layout}`, /MobileServiceDock|BottomServiceDock/)
 })

@@ -127,15 +127,17 @@ test('closing or switching away resets personal consultation state', () => {
   assert.match(dock, /event\.key === 'Escape'/)
 })
 
-test('existing panel ownership and desktop-only boundary remain intact', () => {
+test('shared panel ownership and desktop-only boundary remain intact', () => {
   const home = read('src/views/HomeView.vue')
+  const layout = read('src/components/layout/PublicLayout.vue')
   const dock = read('src/components/home/HomeServiceDock.vue')
   const styles = read('src/components/home/_homeSections.scss')
   const mobile = styles.slice(styles.lastIndexOf('@media (max-width: 768px)'), styles.lastIndexOf('@media (max-width: 480px)'))
 
-  assert.match(home, /const activePanel = ref<ServicePanel \| null>\(null\)/)
-  assert.match(home, /<HomeServiceDock :active-panel="activePanel" @update:active-panel="activePanel = \$event"/)
+  assert.match(home, /inject\(publicServicePanelKey\)!/)
+  assert.match(layout, /const activePanel = ref<PublicServicePanel \| null>\(null\)/)
+  assert.match(layout, /<HomeServiceDock v-if="showFloatingServiceNavigation"/)
   assert.equal((dock.match(/v-if="props\.activePanel"/g) ?? []).length, 1)
   assert.match(mobile, /\.home-service-workspace\s*\{\s*display:\s*none;/)
-  assert.doesNotMatch(`${home}\n${dock}`, /MobileServiceDock|BottomServiceDock/)
+  assert.doesNotMatch(`${home}\n${layout}\n${dock}`, /MobileServiceDock|BottomServiceDock/)
 })

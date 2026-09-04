@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { inject, onMounted } from 'vue'
 import { useThemeStore } from '@/stores/themeStore'
 import HomeHeroSection from '@/components/home/HomeHeroSection.vue'
 import HomeIndustryWeatherSection from '@/components/home/HomeIndustryWeatherSection.vue'
@@ -10,18 +10,12 @@ import HomePersonasSection from '@/components/home/HomePersonasSection.vue'
 import HomeInsightsSection from '@/components/home/HomeInsightsSection.vue'
 import HomeContactCtaSection from '@/components/home/HomeContactCtaSection.vue'
 import HomeLegacyCasesSection from '@/components/home/HomeLegacyCasesSection.vue'
-import HomeServiceDock from '@/components/home/HomeServiceDock.vue'
 import { useCaseStore } from '@/stores/useCaseStore'
-
-type ServicePanel = 'ai' | 'quick-service' | 'human'
+import { publicServicePanelKey } from '@/composables/publicServicePanel'
 
 const themeStore = useThemeStore()
 const caseStore = useCaseStore()
-const activePanel = ref<ServicePanel | null>(null)
-
-const openServicePanel = (panel: ServicePanel) => {
-  activePanel.value = panel
-}
+const { activePanel, openServicePanel } = inject(publicServicePanelKey)!
 
 onMounted(() => {
   /* PRODUCT-CASE-B4 — Homepage Marketplace Authority / Home loads only its canonical public Marketplace data. */
@@ -43,10 +37,5 @@ onMounted(() => {
       <HomeLegacyCasesSection :cases="caseStore.cases" :loading="caseStore.isLoading" :error="caseStore.error" />
       <HomeContactCtaSection />
     </main>
-    <HomeServiceDock :active-panel="activePanel" @update:active-panel="activePanel = $event" />
   </div>
 </template>
-
-<style lang="scss">
-@use '@/components/home/homeSections';
-</style>
