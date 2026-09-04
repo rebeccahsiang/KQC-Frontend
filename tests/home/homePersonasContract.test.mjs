@@ -35,6 +35,11 @@ test('persona presentation uses six semantic images without duplicated placehold
   assert.doesNotMatch(styles, /customer-4col-large-grid|customer-large-card|min-height:\s*220px/)
 })
 
+test('desktop persona images are enlarged proportionally while responsive sizes stay bounded', () => {
+  assert.match(personaStyles, /\.home-persona__visual\s*\{[^}]*width:\s*clamp\(8\.25rem, 10\.5vw, 10\.5rem\);[^}]*aspect-ratio:\s*1;/s)
+  assert.match(personaStyles, /@media \(max-width: 1024px\)[^{]*\{[\s\S]*?\.home-persona__visual\s*\{[^}]*width:\s*clamp\(5\.5rem, 10vw, 7rem\);/s)
+})
+
 test('responsive authority is six columns, then three and two without giant height', () => {
   assert.match(styles, /\.home-personas__grid \{[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\);/s)
   const tabletRules = styles.slice(styles.indexOf('@media (max-width: 1024px)', styles.indexOf('/* HOME-R1C')), styles.indexOf('@media (max-width: 768px)', styles.indexOf('/* HOME-R1C')))
