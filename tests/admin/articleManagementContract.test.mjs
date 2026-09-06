@@ -29,6 +29,29 @@ test('Admin Article API uses authenticated Admin client and exact CRUD paths', (
   assert.doesNotMatch(api, /public\/articles|crm|human-consultation|fetch\(/i)
 })
 
+test('Admin Article list presents cover thumbnails and clamps titles without mutating title data', () => {
+  const view = read('src/views/admin/content/AdminArticlesView.vue')
+  const listStart = view.indexOf('<DataTable :value="articles"')
+  const listEnd = view.indexOf('</DataTable>', listStart)
+  assert.ok(listStart >= 0 && listEnd > listStart)
+  const articleList = view.slice(listStart, listEnd)
+
+  assert.match(articleList, /<Column header="封面">/)
+  assert.match(articleList, /v-if="data\.coverImage && !listCoverFailures\.has\(data\.id\)"/)
+  assert.match(articleList, /:src="articleCoverImageUrl\(data\.coverImage\)"/)
+  assert.match(articleList, /@error="listCoverFailures\.add\(data\.id\)"/)
+  assert.match(articleList, /v-else aria-label="未設定封面"/)
+  assert.match(articleList, /class="article-list-title" :title="data\.title">\{\{ data\.title \}\}/)
+  assert.doesNotMatch(articleList, /data\.title\.(?:substring|slice|substr)\(|truncatedTitle/)
+
+  assert.match(view, /\.article-list-cover \{[^}]*width: 80px;[^}]*height: 54px;[^}]*border-radius:/s)
+  assert.match(view, /\.article-list-cover img \{[^}]*object-fit: cover;/s)
+  assert.match(view, /\.article-list-title \{[^}]*overflow: hidden;/s)
+  assert.match(view, /\.article-list-title \{[^}]*-webkit-line-clamp: 2;/s)
+  assert.match(articleList, /@click="openEdit\(data\)"/)
+  assert.match(articleList, /@click="deleteArticle\(data\)"/)
+})
+
 test('Article Admin view exposes six canonical labels and bounded management fields', () => {
   const view = read('src/views/admin/content/AdminArticlesView.vue')
   const categoryMapping = view.slice(view.indexOf('const CATEGORY_LABELS'), view.indexOf('const STATUS_LABELS'))

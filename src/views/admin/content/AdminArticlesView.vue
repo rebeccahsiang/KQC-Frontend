@@ -49,6 +49,7 @@ const coverPickerLoading = ref(false)
 const coverPickerError = ref('')
 const coverImages = ref<ArticleImageItem[]>([])
 const selectedCover = ref<ArticleImageItem | null>(null)
+const listCoverFailures = reactive(new Set<string>())
 const contentMode = ref<'LEGACY' | 'STRUCTURED'>('STRUCTURED')
 const structuredErrors = ref<string[]>([])
 const structuredSurface = ref<'CHOICE' | 'IMPORT' | 'EDITOR'>('CHOICE')
@@ -76,6 +77,7 @@ const backendMessage = (error: unknown) => {
 }
 const loadArticles = async () => {
   loading.value = true; errorMessage.value = ''
+  listCoverFailures.clear()
   try { articles.value = (await adminArticlesApi.list({ page: 1, limit: 25 })).data.articles }
   catch (error) { errorMessage.value = backendMessage(error) }
   finally { loading.value = false }
@@ -188,7 +190,22 @@ onMounted(loadArticles)
     <header><div><p class="eyebrow">Industry Insights</p><h1>文章管理</h1></div><Button label="新增文章" @click="openCreate" /></header>
     <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
     <DataTable :value="articles" :loading="loading" striped-rows empty-message="目前沒有文章">
-      <Column field="title" header="標題" />
+      <Column header="封面">
+        <template #body="{ data }">
+          <div class="article-list-cover">
+            <img
+              v-if="data.coverImage && !listCoverFailures.has(data.id)"
+              :src="articleCoverImageUrl(data.coverImage)"
+              :alt="`${data.title}封面`"
+              @error="listCoverFailures.add(data.id)"
+            >
+            <span v-else aria-label="未設定封面"><Icon icon="lucide:image-off" aria-hidden="true" /></span>
+          </div>
+        </template>
+      </Column>
+      <Column header="標題" style="width: 18rem; max-width: 18rem">
+        <template #body="{ data }"><span class="article-list-title" :title="data.title">{{ data.title }}</span></template>
+      </Column>
       <Column header="分類"><template #body="{ data }"><div class="article-category-tags"><Tag v-for="category in data.categories" :key="category" class="article-category-tag" :value="CATEGORY_LABELS[category as ArticleCategory]" severity="secondary" /></div></template></Column>
       <Column field="creatorDisplayName" header="撰寫人" />
       <Column header="狀態"><template #body="{ data }"><span class="article-status"><Icon :icon="data.status === 'PUBLISHED' ? 'lucide:circle-check' : data.status === 'SCHEDULED' ? 'lucide:calendar-clock' : 'lucide:file-clock'" aria-hidden="true" />{{ STATUS_LABELS[data.status as ArticleStatus] }}</span></template></Column>
@@ -269,6 +286,11 @@ onMounted(loadArticles)
 :global(.article-dialog .p-dialog-content) { min-width: 0; overflow-x: hidden; overflow-y: auto; }
 .article-admin { display: grid; gap: $kqc-spacing-lg; }
 .article-admin > header, .row-actions, .article-form footer { display: flex; align-items: center; justify-content: space-between; gap: $kqc-spacing-sm; }
+.article-list-cover { display: grid; width: 80px; height: 54px; place-items: center; overflow: hidden; border-radius: $kqc-radius-sm; background: var(--bg-main); color: var(--text-muted); }
+.article-list-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.article-list-cover span { display: grid; width: 100%; height: 100%; place-items: center; }
+.article-list-cover svg { width: 1.25rem; height: 1.25rem; }
+.article-list-title { display: -webkit-box; max-width: 18rem; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; line-height: 1.45; text-overflow: ellipsis; }
 h1 { margin: 0; color: var(--text-main); font-size: $kqc-type-section-title; }
 .eyebrow { margin: 0 0 $kqc-spacing-xs; color: var(--accent-active); font-size: $kqc-type-label; font-weight: 700; }
 .article-form { display: grid; width: 100%; min-width: 0; gap: $kqc-spacing-md; overflow-x: hidden; }
