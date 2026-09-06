@@ -25,17 +25,28 @@ test('previously deferred information architecture is visible and non-actionable
     智慧派遣導入: ['派遣平台建置', '派遣平台導入'],
     司機召募: ['立即卡位黃金職缺', '最新職缺'],
     業主專區: ['營業車額徵求', '停車場徵求', '方案 A：精選職缺刊登', '方案 B：顧問委託招募', '方案 C：企業專屬招募系統'],
-    產業分析報告: ['企業價值評估報告', '產業併購策略規劃', '事業轉讓／承購顧問', '協助制定中長期轉型策略規劃'],
   }
   for (const [heading, items] of Object.entries(plannedGroups)) {
     assert.ok(groups.includes(`title: '${heading}'`), heading)
     for (const item of items) assert.ok(groups.includes(`label: '${item}'`), item)
   }
-  assert.equal((groups.match(/type: 'planned', planned: true/g) ?? []).length, 16)
+  assert.equal((groups.match(/type: 'planned', planned: true/g) ?? []).length, 13)
   assert.match(product, /if \(item\.type === 'planned'\) return/)
   assert.match(product, /:disabled="item\.type === 'planned'"/)
   assert.match(product, /<small v-if="item\.planned">規劃中<\/small>/)
   assert.doesNotMatch(groups, /type: 'planned'[^\n]*(?:hash:|route:|to:|href:|api)/i)
+})
+
+test('obsolete industry analysis group is removed while the member area remains canonical', () => {
+  const groups = product.slice(product.indexOf('const marketplaceGroups'), product.indexOf('const publicServices'))
+  assert.doesNotMatch(groups, /id: 'industry-analysis'|title: '產業分析報告'/)
+  for (const label of ['企業價值評估報告', '產業併購策略規劃', '事業轉讓／承購顧問', '協助制定中長期轉型策略規劃']) {
+    assert.doesNotMatch(groups, new RegExp(`label: '${label}'`))
+  }
+  assert.match(groups, /id: 'member-area', title: '會員專區'/)
+  assert.match(groups, /label: 'KQC 定期產業分析報告'[^\n]*type: 'route'[^\n]*routeName: 'MemberIndustryReports'/)
+  assert.match(groups, /label: '我的合作案件'[^\n]*type: 'planned', planned: true/)
+  assert.match(product, /:disabled="item\.type === 'planned'"/)
 })
 
 test('same-page direct cross-route and history hash changes use bounded local scrolling', () => {
@@ -67,7 +78,7 @@ test('Router yields only the two approved Product hashes to the local scroll aut
 
 test('service selection is local presentation state and cannot mutate Marketplace filters or backend data', () => {
   const activation = product.slice(product.indexOf('const activateSidebarItem'), product.indexOf('const isSidebarItemActive'))
-  const serviceBranch = activation.slice(0, activation.indexOf('selectedServiceId.value = null'))
+  const serviceBranch = activation.slice(0, activation.indexOf("if (item.type === 'route')"))
   const serviceConfiguration = product.slice(product.indexOf('const publicServices'), product.indexOf('const selectedService'))
   assert.match(serviceBranch, /item\.type === 'service'[\s\S]*selectedServiceId\.value = item\.id; return/)
   assert.doesNotMatch(serviceBranch, /setFilter|caseStore|fetch|axios|router\.push/)

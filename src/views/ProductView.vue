@@ -16,6 +16,7 @@ type MarketplaceServicePanelData = { id: PublicServiceId; title: string; summary
 type MarketplaceSidebarItem =
   | { id: string; label: string; icon: string; type: 'anchor'; hash: ProductAnchorHash; planned?: false }
   | { id: PublicServiceId; label: string; icon: string; type: 'service'; planned?: boolean }
+  | { id: string; label: string; icon: string; type: 'route'; routeName: 'MemberIndustryReports'; planned?: false }
   | { id: string; label: string; icon: string; type: 'planned'; planned: true }
 
 const route = useRoute()
@@ -61,11 +62,9 @@ const marketplaceGroups: ReadonlyArray<{ id: string; title: string; icon: string
     { id: 'owner-recruitment-plan-b', label: '方案 B：顧問委託招募', icon: 'lucide:users-round', type: 'planned', planned: true },
     { id: 'owner-recruitment-plan-c', label: '方案 C：企業專屬招募系統', icon: 'lucide:building-cog', type: 'planned', planned: true },
   ] },
-  { id: 'industry-analysis', title: '產業分析報告', icon: 'lucide:chart-no-axes-column-increasing', items: [
-    { id: 'enterprise-valuation-report', label: '企業價值評估報告', icon: 'lucide:file-chart-column', type: 'planned', planned: true },
-    { id: 'industry-ma-strategy', label: '產業併購策略規劃', icon: 'lucide:git-merge', type: 'planned', planned: true },
-    { id: 'business-transfer-advisory', label: '事業轉讓／承購顧問', icon: 'lucide:handshake', type: 'planned', planned: true },
-    { id: 'transformation-strategy', label: '協助制定中長期轉型策略規劃', icon: 'lucide:chart-spline', type: 'planned', planned: true },
+  { id: 'member-area', title: '會員專區', icon: 'lucide:user-round', items: [
+    { id: 'member-industry-reports', label: 'KQC 定期產業分析報告', icon: 'lucide:notebook-text', type: 'route', routeName: 'MemberIndustryReports' },
+    { id: 'member-collaboration-cases', label: '我的合作案件', icon: 'lucide:briefcase-business', type: 'planned', planned: true },
   ] },
 ]
 const publicServices: Record<PublicServiceId, MarketplaceServicePanelData> = {
@@ -98,6 +97,7 @@ const scrollToProductHash = async (hash: string) => {
 const activateSidebarItem = async (item: MarketplaceSidebarItem) => {
   if (item.type === 'planned') return
   if (item.type === 'service') { selectedServiceId.value = item.id; return }
+  if (item.type === 'route') { await router.push({ name: item.routeName }); return }
   selectedServiceId.value = null
   if (route.hash === item.hash) await scrollToProductHash(item.hash)
   else await router.push({ name: 'Products', query: route.query, hash: item.hash })

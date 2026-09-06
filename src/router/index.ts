@@ -42,6 +42,26 @@ const routes: RouteRecordRaw[] = [
       title: '登入中的裝置 - 三爵資訊 KQC'
     }
   },
+  {
+    path: '/account/industry-reports',
+    name: 'MemberIndustryReports',
+    component: () => import('@/views/account/IndustryReportsView.vue'),
+    meta: {
+      requiresAuth: true,
+      authPortal: 'frontend',
+      title: 'KQC 定期產業分析報告 - 三爵資訊 KQC'
+    }
+  },
+  {
+    path: '/account/industry-reports/:slug',
+    name: 'MemberIndustryReportDetail',
+    component: () => import('@/views/account/IndustryReportDetailView.vue'),
+    meta: {
+      requiresAuth: true,
+      authPortal: 'frontend',
+      title: '產業分析報告閱讀 - 三爵資訊 KQC'
+    }
+  },
   { path: '/design-system', name: 'DesignSystem', component: () => import('@/views/DesignSystemView.vue'), meta: { title: 'Design System - 三爵鋼鐵藍 × 琥珀金 Token 展示' } },
   {
     path: '/admin',
