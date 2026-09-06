@@ -1,0 +1,1 @@
+import{t as e}from"./axios-DDpStBLg.js";var t=e=>{if(!e||/^https?:\/\//i.test(e))return e;let t=`https://kqc-backend.onrender.com/api`;return/^https?:\/\//i.test(t)?new URL(e,t).toString():e},n={list:()=>e.get(`/v1/member/industry-reports`,{params:{page:1,limit:100}}),detail:t=>e.get(`/v1/member/industry-reports/${encodeURIComponent(t)}`)};export{n,t};
