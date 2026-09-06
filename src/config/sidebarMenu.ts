@@ -65,6 +65,7 @@ export const sidebarMenu: SidebarMenuItem[] = [
     children: [
       { id: 'articles', title: '文章管理', icon: 'lucide:newspaper', path: '/admin/content/articles', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
       { id: 'article-images', title: '文章圖片', icon: 'lucide:images', path: '/admin/content/article-images', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
+      { id: 'industry-reports', title: '產業分析報告', icon: 'lucide:file-chart-column', path: '/admin/content/industry-reports', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] },
       { id: 'related-links', title: '相關連結', icon: 'lucide:link', disabled: true, capabilities: ['PLATFORM_MANAGER', 'ADMIN'] }
     ]
   },

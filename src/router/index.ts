@@ -73,6 +73,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'content/articles', name: 'AdminArticles', component: () => import('@/views/admin/content/AdminArticlesView.vue'), meta: { title: '文章管理', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
       // D2F-B — Article Image Library Route
       { path: 'content/article-images', name: 'AdminArticleImages', component: () => import('@/views/admin/content/AdminArticleImagesView.vue'), meta: { title: '文章圖片', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
+      { path: 'content/industry-reports', name: 'AdminIndustryReports', component: () => import('@/views/admin/content/AdminIndustryReportsView.vue'), meta: { title: '產業分析報告', capabilities: ['PLATFORM_MANAGER', 'ADMIN'] } },
       {
         path: 'users',
         name: 'AdminUserManagement',
