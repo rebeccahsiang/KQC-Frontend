@@ -43,3 +43,17 @@ test('capability changes clear incompatible placement and dialog lifecycle reset
   const createInvitation = view.slice(createStart, createEnd)
   assert.match(createInvitation, /resetForm\(\)[\s\S]*dialogVisible\.value = false/)
 })
+
+test('invitation actions render only for pending and expired lifecycle states', () => {
+  const view = read('src/views/admin/invitations/AdminInvitationsView.vue')
+  const actionColumnStart = view.indexOf('<Column header="操作">')
+  const actionColumnEnd = view.indexOf('</Column>', actionColumnStart)
+  assert.ok(actionColumnStart >= 0 && actionColumnEnd > actionColumnStart)
+  const actionColumn = view.slice(actionColumnStart, actionColumnEnd)
+
+  assert.match(actionColumn, /v-if="\['pending', 'expired'\]\.includes\(data\.status\)"/)
+  assert.match(actionColumn, /<Button label="重寄" text @click="resend\(data\.id\)" \/>/)
+  assert.match(actionColumn, /<Button label="撤銷" text severity="danger" @click="revoke\(data\.id\)" \/>/)
+  assert.match(actionColumn, /<span v-else aria-label="無可用操作">—<\/span>/)
+  assert.doesNotMatch(actionColumn, /:disabled=/)
+})

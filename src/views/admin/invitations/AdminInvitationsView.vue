@@ -99,7 +99,15 @@ onMounted(load)
       <Column field="name" header="姓名" /><Column field="email" header="Email" />
       <Column header="Staff Capabilities"><template #body="{ data }"><Tag v-for="item in data.capabilities" :key="item" :value="CAPABILITY_LABELS[item as Capability]" class="tag" /></template></Column>
       <Column field="status" header="狀態" /><Column field="expiresAt" header="到期時間" />
-      <Column header="操作"><template #body="{ data }"><Button label="重寄" text :disabled="!['pending', 'expired'].includes(data.status)" @click="resend(data.id)" /><Button label="撤銷" text severity="danger" :disabled="data.status !== 'pending'" @click="revoke(data.id)" /></template></Column>
+      <Column header="操作">
+        <template #body="{ data }">
+          <template v-if="['pending', 'expired'].includes(data.status)">
+            <Button label="重寄" text @click="resend(data.id)" />
+            <Button label="撤銷" text severity="danger" @click="revoke(data.id)" />
+          </template>
+          <span v-else aria-label="無可用操作">—</span>
+        </template>
+      </Column>
     </DataTable>
     <Dialog v-model:visible="dialogVisible" modal header="建立 Staff Invitation" :style="{ width: 'min(38rem, calc(100vw - 2rem))' }" @hide="resetForm">
       <div class="form-grid"><label>姓名<InputText v-model="form.name" /></label><label>Email<InputText v-model="form.email" type="email" /></label>
