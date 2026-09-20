@@ -9,7 +9,6 @@ test('summary foundation uses the Industry Statistics API and remains isolated f
   const component = read('src/components/home/IndustryStatisticsSummary.vue')
   const api = read('src/api/industryStatistics.ts')
   const home = read('src/views/HomeView.vue')
-  const section = read('src/components/home/HomeIndustryWeatherSection.vue')
   const weather = read('src/components/home/IndustryWeatherCard.vue')
 
   assert.match(component, /from ['"]@\/api\/industryStatistics['"]/) 
@@ -17,7 +16,6 @@ test('summary foundation uses the Industry Statistics API and remains isolated f
   assert.doesNotMatch(component, /industryWeatherApi|\/public\/industry-weather|stat\.thb\.gov\.tw|fetch\(/)
   assert.doesNotMatch(api, /stat\.thb\.gov\.tw|fetch\(/)
   assert.doesNotMatch(home, /IndustryStatisticsSummary/)
-  assert.doesNotMatch(section, /IndustryStatisticsSummary/)
   assert.match(weather, /industryWeatherApi\.get\(\)/)
 })
 

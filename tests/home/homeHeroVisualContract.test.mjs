@@ -43,7 +43,7 @@ test('Home keeps Hero immediately before the separate Industry Weather section',
   const weather = home.indexOf('<HomeIndustryWeatherSection')
   assert.ok(hero >= 0 && weather > hero)
   assert.equal((home.slice(hero, weather).match(/<Home[A-Z]/g) || []).length, 1)
-  assert.match(read('src/components/home/HomeIndustryWeatherSection.vue'), /<IndustryWeatherCard\s*\/>/)
+  assert.match(read('src/components/home/HomeIndustryWeatherSection.vue'), /<IndustryStatisticsSummary\s*\/>/)
 })
 
 test('Hero and transition introduce neither government nor Backend access', () => {

@@ -16,10 +16,11 @@ test('HomeView composes bounded homepage sections', () => {
   assert.doesNotMatch(home, /<Swiper|accordionItems|customerTargets|latestInsights|bannerSlides/)
 })
 
-test('industry weather remains owned by the existing card contract', () => {
+test('homepage Industry Weather section mounts the official summary foundation', () => {
   const section = read('src/components/home/HomeIndustryWeatherSection.vue')
-  assert.match(section, /IndustryWeatherCard/)
-  assert.doesNotMatch(section, /industryWeatherApi|sourceStatus|HOT|COOLING/)
+  assert.match(section, /IndustryStatisticsSummary/)
+  assert.match(section, /<IndustryStatisticsSummary\s*\/>/)
+  assert.doesNotMatch(section, /IndustryWeatherCard|industryWeatherApi|sourceStatus|HOT|COOLING/)
 })
 
 test('promo, unused services and insights keep explicit placeholder ownership while personas use their bounded foundation', () => {
