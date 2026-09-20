@@ -245,3 +245,26 @@ onUnmounted(() => window.removeEventListener('keydown', handleEscape))
     </Transition>
   </div>
 </template>
+
+<style scoped lang="scss">
+@media (min-width: 641px) {
+  .fixed-right-widget-panel .widget-icon-bar .widget-tab-btn {
+    // Preserve HEAD's button typography without inheriting public control sizing.
+    min-height: 0;
+    min-width: 4rem;
+    padding: 8px 8px;
+    font-size: 1rem;
+    line-height: 1.6;
+
+    .tab-label { line-height: 1.4; }
+  }
+}
+
+// Restore the existing dock and its panels only on the homepage's narrow desktop.
+@media (min-width: 641px) and (max-width: 768px) {
+  // The complete selector belongs inside :global(), including its target.
+  :global(.public-layout:has(.kqc-home-wrapper) .home-service-workspace) { display: block; }
+  :global(.public-layout:has(.kqc-home-wrapper) .fixed-right-widget-panel),
+  :global(.public-layout:has(.kqc-home-wrapper) .home-service-panel) { display: flex; }
+}
+</style>
