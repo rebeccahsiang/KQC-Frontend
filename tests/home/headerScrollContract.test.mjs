@@ -37,13 +37,13 @@ test('compact header remains navigable and the mobile header stays usable', () =
   assert.doesNotMatch(compactPosition, /display:\s*none|visibility:\s*hidden|opacity:\s*0|translateY/)
   assert.match(header, /\.is-compact[\s\S]*\.compact-brand-link[\s\S]*display: inline-flex/)
   assert.match(header, /\.compact-nav-links[\s\S]*display: flex/)
-  assert.match(header, /@media \(max-width: 768px\)[\s\S]*\.header-section-a\.is-collapsed[\s\S]*visibility: visible/)
+  assert.match(header, /@media \(max-width: 640px\)[\s\S]*\.header-section-a\.is-collapsed[\s\S]*visibility: visible/)
   assert.match(header, /active-class="nav-item--active"/)
 })
 
 test('mobile navigation stays in flow above the utility and search surface', () => {
   const header = read('src/components/layout/FrontHeader.vue')
-  const mobileStart = header.indexOf('@media (max-width: 768px)')
+  const mobileStart = header.indexOf('@media (max-width: 640px)')
   const mobileEnd = header.indexOf('@media (prefers-reduced-motion: reduce)', mobileStart)
   const mobile = header.slice(mobileStart, mobileEnd)
 

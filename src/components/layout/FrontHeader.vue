@@ -329,6 +329,7 @@ const handleSearch = (): void => {
 
 .market-ticker-wrapper {
   flex: 1;
+  min-width: 0;
   max-width: 45rem;
   background-color: var(--bg-main);
   border: 1px solid var(--border-line, var(--border-grey));
@@ -380,6 +381,10 @@ const handleSearch = (): void => {
   flex-shrink: 0;
 
   .nav-item {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    white-space: nowrap;
     color: var(--text-primary);
     text-decoration: none;
     padding: 0.25rem 0;
@@ -407,8 +412,8 @@ const handleSearch = (): void => {
 
 .mobile-nav-toggle {
   display: none;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   place-items: center;
   border: 1px solid var(--border-line);
   border-radius: 0.5rem;
@@ -441,7 +446,7 @@ const handleSearch = (): void => {
 
 .is-compact {
   .header-section-b { padding-block: 0.45rem; }
-  .header-inner-b { max-width: 1340px; }
+  .header-inner-b { max-width: 1340px; flex-wrap: nowrap; }
   .compact-brand-link {
     display: inline-flex;
     align-items: center;
@@ -524,6 +529,9 @@ const handleSearch = (): void => {
   flex-shrink: 0;
 
   .control-btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    justify-content: center;
     padding: 0.4375rem;
     border-radius: 0.5rem;
     background-color: var(--bg-main);
@@ -541,8 +549,8 @@ const handleSearch = (): void => {
 
     .control-icon,
     .theme-icon {
-      width: 0.9375rem;
-      height: 0.9375rem;
+      width: 1.25rem;
+      height: 1.25rem;
     }
 
     .theme-icon {
@@ -591,10 +599,97 @@ const handleSearch = (): void => {
   gap: 0.5rem;
 }
 
-.user-name-badge { white-space: nowrap; }
+.user-name-badge { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .staff-entry-btn { min-height: 2.5rem; text-decoration: none; white-space: nowrap; }
 
-@media (max-width: 768px) {
+@media (min-width: 641px) {
+  // Keep each complete homepage selector inside :global() so its target is preserved.
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header.is-compact .compact-brand-link > span) {
+    margin-bottom: 0;
+  }
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header .market-ticker-wrapper) {
+    padding-block: 0.25rem;
+  }
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header .market-ticker-wrapper :is(.ticker-badge, .ping-dot, .ticker-text)) {
+    margin-bottom: 0;
+  }
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header .ticker-text) {
+    vertical-align: middle;
+  }
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header .search-input-group) {
+    padding-block: 0.25rem;
+  }
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header .search-input-group .search-input) {
+    min-height: 0;
+  }
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header .action-controls .control-btn:is(.theme-btn, .faq-btn, .bell-btn, .login-btn)) {
+    background-color: transparent;
+    border-color: transparent;
+  }
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header .action-controls .control-btn:is(.theme-btn, .faq-btn, .bell-btn, .login-btn):hover) {
+    background-color: color-mix(in srgb, var(--text-main) 6%, transparent);
+    border-color: var(--border-line);
+  }
+
+  .is-compact {
+    .header-inner-b {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+    }
+    .compact-brand-link { grid-column: 1; justify-self: start; }
+    .compact-nav-links { grid-column: 2; justify-self: center; }
+    .action-controls { grid-column: 3; justify-self: end; }
+
+    .action-controls .control-btn:is(.theme-btn, .faq-btn, .bell-btn, .login-btn) {
+      // HEAD icon + two padding edges + two border edges.
+      box-sizing: border-box;
+      width: calc(0.9375rem + 0.875rem + 2px);
+      height: calc(0.9375rem + 0.875rem + 2px);
+      flex: 0 0 auto;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+  }
+
+  .action-controls .control-btn:is(.theme-btn, .faq-btn, .bell-btn, .login-btn) {
+    min-width: 0;
+    min-height: 0;
+
+    .control-icon,
+    .theme-icon {
+      width: 0.9375rem;
+      height: 0.9375rem;
+    }
+  }
+}
+
+// Narrow desktop adaptation only; wider desktop geometry follows HEAD.
+@media (min-width: 641px) and (max-width: 768px) {
+  .market-ticker-wrapper { display: none; }
+  .header-inner-a, .header-inner-b { padding-inline: 0.75rem; gap: 0.75rem; }
+  .brand-link .brand-subtitle { display: none; }
+  .brand-link .brand-logo-badge { width: 3rem; height: 3rem; }
+  .main-nav-links { gap: 0.75rem; }
+  .is-compact {
+    .header-inner-b { padding-inline: 0.5rem; gap: 0.375rem; }
+    .compact-brand-link { flex-shrink: 0; }
+    .user-name-badge,
+    .staff-entry-btn > span { display: none; }
+    .compact-nav-links { gap: 0.375rem; }
+    .action-controls { flex-basis: auto; }
+    .action-controls, .user-profile-menu { gap: 0.25rem; }
+  }
+}
+
+@media (min-width: 768px) and (max-width: 768px) {
+  :global(.public-layout:has(.kqc-home-wrapper) .kqc-sticky-header:not(.is-compact) .header-section-a .market-ticker-wrapper) {
+    display: flex;
+  }
+}
+
+// Only narrow tablet/mobile viewports collapse the primary links.
+@media (max-width: 640px) {
   .kqc-sticky-header.is-compact { position: sticky; top: 1rem; left: auto; margin: 0 auto; transform: none; }
   .header-section-a, .header-section-a.is-collapsed { max-height: none !important; overflow: visible; }
   .header-section-a.is-collapsed { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; border-bottom-color: var(--border-line, var(--border-grey)) !important; }
