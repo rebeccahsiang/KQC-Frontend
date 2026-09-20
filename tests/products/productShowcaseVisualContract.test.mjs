@@ -31,15 +31,17 @@ test('Marketplace sidebar follows Admin expanded and collapsed dimensions with i
 /* PRODUCT-SHOWCASE-UI-R2D — Marketplace Sidebar Accordion / canonical defaults and accessible local controls. */
 test('completed and planned Marketplace groups use independent accessible accordions with bounded child controls', () => {
   for (const label of ['運輸業買賣媒合', '交通運輸運營服務', '商品案件', '過戶流程', '營業用車額買賣', '停車位證明申辦', '車險與產險顧問對接']) assert.match(product, new RegExp(label))
-  assert.equal((product.match(/title: '(?:運輸業買賣媒合|交通運輸運營服務|專屬形象網站|智慧派遣導入|司機召募|業主專區|產業分析報告)'/g) ?? []).length, 7)
+  const marketplaceGroupIds = ['asset-matching', 'transport-operations', 'websites', 'dispatch', 'driver-recruiting', 'owner-services', 'member-area']
+  for (const id of marketplaceGroupIds) assert.match(product, new RegExp(`id: '${id}', title:`))
+  assert.equal((product.match(/id: '(?:asset-matching|transport-operations|websites|dispatch|driver-recruiting|owner-services|member-area)', title:/g) ?? []).length, 7)
   for (const obsolete of ['資產買賣媒合', '誠意｜買家委託', '精選｜賣家案件', '特約公證處', '代書流程把關']) assert.doesNotMatch(product, new RegExp(obsolete))
   assert.match(product, /expandedMarketplaceGroups = ref\(new Set\(\['asset-matching', 'transport-operations'\]\)\)/)
   assert.match(product, /toggleMarketplaceGroup\(group\.id\)/)
   assert.match(product, /:aria-expanded="isMarketplaceGroupExpanded\(group\.id\)"/)
   assert.match(product, /:aria-controls="`marketplace-group-\$\{group\.id\}`"/)
   assert.match(product, /lucide:chevron-up[\s\S]*lucide:chevron-down/)
-  assert.match(product, /service-group__toggle[\s\S]*font-size: \.82rem/)
-  assert.match(product, /service-group__children li[\s\S]*font-size: \.76rem/)
+  assert.match(product, /service-group__toggle[\s\S]*font-size: var\(--public-type-action, \.82rem\)/)
+  assert.match(product, /service-group__children li[\s\S]*font-size: var\(--public-type-body-small, \.76rem\)/)
   assert.match(product, /<button type="button" class="service-item-button"[\s\S]*:aria-current="isSidebarItemActive\(item\) \? 'location' : undefined"[\s\S]*@click="activateSidebarItem\(item\)"/)
   assert.match(product, /v-if="!isMarketplaceSidebarCollapsed" v-show="isMarketplaceGroupExpanded\(group\.id\)"/)
   assert.match(product, /v-else class="service-group__compact-icon"/)
@@ -95,18 +97,18 @@ test('dense card hierarchy promotes title above secondary case id and anchors it
 })
 
 /* PRODUCT-SHOWCASE-UI-R4D — CaseCard Typography Readability / bounded minimums protect secondary copy without changing layout or CTA authority. */
-test('CaseCard secondary information has readable hierarchy while clamps and CTA sizing stay stable', () => {
+test('CaseCard shares public typography while preserving clamps and enlarging CTA targets', () => {
   const typographyStart = card.indexOf('PRODUCT-SHOWCASE-UI-R4D — CaseCard Typography Readability')
   const typographyBoundary = card.slice(typographyStart, card.indexOf('@media (max-width: 380px)', typographyStart))
   assert.ok(typographyStart >= 0)
-  assert.match(typographyBoundary, /\.case-number, \.category \{ font-size: \.8125rem; \}/)
-  assert.match(typographyBoundary, /\.market-meta \{ font-size: \.875rem; line-height: 1\.5; \}/)
-  assert.match(typographyBoundary, /\.need-label \{ font-size: \.8125rem; \}/)
-  assert.match(typographyBoundary, /\.need-block p \{ font-size: \.875rem; line-height: 1\.55; \}/)
-  assert.match(typographyBoundary, /\.price-block span \{ font-size: \.8125rem; \}/)
-  assert.match(typographyBoundary, /\.price-block strong \{ font-size: \.90625rem; font-weight: 800; line-height: 1\.3; \}/)
+  assert.match(typographyBoundary, /\.case-number, \.category \{ font-size: var\(--public-type-body-small, \.8125rem\); \}/)
+  assert.match(typographyBoundary, /\.market-meta \{ font-size: var\(--public-type-caption, \.875rem\); line-height: 1\.5; \}/)
+  assert.match(typographyBoundary, /\.need-label \{ font-size: var\(--public-type-caption, \.8125rem\); \}/)
+  assert.match(typographyBoundary, /\.need-block p \{ font-size: var\(--public-type-body-small, \.875rem\); line-height: 1\.7; \}/)
+  assert.match(typographyBoundary, /\.price-block span \{ font-size: var\(--public-type-body-small, \.8125rem\); \}/)
+  assert.match(typographyBoundary, /\.price-block strong \{ font-size: var\(--public-type-card-title, \.90625rem\); font-weight: 800; line-height: 1\.3; \}/)
   assert.match(card, /\.need-block p[\s\S]*-webkit-line-clamp: 2/)
-  assert.match(card, /\.intent-link \{[^}]*min-height: 2rem[^}]*font-size: \.64rem/)
+  assert.match(card, /\.intent-link \{[^}]*min-height: var\(--public-control-sm\)[^}]*font-size: var\(--public-type-action, \.64rem\)/)
 })
 
 /* PRODUCT-ADVERTISEMENT-R3 — Public Advertisement Visual Contract / creative tokens stay independent from BUY/SELL identity. */

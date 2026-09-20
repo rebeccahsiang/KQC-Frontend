@@ -67,10 +67,10 @@ test('compact consultant action replaces the large workspace CTA without changin
   assert.match(toolbar, /<router-link to="\/contact" class="consultant-entry">/)
   assert.match(toolbar, /lucide:messages-square[\s\S]*聯絡 KQC 顧問[\s\S]*精準媒合・加速成交[\s\S]*lucide:chevron-right/)
   assert.doesNotMatch(product, /class="marketplace-cta"|KQC MATCH/)
-  assert.match(product, /grid-template-columns: minmax\(max-content, 1fr\) auto minmax\(max-content, 1fr\)/)
+  assert.match(product, /grid-template-columns: minmax\(0, 1fr\) auto minmax\(0, 1fr\)/)
   assert.match(product, /consultant-entry[^}]*justify-self: end/)
   assert.doesNotMatch(product, /@media \(max-width: 1180px\)[\s\S]*filter-tabs[^}]*grid-row: 2/)
-  assert.match(product, /@media \(max-width: 960px\)[\s\S]*filter-tabs[^}]*grid-row: 2/)
+  assert.match(product, /@media \(max-width: 1280px\)[\s\S]*filter-tabs[^}]*grid-row: 2/)
   assert.match(product, /@media \(max-width: 820px\)[\s\S]*product-toolbar[^}]*grid-template-columns: 1fr/)
 })
 
