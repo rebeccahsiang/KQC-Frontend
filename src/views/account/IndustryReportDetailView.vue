@@ -96,10 +96,10 @@ watch(slug, loadReport, { immediate: true })
 .member-report-article__cover img { width: 100%; height: 100%; object-fit: contain; background: #eef2f5; }
 .member-report-article__cover > svg { width: 3rem; height: 3rem; }
 .member-report-article header { padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 5vw, 4rem) 1.5rem; }
-.member-report-article time { color: #7a8795; font-size: .85rem; }
+.member-report-article time { color: #7a8795; font-size: var(--public-type-caption, .85rem); }
 .member-report-article h1 { margin: .7rem 0 1rem; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.25; }
-.member-report-article header p { margin: 0; color: #5f6f82; font-size: 1.05rem; line-height: 1.8; }
-.member-report-article__content { padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(2rem, 6vw, 4.5rem); color: #26384d; font-size: 1rem; line-height: 1.95; white-space: pre-wrap; overflow-wrap: anywhere; }
+.member-report-article header p { margin: 0; color: #5f6f82; font-size: var(--public-type-body, 1.05rem); line-height: 1.8; }
+.member-report-article__content { padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(2rem, 6vw, 4.5rem); color: #26384d; font-size: var(--public-type-body, 1rem); line-height: 1.95; white-space: pre-wrap; overflow-wrap: anywhere; }
 .member-report-detail__state { display: grid; min-height: 22rem; place-items: center; align-content: center; gap: .7rem; border: 1px solid #dce4eb; border-radius: 1rem; background: #fff; text-align: center; }
 .member-report-detail__state > svg { width: 2.4rem; height: 2.4rem; color: #97701c; }
 .member-report-detail__state h1, .member-report-detail__state p { margin: 0; }

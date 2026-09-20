@@ -288,7 +288,7 @@ onUnmounted(() => {
   font-family: 'DM Sans', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
 
   .kqc-select-label {
-    font-size: 0.875rem;
+    font-size: var(--public-type-caption, 0.875rem);
     font-weight: 600;
     color: var(--kqc-text-main);
     margin-bottom: 6px;
@@ -324,7 +324,7 @@ onUnmounted(() => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.95rem;
+    font-size: var(--public-type-body-small, 0.95rem);
 
     .selected-text {
       color: var(--kqc-text-main);
@@ -352,7 +352,7 @@ onUnmounted(() => {
       color: var(--kqc-text-muted);
       cursor: pointer;
       border-radius: 50%;
-      font-size: 0.85rem;
+      font-size: var(--public-type-action, 0.85rem);
 
       &:hover {
         color: var(--kqc-danger);
@@ -396,7 +396,7 @@ onUnmounted(() => {
         border: none;
         background: transparent;
         outline: none;
-        font-size: 0.875rem;
+        font-size: var(--public-type-body-small, 0.875rem);
         color: var(--kqc-text-main);
 
         &::placeholder {
@@ -435,13 +435,13 @@ onUnmounted(() => {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.9rem;
+        font-size: var(--public-type-body-small, 0.9rem);
         color: var(--kqc-text-main);
       }
 
       .option-desc {
         margin: 2px 0 0 0;
-        font-size: 0.75rem;
+        font-size: var(--public-type-body-small, 0.75rem);
         color: var(--kqc-text-muted);
       }
 
@@ -473,7 +473,7 @@ onUnmounted(() => {
       padding: 20px;
       text-align: center;
       color: var(--kqc-text-muted);
-      font-size: 0.875rem;
+      font-size: var(--public-type-body-small, 0.875rem);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -486,7 +486,7 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     padding: 2px 6px;
-    font-size: 0.7rem;
+    font-size: var(--public-type-caption, 0.7rem);
     font-weight: 600;
     border-radius: 4px;
     background-color: var(--kqc-accent);
@@ -494,9 +494,9 @@ onUnmounted(() => {
   }
 
   /* 尺寸變體 (Sizes) */
-  &.size-sm .kqc-select-trigger { height: 36px; font-size: 0.85rem; }
-  &.size-md .kqc-select-trigger { height: 44px; font-size: 0.95rem; }
-  &.size-lg .kqc-select-trigger { height: 52px; font-size: 1.05rem; }
+  &.size-sm .kqc-select-trigger { height: 36px; font-size: var(--public-type-body-small, 0.85rem); }
+  &.size-md .kqc-select-trigger { height: 44px; font-size: var(--public-type-body-small, 0.95rem); }
+  &.size-lg .kqc-select-trigger { height: 52px; font-size: var(--public-type-body, 1.05rem); }
 
   /* 開啟狀態動態 */
   &.is-open {
@@ -526,7 +526,7 @@ onUnmounted(() => {
     }
     .kqc-select-error-msg {
       margin-top: 4px;
-      font-size: 0.75rem;
+      font-size: var(--public-type-body-small, 0.75rem);
       color: var(--kqc-danger);
       display: flex;
       align-items: center;

@@ -561,7 +561,7 @@ const handleForgotPassword = async () => {
     right: 1rem;
     background: transparent;
     border: none;
-    font-size: 1.25rem;
+    font-size: var(--public-type-action, 1.25rem);
     color: #64748b;
     cursor: pointer;
     transition: color 0.2s ease;
@@ -582,20 +582,20 @@ const handleForgotPassword = async () => {
     background-color: #eab308;
     color: #1e293b;
     font-weight: 700;
-    font-size: 0.875rem;
+    font-size: var(--public-type-caption, 0.875rem);
     border-radius: 9999px;
     margin-bottom: 0.5rem;
   }
 
   h2 {
-    font-size: 1.5rem;
+    font-size: var(--public-type-card-title, 1.5rem);
     font-weight: 700;
     color: #1e293b;
     margin: 0 0 0.35rem 0;
   }
 
   p {
-    font-size: 0.875rem;
+    font-size: var(--public-type-body-small, 0.875rem);
     color: #64748b;
     margin: 0;
   }
@@ -612,7 +612,7 @@ const handleForgotPassword = async () => {
     gap: 0.4rem;
 
     label {
-      font-size: 0.85rem;
+      font-size: var(--public-type-caption, 0.85rem);
       font-weight: 600;
       color: #1e293b;
 
@@ -651,7 +651,7 @@ const handleForgotPassword = async () => {
   align-items: center;
   gap: 0.4rem;
   margin-top: 1.5rem;
-  font-size: 0.875rem;
+  font-size: var(--public-type-body-small, 0.875rem);
   color: #64748b;
 }
 
@@ -659,7 +659,7 @@ const handleForgotPassword = async () => {
   background: none;
   border: none;
   padding: 0;
-  font-size: 0.875rem;
+  font-size: var(--public-type-action, 0.875rem);
   cursor: pointer;
 
   &.text-link {
@@ -701,7 +701,7 @@ const handleForgotPassword = async () => {
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: var(--public-type-body-small, 0.9rem);
       color: #64748b;
       transition: all 0.2s ease;
 
@@ -713,7 +713,7 @@ const handleForgotPassword = async () => {
     }
 
     .step-label {
-      font-size: 0.75rem;
+      font-size: var(--public-type-caption, 0.75rem);
       color: #64748b;
       font-weight: 500;
     }
@@ -732,7 +732,7 @@ const handleForgotPassword = async () => {
 
     .interest-chip {
       width: 100%;
-      font-size: 0.85rem;
+      font-size: var(--public-type-body-small, 0.85rem);
       justify-content: center;
     }
   }
@@ -757,13 +757,13 @@ const handleForgotPassword = async () => {
     }
 
     h3 {
-      font-size: 1.25rem;
+      font-size: var(--public-type-card-title, 1.25rem);
       color: #1e293b;
       margin-bottom: 0.35rem;
     }
 
     p {
-      font-size: 0.875rem;
+      font-size: var(--public-type-body-small, 0.875rem);
       color: #64748b;
     }
   }
@@ -781,7 +781,7 @@ const handleForgotPassword = async () => {
     border: 1px solid #e2e8f0;
     background: #f8fafc;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: var(--public-type-action, 0.85rem);
     color: #64748b;
     cursor: pointer;
     display: flex;

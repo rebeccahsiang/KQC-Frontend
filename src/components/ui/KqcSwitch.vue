@@ -91,7 +91,7 @@ const handleChange = (e: Event) => {
   }
 
   &__label {
-    font-size: 14px;
+    font-size: var(--public-type-caption, 14px);
     font-weight: 600;
     color: var(--kqc-text-main);
   }

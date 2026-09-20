@@ -176,12 +176,12 @@ onBeforeUnmount(() => {
 .article-detail__hero-copy { position: absolute; z-index: 2; top: 50%; left: 50%; display: grid; width: min(38rem, calc(100% - 3rem)); justify-items: center; gap: $kqc-spacing-sm; color: #fff; text-align: center; transform: translate(-50%, -50%); text-shadow: 0 2px 16px rgb(0 0 0 / 35%); }
 .article-detail__hero-copy span { padding: $kqc-spacing-2xs $kqc-spacing-sm; border-radius: $kqc-radius-full; background: rgb(255 255 255 / 14%); color: #fff; opacity: 0.32; font-size: $kqc-type-caption; font-weight: 600; letter-spacing: 0.06em; }
 .article-detail__hero-copy strong { font-size: clamp(1.5rem, 3.2vw, 2.75rem); line-height: 1.35; }
-.article-detail__reading { display: grid; width: min(100%, 52rem); margin-inline: auto; gap: $kqc-spacing-lg; }
+.article-detail__reading { display: grid; width: min(100%, var(--public-reading-width)); margin-inline: auto; gap: $kqc-spacing-lg; }
 .article-detail__hero + .article-detail__reading { margin-top: clamp(1.5rem, 3vw, 2.75rem); }
 .article-detail__header { display: grid; min-width: 0; gap: $kqc-spacing-sm; }
 .article-detail__categories, .article-detail__tags { display: flex; flex-wrap: wrap; gap: $kqc-spacing-xs; }
 .article-detail__categories span, .article-detail__tags span { padding: $kqc-spacing-2xs $kqc-spacing-sm; border-radius: $kqc-radius-full; background: color-mix(in srgb, var(--accent-active) 12%, transparent); color: var(--accent-active); font-size: $kqc-type-metadata; font-weight: 700; }
-.article-detail__header h1 { max-width: 100%; margin: 0; overflow-wrap: anywhere; font-size: clamp(2rem, 4.5vw, 3.25rem); line-height: 1.22; }
+.article-detail__header h1 { max-width: 100%; margin: 0; overflow-wrap: anywhere; font-size: var(--public-type-page-title); line-height: 1.22; }
 .article-detail__header time { color: var(--text-muted); font-size: $kqc-type-metadata; }
 /* Industry Insights / Article Detail Body / WEB-1F-D2C / WEB-1F-D2C-P1 */
 .article-detail__body { overflow-wrap: anywhere; color: var(--text-main); font-size: $kqc-type-body-emphasis; line-height: 1.9; white-space: pre-wrap; }
@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
   .article-detail__hero, .article-detail__hero-skeleton { height: clamp(12.5rem, 54vw, 16rem); border-radius: $kqc-radius-lg; }
   .article-detail__hero-copy { width: calc(100% - 3rem); }
   .article-detail__hero-copy strong { font-size: clamp(1.35rem, 6.5vw, 2rem); }
-  .article-detail__header h1 { font-size: clamp(1.8rem, 8vw, 2.35rem); }
+  .article-detail__header h1 { font-size: var(--public-type-page-title); }
   .article-detail__body { font-size: $kqc-type-body; line-height: 1.8; }
   .article-detail__breadcrumb li[aria-current='page'] { max-width: 42vw; }
 }

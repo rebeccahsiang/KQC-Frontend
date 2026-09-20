@@ -39,7 +39,7 @@ header, footer, .weather-status, em { display: flex; align-items: center; } head
 h2 { margin: .2rem 0 0; font-size: $kqc-type-card-title; } .eyebrow { color: var(--accent-gold); font-size: $kqc-type-caption; font-weight: 700; letter-spacing: .08em; }
 .weather-status { gap: .35rem; padding: .4rem .65rem; border-radius: 999px; font-size: $kqc-type-label; font-weight: 700; background: var(--bg-main); }
 .indicator-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .65rem; } article { min-width: 0; padding: .75rem; border-radius: .75rem; background: var(--bg-main); }
-article > span { display: block; min-height: 2.2em; color: var(--text-muted); font-size: $kqc-type-metadata; } strong { display: block; margin: .35rem 0; font-size: 1.05rem; } small { color: var(--text-muted); font-size: $kqc-type-caption; }
+article > span { display: block; min-height: 2.2em; color: var(--text-muted); font-size: $kqc-type-metadata; } strong { display: block; margin: .35rem 0; font-size: var(--public-type-card-title, 1.05rem); } small { color: var(--text-muted); font-size: $kqc-type-caption; }
 em { gap: .2rem; width: fit-content; font-size: $kqc-type-metadata; font-style: normal; } .direction--up { color: #dc2626; } .direction--down { color: #2563eb; } .direction--flat, .direction--unknown { color: var(--text-muted); }
 .weather-state { display: flex; min-height: 7rem; align-items: center; justify-content: center; gap: .5rem; color: var(--text-muted); text-align: center; }
 footer { justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; color: var(--text-muted); font-size: $kqc-type-caption; } footer a { color: var(--accent-gold); } .fallback-note { font-weight: 700; }

@@ -50,9 +50,9 @@ withDefaults(defineProps<Props>(), {
   white-space: nowrap;
 
   /* 尺寸 Sizes */
-  &--sm { height: 32px; padding: 0 12px; font-size: 13px; }
-  &--md { height: 40px; padding: 0 16px; font-size: 14px; }
-  &--lg { height: 48px; padding: 0 24px; font-size: 16px; }
+  &--sm { height: 32px; padding: 0 12px; font-size: var(--public-type-body-small, 13px); }
+  &--md { height: 40px; padding: 0 16px; font-size: var(--public-type-body-small, 14px); }
+  &--lg { height: 48px; padding: 0 24px; font-size: var(--public-type-body, 16px); }
 
   /* 變體 Variants (100% 全域 Theme Token 驅動，無任何 HEX 硬編碼) */
   /* 1. 三爵鋼鐵藍 (Primary) */

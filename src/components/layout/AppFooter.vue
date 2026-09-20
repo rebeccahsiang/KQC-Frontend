@@ -30,9 +30,9 @@ const expanded = ref(true)
 .public-footer--compact .public-footer__inner { padding-block: 0.65rem; }
 .public-footer__brand { display: flex; align-items: center; gap: 0.75rem; }
 .public-footer__brand strong { color: var(--text-main); }
-.public-footer__brand p { margin: 0.2rem 0 0; font-size: 0.8rem; }
+.public-footer__brand p { margin: 0.2rem 0 0; font-size: var(--public-type-body-small, 0.8rem); }
 .public-footer__logo { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border-radius: 0.5rem; background: var(--accent); color: #1e293b; font-weight: 900; }
-.public-footer__details { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; flex-wrap: wrap; font-size: 0.8rem; }
+.public-footer__details { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; flex-wrap: wrap; font-size: var(--public-type-body-small, 0.8rem); }
 .public-footer__details a { color: var(--text-main); text-decoration: none; }
 .public-footer__details a:hover { color: var(--accent); }
 .public-footer__toggle { position: absolute; top: 0.75rem; right: 0; display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border: 1px solid var(--border-grey); border-radius: 0.5rem; background: var(--bg-main); color: var(--text-main); cursor: pointer; }

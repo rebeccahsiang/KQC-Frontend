@@ -199,7 +199,7 @@ const handleChange = (val?: string | number): void => {
   }
 
   &__label {
-    font-size: 15px;
+    font-size: var(--public-type-caption, 15px);
     font-weight: 700;
     color: var(--kqc-text-main);
   }
@@ -210,7 +210,7 @@ const handleChange = (val?: string | number): void => {
   }
 
   &__hint {
-    font-size: 13px;
+    font-size: var(--public-type-body-small, 13px);
     color: var(--kqc-text-muted);
   }
 
@@ -234,7 +234,7 @@ const handleChange = (val?: string | number): void => {
   }
 
   &__error {
-    font-size: 13px;
+    font-size: var(--public-type-body-small, 13px);
     color: var(--kqc-danger);
     display: flex;
     align-items: center;
@@ -294,13 +294,13 @@ const handleChange = (val?: string | number): void => {
   }
 
   &__label {
-    font-size: 14px;
+    font-size: var(--public-type-caption, 14px);
     font-weight: 600;
     color: var(--kqc-text-main);
   }
 
   &__desc {
-    font-size: 12px;
+    font-size: var(--public-type-body-small, 12px);
     color: var(--kqc-text-muted);
     margin-top: 2px;
   }

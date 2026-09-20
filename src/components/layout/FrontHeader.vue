@@ -314,14 +314,14 @@ const handleSearch = (): void => {
   }
 
   .brand-title {
-    font-size: 1.25rem;
+    font-size: var(--public-type-card-title, 1.25rem);
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
   }
 
   .brand-subtitle {
-    font-size: 0.75rem;
+    font-size: var(--public-type-caption, 0.75rem);
     color: var(--text-muted);
     margin: 0;
   }
@@ -338,7 +338,7 @@ const handleSearch = (): void => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 1rem;
+  font-size: var(--public-type-body, 1rem);
   overflow: hidden;
 
   .ticker-badge {
@@ -376,7 +376,7 @@ const handleSearch = (): void => {
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  font-size: 1rem;
+  font-size: var(--public-type-navigation, 1.25rem);
   font-weight: 600;
   flex-shrink: 0;
 
@@ -511,7 +511,7 @@ const handleSearch = (): void => {
       border: none !important;
       outline: none !important;
       box-shadow: none !important;
-      font-size: 0.8125rem;
+      font-size: var(--public-type-body-small, 0.8125rem);
       color: var(--text-primary, #1e293b);
 
       &::placeholder {
@@ -558,7 +558,7 @@ const handleSearch = (): void => {
     }
 
     .faq-text {
-      font-size: 0.75rem;
+      font-size: var(--public-type-body-small, 0.75rem);
       font-weight: 600;
     }
   }
@@ -579,7 +579,7 @@ const handleSearch = (): void => {
     background-color: var(--accent-gold, #eab308);
     color: #1e293b;
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: var(--public-type-body-small, 0.75rem);
     text-decoration: none;
 
     &:hover {

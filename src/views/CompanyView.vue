@@ -121,10 +121,10 @@ const nextValue = () => brandValueSwiper.value?.slideNext()
 .company-hero__frame { width: min(100%, 90rem); margin-inline: auto; overflow: hidden; border: 1px solid #d7e1e8; border-radius: 1.15rem; background: #10243b; box-shadow: 0 18px 45px rgba(23, 43, 67, 0.14); }
 .company-hero__frame img { display: block; width: 100%; height: auto; }
 .company-content { display: grid; gap: clamp(3.25rem, 5.5vw, 5.5rem); padding-block: clamp(3.5rem, 5.5vw, 5.5rem); }
-.company-section-label { color: #97701c; font-size: 0.7rem; font-weight: 850; letter-spacing: 0.15em; }
+.company-section-label { color: #97701c; font-size: var(--public-type-caption, 0.7rem); font-weight: 850; letter-spacing: 0.15em; }
 .company-origin { display: grid; max-width: 72rem; margin-inline: auto; grid-template-columns: 0.3rem minmax(16rem, 0.8fr) minmax(0, 1.2fr); align-items: start; gap: clamp(1.5rem, 4vw, 3.5rem); }
 .company-origin__marker { width: 0.3rem; height: 7rem; border-radius: 99px; background: linear-gradient(#c6942d, #1d718e); }
-.company-origin h2, .company-section-heading h2, .company-pillar h2, .company-closing h2 { margin: 0.55rem 0 0.8rem; color: #172b43; font-size: clamp(1.7rem, 2.6vw, 2.45rem); line-height: 1.2; letter-spacing: -0.025em; }
+.company-origin h2, .company-section-heading h2, .company-pillar h2, .company-closing h2 { margin: 0.55rem 0 0.8rem; color: #172b43; font-size: var(--public-type-section-title); line-height: 1.2; letter-spacing: -0.025em; }
 .company-origin__story { display: grid; gap: 0.7rem; }
 .company-origin__story p, .company-pillar__copy > p { margin: 0; color: #627386; line-height: 1.72; }
 .company-film { text-align: center; }
@@ -146,8 +146,8 @@ const nextValue = () => brandValueSwiper.value?.slideNext()
 .company-support__grid { display: grid; margin: 0; padding: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; list-style: none; }
 .company-support__grid li { display: grid; min-width: 0; padding: 1.1rem; grid-template-columns: auto 1fr; align-items: start; gap: 0.3rem 0.8rem; border: 1px solid #e0e7ed; border-radius: 0.75rem; background: #f8fafc; }
 .company-support__grid svg { width: 1.4rem; height: 1.4rem; grid-row: 2; color: #1d718e; }
-.company-support__number { grid-column: 1 / -1; color: #b18428; font: 850 0.68rem ui-monospace, monospace; letter-spacing: 0.12em; }
-.company-support__grid h3 { margin: 0 0 0.25rem; color: #22364c; font-size: 1.02rem; }
+.company-support__number { grid-column: 1 / -1; color: #b18428; font: 850 var(--public-type-caption, 0.68rem) ui-monospace, monospace; letter-spacing: 0.12em; }
+.company-support__grid h3 { margin: 0 0 0.25rem; color: #22364c; font-size: var(--public-type-card-title, 1.02rem); }
 .company-support__grid p { margin: 0; color: #69798b; line-height: 1.55; }
 .company-values { text-align: center; }
 .company-values__stage { width: 100%; padding: 0.6rem 3rem 2.7rem; box-sizing: border-box; overflow: hidden; }
@@ -164,10 +164,10 @@ const nextValue = () => brandValueSwiper.value?.slideNext()
 .company-value-card__body { display: grid; padding: clamp(1.35rem, 2.4vw, 1.8rem); align-content: start; }
 .company-value-card__heading { display: flex; margin-bottom: 1rem; align-items: center; justify-content: space-between; }
 .company-value-card__heading svg { width: 2rem; height: 2rem; color: #e0b75d; }
-.company-value-card__heading span { color: #e0b75d; font: 800 0.72rem ui-monospace, monospace; letter-spacing: 0.12em; }
-.company-value-card h3 { margin: 0 0 0.65rem; color: #fff; font-size: 1.45rem; }
-.company-value-card__body > strong { color: #f0d99f; font-size: 1rem; line-height: 1.55; }
-.company-value-card p { margin: 0.85rem 0 0; color: #d5e0e8; font-size: 0.94rem; line-height: 1.68; }
+.company-value-card__heading span { color: #e0b75d; font: 800 var(--public-type-caption, 0.72rem) ui-monospace, monospace; letter-spacing: 0.12em; }
+.company-value-card h3 { margin: 0 0 0.65rem; color: #fff; font-size: var(--public-type-card-title, 1.45rem); }
+.company-value-card__body > strong { color: #f0d99f; font-size: var(--public-type-card-title, 1rem); line-height: 1.55; }
+.company-value-card p { margin: 0.85rem 0 0; color: #d5e0e8; font-size: var(--public-type-body-small, 0.94rem); line-height: 1.68; }
 .company-values__swiper :deep(.swiper-pagination) { bottom: -2rem; }
 .company-values__swiper :deep(.swiper-pagination-bullet) { width: 0.58rem; height: 0.58rem; border: 0; background: #9aaab7; opacity: 0.65; }
 .company-values__swiper :deep(.swiper-pagination-bullet-active) { width: 1.5rem; border-radius: 99px; background: #a57818; opacity: 1; }

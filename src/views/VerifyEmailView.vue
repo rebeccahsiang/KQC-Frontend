@@ -87,7 +87,7 @@ onMounted(verify)
 </script>
 
 <template>
-  <main class="lifecycle-view min-h-screen flex items-center justify-center px-4 py-12">
+  <main class="lifecycle-view public-verification min-h-screen flex items-center justify-center px-4 py-12">
     <KqcCard padding="lg" :hoverable="false" class="w-full max-w-md border">
       <div class="space-y-6">
         <header class="text-center space-y-2">
@@ -150,7 +150,7 @@ onMounted(verify)
   border-radius: 9999px;
   background: color-mix(in srgb, var(--kqc-accent) 20%, transparent);
   color: var(--kqc-accent);
-  font-size: 0.75rem;
+  font-size: var(--public-type-caption, 0.75rem);
   font-weight: 700;
 }
 
@@ -161,7 +161,7 @@ onMounted(verify)
 
   label {
     color: var(--kqc-text-main);
-    font-size: 0.8rem;
+    font-size: var(--public-type-caption, 0.8rem);
     font-weight: 700;
   }
 }

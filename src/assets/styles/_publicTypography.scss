@@ -1,0 +1,79 @@
+// Frontend-only runtime scale. Teleported public dialogs opt in explicitly.
+// Never attach these tokens to :root: admin components keep their old fallbacks.
+@mixin scale {
+  --public-type-display: clamp(2rem, 1.5rem + 2vw, 3rem);
+  --public-type-page-title: clamp(1.75rem, 1.5rem + 1vw, 2rem);
+  --public-type-section-title: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+  --public-type-card-title: clamp(1.25rem, 1.15rem + 0.4vw, 1.375rem);
+  --public-type-body-emphasis: clamp(1.0625rem, 1rem + 0.25vw, 1.25rem);
+  --public-type-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --public-type-body-small: clamp(1rem, 0.975rem + 0.125vw, 1.0625rem);
+  --public-type-label: clamp(1rem, 0.975rem + 0.125vw, 1.0625rem);
+  --public-type-action: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --public-type-navigation: clamp(1.125rem, 0.875rem + 0.417vw, 1.25rem);
+  --public-type-caption: 1rem;
+  --public-type-metadata: 1rem;
+  --public-leading-body: 1.75;
+  --public-leading-heading: 1.4;
+  --public-control-sm: 2.75rem;
+  --public-control-md: 3rem;
+  --public-control-lg: 3.25rem;
+  --public-reading-width: 42rem;
+  --public-text-accent: #806014;
+  font-size: var(--public-type-body);
+  line-height: var(--public-leading-body);
+}
+
+:is(.public-layout, .session-page, .public-verification, .kqc-auth-dialog, .intent-overlay) {
+  @include scale;
+
+  :where(p, li) { line-height: var(--public-leading-body); }
+  :where(span) { line-height: inherit; }
+  :where(small, .text-xs, .text-sm) { font-size: var(--public-type-caption); }
+  :where(h1) { font-size: var(--public-type-page-title); }
+  :where(h2) { font-size: var(--public-type-section-title); }
+  :where(h3, h4) { font-size: var(--public-type-card-title); }
+  :where(h1, h2, h3, h4) { line-height: var(--public-leading-heading); }
+  :where(button, input, select, textarea) { font-size: var(--public-type-action); }
+  :where(button, select, input:not([type='checkbox'], [type='radio'])) {
+    min-height: var(--public-control-sm);
+  }
+  :where(button) { line-height: 1.4; }
+  :where(input, select, textarea) { max-width: 100%; }
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+  }
+
+  // Shared KQC / PrimeVue controls retain all existing variant colors.
+  .kqc-btn { height: auto; min-height: var(--public-control-md); padding: 0.6rem 1rem; font-size: var(--public-type-action); }
+  .kqc-btn--sm { min-height: var(--public-control-sm); font-size: var(--public-type-label); }
+  .kqc-btn--lg { min-height: var(--public-control-lg); padding-inline: 1.5rem; }
+  .kqc-btn__content { margin: 0; color: inherit; line-height: inherit; }
+  .kqc-input-wrapper { min-height: var(--public-control-md); height: auto; }
+  .kqc-input-wrapper--sm { min-height: var(--public-control-sm); }
+  .kqc-input-wrapper--lg { min-height: var(--public-control-lg); }
+  .kqc-input__field { min-height: 2.75rem; font-size: var(--public-type-body); }
+  .kqc-select-group .kqc-select-trigger { height: auto; min-height: var(--public-control-md); font-size: var(--public-type-body); }
+  .kqc-select-option { min-height: var(--public-control-sm); }
+  .p-button, .p-inputtext, .p-select, .p-password-input { min-height: var(--public-control-md); font-size: var(--public-type-action); }
+  .p-button { padding: 0.6rem 1rem; }
+  .p-tag, .p-badge { height: auto; font-size: var(--public-type-caption); line-height: 1.5; }
+  .p-accordionheader { min-height: var(--public-control-lg); font-size: var(--public-type-card-title); }
+  .p-paginator button, .p-tab { min-width: var(--public-control-sm); min-height: var(--public-control-sm); }
+  .session-item__details dd { overflow-wrap: anywhere; }
+
+  // Rich text spans must inherit article rhythm instead of the global 1.6 reset.
+  :is(.article-detail__body, .structured-article, .member-report-article__content) {
+    width: 100%; max-width: var(--public-reading-width); margin-inline: auto;
+    font-size: var(--public-type-body); line-height: 1.85;
+    :where(p, li, span) { line-height: inherit; }
+    a, .article-rich-text__emphasis { color: var(--public-text-accent); }
+    :where(a) { text-decoration: underline; text-underline-offset: 0.2em; }
+    .article-blocks__paragraph + .article-blocks__paragraph { margin-top: 1em; }
+  }
+}
+
+[data-theme='dark'] :is(.public-layout, .session-page, .public-verification, .kqc-auth-dialog, .intent-overlay) {
+  --public-text-accent: #eab308;
+}

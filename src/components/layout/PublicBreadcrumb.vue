@@ -26,7 +26,7 @@ const currentLabel = computed(() => labels[String(route.name)])
 <style scoped lang="scss">
 .public-breadcrumb {
   width: min(100% - 2rem, 80rem); margin: 0.75rem auto 0; overflow-x: auto;
-  ol { display: flex; align-items: center; gap: 0.4rem; min-width: max-content; margin: 0; padding: 0; list-style: none; color: var(--text-muted); font-size: 0.8125rem; }
+  ol { display: flex; align-items: center; gap: 0.4rem; min-width: max-content; margin: 0; padding: 0; list-style: none; color: var(--text-muted); font-size: var(--public-type-body-small, 0.8125rem); }
   svg { width: 0.875rem; height: 0.875rem; }
   a { color: inherit; text-decoration: none; }
   a:hover { color: var(--accent); }

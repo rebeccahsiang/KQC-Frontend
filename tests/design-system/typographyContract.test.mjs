@@ -17,7 +17,7 @@ test('semantic typography aliases preserve the authoritative primitive scale', (
     body: 'md', 'body-emphasis': 'lg', 'card-title': 'xl', 'section-title': '2xl',
   }
   for (const [role, primitive] of Object.entries(mappings)) {
-    assert.match(variables, new RegExp(`\\$kqc-type-${role}: \\$kqc-font-size-${primitive};`))
+    assert.ok(variables.includes(`$kqc-type-${role}: var(--public-type-${role}, #{$kqc-font-size-${primitive}});`))
   }
 })
 
@@ -41,13 +41,14 @@ test('homepage normal text adopts semantic roles while display typography stays 
   }
   assert.match(home, /\.hero-main-title[\s\S]*font-size: clamp\(/)
   assert.match(home, /\.home-industry-weather__intro h2[^\n]*font-size: clamp\(/)
-  assert.match(weather, /strong[^\n]*font-size: 1\.05rem/)
+  assert.match(weather, /strong[^\n]*font-size: var\(--public-type-card-title, 1\.05rem\)/)
   assert.doesNotMatch(`${home}\n${weather}`, /--(?:homepage|promo|weather)-font-/)
 })
 
-test('approved header typography and scroll behavior remain outside this migration', () => {
+test('public navigation uses the shared scale while preserving scroll behavior', () => {
   const header = read('src/components/layout/FrontHeader.vue')
-  assert.doesNotMatch(header, /\$kqc-type-|type-(?:caption|metadata|label|body|card-title|section-title)/)
+  assert.match(header, /font-size: var\(--public-type-navigation, 1\.25rem\)/)
+  assert.match(header, /min-height: 2\.75rem/)
   assert.match(header, /const COMPACT_ENTER_Y = 140/)
   assert.match(header, /const FULL_RETURN_Y = 32/)
 })

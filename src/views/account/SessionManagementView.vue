@@ -298,7 +298,7 @@ onMounted(loadSessions)
 
 .session-view__eyebrow {
   color: var(--kqc-accent) !important;
-  font-size: 0.8rem;
+  font-size: var(--public-type-caption, 0.8rem);
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -330,7 +330,7 @@ onMounted(loadSessions)
 
   h2 {
     margin: 0 0 0.5rem;
-    font-size: 1.1rem;
+    font-size: var(--public-type-card-title, 1.1rem);
   }
 
   p {
@@ -352,7 +352,7 @@ onMounted(loadSessions)
 
   h2 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: var(--public-type-card-title, 1.1rem);
   }
 }
 
@@ -362,7 +362,7 @@ onMounted(loadSessions)
   border-radius: 9999px;
   padding: 0.25rem 0.65rem;
   color: var(--kqc-success);
-  font-size: 0.75rem;
+  font-size: var(--public-type-body-small, 0.75rem);
   font-weight: 700;
 }
 
@@ -374,7 +374,7 @@ onMounted(loadSessions)
 
   dt {
     color: var(--kqc-text-muted);
-    font-size: 0.8rem;
+    font-size: var(--public-type-body-small, 0.8rem);
   }
 
   dd {

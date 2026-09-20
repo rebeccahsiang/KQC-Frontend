@@ -42,11 +42,11 @@ withDefaults(defineProps<Props>(), {
   /* 尺寸 Sizes */
   &--sm {
     padding: 2px 8px;
-    font-size: 11px;
+    font-size: var(--public-type-body-small, 11px);
   }
   &--md {
     padding: 4px 10px;
-    font-size: 12px;
+    font-size: var(--public-type-body-small, 12px);
   }
 
   /* 圓角邊框 (預設膠囊狀) */

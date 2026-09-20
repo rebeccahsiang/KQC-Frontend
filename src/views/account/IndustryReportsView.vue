@@ -91,7 +91,7 @@ onMounted(loadReports)
 <style scoped lang="scss">
 .member-reports-page { min-height: 70vh; color: #172b43; background: #f4f7fa; }
 .member-reports-hero { padding: clamp(3rem, 7vw, 5.5rem) 1.5rem; text-align: center; background: linear-gradient(120deg, #eef5f9, #fff8e7); }
-.member-reports-hero__eyebrow { margin: 0 0 .75rem; color: #97701c; font-size: .75rem; font-weight: 850; letter-spacing: .14em; }
+.member-reports-hero__eyebrow { margin: 0 0 .75rem; color: #97701c; font-size: var(--public-type-caption, .75rem); font-weight: 850; letter-spacing: .14em; }
 .member-reports-hero h1 { margin: 0; color: #172b43; font-size: clamp(2rem, 4vw, 3.25rem); }
 .member-reports-hero > p:last-child { max-width: 42rem; margin: 1rem auto 0; color: #5f6f82; line-height: 1.8; }
 .member-reports-content { width: min(76rem, calc(100% - 2rem)); margin: 0 auto; padding: 3rem 0 5rem; }
@@ -103,10 +103,10 @@ onMounted(loadReports)
 .member-report-card__cover img { width: 100%; height: 100%; object-fit: cover; }
 .member-report-card__cover > svg { width: 2.25rem; height: 2.25rem; }
 .member-report-card__body { display: grid; padding: 1.25rem; gap: .7rem; }
-.member-report-card time { color: #7a8795; font-size: .78rem; }
-.member-report-card h2 { margin: 0; font-size: 1.2rem; line-height: 1.45; }
+.member-report-card time { color: #7a8795; font-size: var(--public-type-caption, .78rem); }
+.member-report-card h2 { margin: 0; font-size: var(--public-type-card-title, 1.2rem); line-height: 1.45; }
 .member-report-card p { display: -webkit-box; margin: 0; overflow: hidden; color: #5f6f82; line-height: 1.7; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-.member-report-card span { display: inline-flex; align-items: center; gap: .35rem; color: #876315; font-size: .85rem; font-weight: 800; }
+.member-report-card span { display: inline-flex; align-items: center; gap: .35rem; color: #876315; font-size: var(--public-type-body-small, .85rem); font-weight: 800; }
 .member-report-card span svg { width: 1rem; height: 1rem; }
 .member-reports-state { display: grid; min-height: 18rem; place-items: center; align-content: center; gap: .65rem; border: 1px solid #dce4eb; border-radius: .9rem; color: #687789; background: #fff; text-align: center; }
 .member-reports-state > svg { width: 2rem; height: 2rem; color: #97701c; }

@@ -169,13 +169,13 @@ const handleKeyDown = (event: KeyboardEvent, currentIndex: number): void => {
 }
 
 .kqc-radio-label {
-  font-size: 14px;
+  font-size: var(--public-type-caption, 14px);
   color: var(--kqc-text-main);
   line-height: 1.4;
 }
 
 .kqc-radio-desc {
-  font-size: 12px;
+  font-size: var(--public-type-body-small, 12px);
   color: var(--kqc-text-muted);
   line-height: 1.3;
 }
