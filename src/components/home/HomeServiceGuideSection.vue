@@ -65,3 +65,57 @@ const serviceEntries: { id: ServicePanel; icon: string; label: string; descripti
     </aside>
   </section>
 </template>
+
+<style scoped lang="scss">
+// This section owns its layout independently of the shared homepage breakpoints.
+.home-service-guide {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 7fr) minmax(15rem, 3fr);
+  grid-template-areas: 'core entries';
+  gap: 20px;
+  align-items: stretch;
+}
+
+.home-service-guide > .kqc-card-block,
+.home-service-entry-column {
+  min-width: 0;
+}
+
+.home-service-guide > .kqc-card-block { grid-area: core; }
+.home-service-entry-column {
+  grid-area: entries;
+  display: block;
+}
+
+.accordion-category,
+.accordion-service-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+// Preserve both columns on narrow desktops without reducing typography.
+@media (min-width: 641px) and (max-width: 768px) {
+  .home-service-guide {
+    grid-template-columns: minmax(0, 7fr) minmax(11rem, 3fr);
+    gap: 12px;
+  }
+  .home-service-guide > .kqc-card-block,
+  .home-service-entry-card { padding: 12px; }
+  .home-service-entry-grid { gap: 12px; }
+  .home-service-guide .accordion-head-bar { padding: 12px; gap: 8px; }
+  .home-service-guide .accordion-body-text { padding: 12px; gap: 12px; }
+  .home-service-guide .accordion-service-content ul { gap: 8px; }
+}
+
+// Only mobile stacks the outer columns and the accordion interior.
+@media (max-width: 640px) {
+  .home-service-guide {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'core' 'entries';
+  }
+  .home-service-guide .accordion-body-text { grid-template-columns: minmax(0, 1fr); }
+  .home-service-guide .accordion-service-content ul { grid-template-columns: minmax(0, 1fr); }
+}
+</style>

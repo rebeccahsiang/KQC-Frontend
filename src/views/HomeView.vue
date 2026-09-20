@@ -39,3 +39,10 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
+<style scoped lang="scss">
+// Keep the desktop gutter only where HEAD would apply the mobile gutter.
+@media (min-width: 641px) and (max-width: 768px) {
+  .kqc-main-container { padding-inline: 20px; }
+}
+</style>

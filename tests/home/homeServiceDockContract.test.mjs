@@ -139,6 +139,7 @@ test('old demo cards are removed with their exclusive wrapper', () => {
 })
 
 test('panel overlays desktop, stays hidden on mobile, and respects reduced motion', () => {
+  const guide = read('src/components/home/HomeServiceGuideSection.vue')
   const dock = read('src/components/home/HomeServiceDock.vue')
   const styles = read('src/components/home/_homeSections.scss')
   const mobileStart = styles.lastIndexOf('@media (max-width: 768px)')
@@ -158,9 +159,9 @@ test('panel overlays desktop, stays hidden on mobile, and respects reduced motio
   assert.match(mobile, /\.home-service-workspace\s*\{\s*display:\s*none;\s*\}/)
   assert.match(mobile, /\.fixed-right-widget-panel\s*\{\s*display:\s*none;\s*\}/)
   assert.match(mobile, /\.home-service-panel\s*\{\s*display:\s*none;\s*\}/)
-  assert.match(styles, /\.home-service-guide\s*\{[^}]*grid-template-columns:\s*minmax\(0, 7fr\) minmax\(15rem, 3fr\);/s)
+  assert.match(guide, /\.home-service-guide\s*\{[^}]*grid-template-columns:\s*minmax\(0, 7fr\) minmax\(15rem, 3fr\);/s)
   assert.match(styles, /\.home-service-entry-grid\s*\{[^}]*grid-template-columns:\s*1fr;/s)
-  assert.match(mobile, /\.home-service-guide\s*\{\s*grid-template-columns:\s*1fr;\s*\}/)
+  assert.match(guide, /@media \(max-width: 640px\)[\s\S]*\.home-service-guide\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/s)
   assert.doesNotMatch(mobile, /\.home-service-entry-(?:column|grid|card)[^{]*\{[^}]*display:\s*none/s)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.service-panel-enter-active[^}]*transition:\s*none;/)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.tab-icon, \.home-service-entry-card__icon \{ animation: none !important; \}/)
