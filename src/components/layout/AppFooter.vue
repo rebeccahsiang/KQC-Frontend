@@ -35,7 +35,7 @@ const expanded = ref(true)
 .public-footer__details { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; flex-wrap: wrap; font-size: var(--public-type-body-small, 0.8rem); }
 .public-footer__details a { color: var(--text-main); text-decoration: none; }
 .public-footer__details a:hover { color: var(--accent); }
-.public-footer__toggle { position: absolute; top: 0.75rem; right: 0; display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border: 1px solid var(--border-grey); border-radius: 0.5rem; background: var(--bg-main); color: var(--text-main); cursor: pointer; }
+.public-footer__toggle { position: absolute; top: 0.75rem; right: 0; display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--border-grey); border-radius: 0.5rem; background: var(--bg-main); color: var(--text-main); cursor: pointer; }
 .public-footer__toggle:hover, .public-footer__toggle:focus-visible { border-color: var(--accent); color: var(--accent); }
 @media (max-width: 640px) { .public-footer__inner { align-items: flex-start; flex-direction: column; } .public-footer__details { align-items: flex-start; flex-direction: column; gap: 0.5rem; } }
 @media (prefers-reduced-motion: reduce) { .public-footer { transition: none; } }

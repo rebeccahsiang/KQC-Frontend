@@ -556,6 +556,8 @@ const handleForgotPassword = async () => {
   background-color: var(--bg-card, #ffffff);
 
   .close-btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     position: absolute;
     top: 1rem;
     right: 1rem;
