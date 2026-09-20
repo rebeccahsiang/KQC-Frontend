@@ -46,7 +46,7 @@ test('detail selects structured rendering or escaped legacy text within the edit
   const view = read('src/views/InsightsDetailView.vue'); const styles = view.slice(view.indexOf('<style'))
   assert.match(view, /<StructuredArticleContent v-if="article\.structuredContent" :content="article\.structuredContent" \/>[\s\S]*<div v-else class="article-detail__body">\{\{ article\.content \}\}<\/div>/)
   assert.doesNotMatch(view, /v-html/)
-  assert.match(styles, /\.article-detail__reading \{[^}]*width: min\(100%, 52rem\);[^}]*margin-inline: auto;/s)
+  assert.match(styles, /\.article-detail__reading \{[^}]*width: min\(100%, var\(--public-reading-width\)\);[^}]*margin-inline: auto;/s)
   assert.match(styles, /\.article-detail__body \{[^}]*overflow-wrap: anywhere;[^}]*line-height: 1\.9;[^}]*white-space: pre-wrap;/s)
   assert.match(styles, /\.article-detail__hero[^}]*height: clamp\(18rem, 30vw, 25rem\);[^}]*overflow: hidden/s)
   assert.match(styles, /\.article-detail__hero img \{[^}]*object-fit: cover;/s)

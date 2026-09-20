@@ -90,6 +90,6 @@ test('renderer remains bounded, responsive and leaves the existing D2C metadata 
   assert.match(blocks, /article-blocks__callout/)
   assert.match(styles, /structured-article__advisor/)
   for (const owner of ['article.coverImage', 'article.categories', 'article.title', 'article.publishedAt', 'article.tags', 'article-detail__breadcrumb', 'article-detail__return']) assert.ok(view.includes(owner))
-  assert.match(view, /width: min\(100%, 52rem\)/)
+  assert.match(view, /width: min\(100%, var\(--public-reading-width\)\)/)
   assert.doesNotMatch(`${renderer}\n${blocks}\n${richText}`, /publicArticlesApi|adminArticlesApi|fetch\(|axios|router|useRoute/)
 })

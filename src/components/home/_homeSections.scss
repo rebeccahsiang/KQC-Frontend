@@ -287,6 +287,64 @@
   .home-promo-swiper .swiper-button-prev, .home-promo-swiper .swiper-button-next { display: none; }
 }
 
+// Homepage-only desktop calibration; Header, Dock and narrow viewports retain their scale.
+@media (min-width: 768px) {
+  .kqc-home-wrapper {
+    --public-type-caption: 0.75rem;
+    --public-type-metadata: 0.875rem;
+    --public-type-label: 0.875rem;
+    --public-type-body-small: 0.875rem;
+    --public-type-body: 1rem;
+    --public-type-card-title: 1.25rem;
+    --public-type-section-title: 1.5rem;
+    font-size: var(--public-type-body);
+
+    .hero-banner-card {
+      min-height: 0;
+      grid-template-rows: auto auto;
+      align-content: start;
+    }
+
+    .hero-values { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .hero-value:nth-child(3),
+    .hero-value:nth-child(4) {
+      border-top: 0;
+      border-left: 1px solid rgb(148 163 184 / 17%);
+    }
+    .hero-value strong { font-size: 1.125rem; }
+    .hero-value span { margin-bottom: 0; }
+    .hero-value strong,
+    .hero-value span { line-height: 1.6; }
+
+    .home-promo-heading h2 { font-size: clamp(1.35rem, 2vw, 1.75rem); }
+    .home-industry-weather__intro h2 { font-size: clamp(1.25rem, 2vw, 1.7rem); }
+
+    .home-industry-weather {
+      row-gap: 0.75rem;
+      padding-block: 1rem;
+
+      .industry-weather {
+        padding-block: 0.75rem;
+
+        > header { margin-bottom: 0.5rem; }
+        > footer {
+          margin-top: 0.5rem;
+          > span { margin-bottom: 0; }
+        }
+      }
+    }
+
+    // These paragraphs/list items had no component-owned line-height in HEAD.
+    .home-promo-heading p,
+    .home-personas__heading > p,
+    .reservation-form-block p,
+    .accordion-service-content p,
+    .accordion-service-content li {
+      line-height: 1.6;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-promo-card, .home-promo-media img { transition: none; }
   .home-promo-card:hover .home-promo-media img { transform: none; }
@@ -450,7 +508,7 @@
     display: flex; flex-direction: column; background-color: var(--primary-active); border-radius: 8px 0 0 8px; overflow: hidden; box-shadow: var(--shadow-md); transition: box-shadow 0.48s ease;
     .widget-tab-btn {
       display: flex; min-width: 4.75rem; flex-direction: column; align-items: center; padding: 12px 10px; background: transparent; color: #cbd5e1; border: none; border-bottom: 1px solid color-mix(in srgb, var(--border-grey) 35%, transparent); cursor: pointer; transition: background-color 0.32s ease, color 0.32s ease;
-      .tab-icon { color: var(--accent); font-size: 1.25rem; stroke-width: 1.8; animation: home-service-icon-idle 5s ease-in-out infinite; transition: color 0.32s ease, filter 0.32s ease, transform 0.42s cubic-bezier(0.22, 1, 0.36, 1); } .tab-label { margin: 4px 0 0; color: inherit; font-size: $kqc-type-caption; transition: color 0.32s ease; }
+      .tab-icon { color: var(--accent); font-size: 1.25rem; stroke-width: 1.8; animation: home-service-icon-idle 5s ease-in-out infinite; transition: color 0.32s ease, filter 0.32s ease, transform 0.42s cubic-bezier(0.22, 1, 0.36, 1); } .tab-label { margin: 4px 0 0; color: inherit; font-size: 0.75rem; transition: color 0.32s ease; }
       &:hover, &.active { background-color: var(--accent); color: var(--primary-active); }
       &:hover .tab-icon, &.active .tab-icon, &:focus-visible .tab-icon { color: currentColor; filter: drop-shadow(0 0 0.4rem rgb(var(--accent-rgb) / 42%)); }
       &:hover .tab-icon, &:focus-visible .tab-icon { animation: none; transform: translateY(-2px) scale(1.05); }

@@ -460,10 +460,11 @@ const handleSearch = (): void => {
   .compact-brand-mark { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 0.45rem; background: var(--accent-gold, var(--accent)); color: #1e293b; font-size: 0.72rem; }
   .compact-nav-links {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     gap: clamp(0.65rem, 1.5vw, 1.25rem);
 
-    a { color: var(--text-primary, var(--text-main)); font-size: 0.78rem; font-weight: 650; text-decoration: none; white-space: nowrap; }
+    a { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--text-primary, var(--text-main)); font-size: var(--public-type-navigation, 1.25rem); font-weight: 600; text-decoration: none; white-space: nowrap; }
     a:hover, a.is-active { color: var(--accent-gold, var(--accent)); }
   }
   .search-bar-container { display: none; }

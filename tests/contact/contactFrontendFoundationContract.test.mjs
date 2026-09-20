@@ -78,9 +78,9 @@ test('CONTACT-R1A-2 aligns to public width authority and raises local readabilit
   assert.match(view, /\.contact-hero\{[^}]*width:min\(calc\(100% - 2rem\),90rem\)/)
   assert.match(view, /\.contact-layout\{[^}]*width:min\(calc\(100% - 2rem\),90rem\)/)
   assert.match(view, /grid-template-columns:minmax\(0,2\.65fr\) minmax\(20rem,1fr\)/)
-  assert.match(selection, /\.service-grid button\{[^}]*font-size:1rem/)
-  assert.match(trust, /\.trust-panel li strong\{[^}]*font-size:1rem/)
-  assert.match(trust, /\.trust-panel li small\{[^}]*font-size:\.94rem/)
+  assert.match(selection, /\.service-grid button\{[^}]*font-size: var\(--public-type-action, 1rem\)/)
+  assert.match(trust, /\.trust-panel li strong\{[^}]*font-size: var\(--public-type-card-title, 1rem\)/)
+  assert.match(trust, /\.trust-panel li small\{[^}]*font-size: var\(--public-type-caption, \.94rem\)/)
 })
 
 test('CONTACT-R1A-3 keeps support contextual while exposing approved phone and unchanged LINE channels', () => {
