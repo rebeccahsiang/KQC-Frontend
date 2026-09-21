@@ -8,7 +8,7 @@
     modal
     dismissableMask
     :style="{ width: '90vw', maxWidth: '520px' }"
-    class="kqc-auth-dialog"
+    :class="['kqc-auth-dialog', { 'kqc-auth-dialog--register': authStore.authMode === 'register' }]"
     :showHeader="false"
   >
     <div class="auth-dialog-content">
@@ -20,9 +20,9 @@
       <!-- ================= 1. 登入卡片 (Login View) ================= -->
       <div v-if="authStore.authMode === 'login'" class="auth-card-wrapper">
         <div class="auth-header">
-          <div class="brand-badge">KQC</div>
-          <h2>歡迎回到三爵資訊</h2>
-          <p>請輸入您的電子郵件與密碼登入戰情室</p>
+          <div class="brand-badge">KQJ</div>
+          <h2>會員登入</h2>
+          <p>請輸入您的帳號與密碼登入會員中心。</p>
         </div>
 
         <Message
@@ -54,13 +54,12 @@
                 class="link-btn text-link"
                 @click="authStore.authMode = 'forgot'"
               >
-                忘記密碼？
-              </button>
+                忘記密碼？              </button>
             </div>
             <Password
               id="login-password"
               v-model="loginForm.password"
-              placeholder="••••••••"
+              placeholder="請輸入密碼"
               :feedback="false"
               toggleMask
               fluid
@@ -69,7 +68,7 @@
 
           <Button
             type="submit"
-            label="立即登入"
+            label="會員登入"
             :loading="isLoading"
             class="submit-btn kqc-primary-btn"
             fluid
@@ -77,22 +76,22 @@
         </form>
 
         <div class="auth-footer">
-          <span>還沒有帳號嗎？</span>
+          <span>還沒有會員帳號？</span>
           <button
             type="button"
             class="link-btn highlight"
             @click="authStore.authMode = 'register'"
           >
-            免費註冊會員
+            立即註冊會員
           </button>
         </div>
       </div>
 
       <!-- ================= 2. 會員註冊 (Stepper Step-by-Step) ================= -->
-      <div v-else-if="authStore.authMode === 'register'" class="auth-card-wrapper">
+      <div v-else-if="authStore.authMode === 'register'" class="auth-card-wrapper auth-card-wrapper--register">
         <div class="auth-header">
-          <h2>建立三爵會員帳號</h2>
-          <p>完成 3 步驟，開啟 B2B 資產交易與 AI 語意配對服務</p>
+          <h2>建立三瑝會員帳號</h2>
+          <p>完成 3 個步驟，開始掌握交通運輸產業資訊。</p>
         </div>
 
         <Stepper v-model:value="activeStep" class="register-stepper">
@@ -122,20 +121,20 @@
           <StepPanels>
             <!-- 步驟一：基本帳號資料 (已拆分姓名與車行名稱) -->
             <StepPanel v-slot="{ activateCallback }" :value="1">
-              <div class="step-content">
+              <div class="step-content step-content--basic">
                 <div class="field-group">
-                  <label>您的姓名 / 聯絡人 <span class="required-star">*</span></label>
+                  <label>公司／商號名稱 <span class="required-star">*</span></label>
                   <InputText
                     v-model="registerForm.name"
-                    placeholder="例：張經理"
+                    placeholder="請輸入公司名稱"
                     fluid
                   />
                 </div>
                 <div class="field-group">
-                  <label>車行 / 公司名稱 <span class="required-star">*</span></label>
+                  <label>您的姓名／聯絡人 <span class="required-star">*</span></label>
                   <InputText
                     v-model="registerForm.companyName"
-                    placeholder="例：三爵客運股份有限公司"
+                    placeholder="請輸入姓名"
                     fluid
                   />
                 </div>
@@ -166,16 +165,20 @@
             <!-- 步驟二：產業意向選取 (標準 3 欄靠左對齊) -->
             <StepPanel v-slot="{ activateCallback }" :value="2">
               <div class="step-content">
-                <p class="step-subtitle">選擇您關注的運輸資產類型（可複選）</p>
+                <p class="step-subtitle">選擇您關注的運輸產業類型（可複選）</p>
                 <div class="interests-grid">
-                  <ToggleButton
+                  <button
                     v-for="item in interestOptions"
                     :key="item.key"
-                    v-model="registerForm.interests[item.key]"
-                    :onLabel="item.label"
-                    :offLabel="item.label"
-                    class="interest-chip"
-                  />
+                    type="button"
+                    :class="['interest-card', { selected: registerForm.interests[item.key] }]"
+                    :aria-pressed="registerForm.interests[item.key]"
+                    @click="registerForm.interests[item.key] = !registerForm.interests[item.key]"
+                  >
+                    <img :src="item.image" :alt="item.label" />
+                    <span class="interest-card__code">{{ item.key }}</span>
+                    <strong>{{ item.label }}</strong>
+                  </button>
                 </div>
               </div>
               <div class="step-actions flex-between">
@@ -187,19 +190,26 @@
             <!-- 步驟三：註冊成功引導 -->
             <StepPanel :value="3">
               <div class="step-content success-box">
-                <i class="pi pi-check-circle success-icon"></i>
-                <h3>會員帳號建立成功！</h3>
-                <p>系統已同步開啟您的專屬權限，歡迎開始使用全域語意搜尋與賣場媒合。</p>
+                <div class="success-side success-side--left" aria-hidden="true"><img :src="successRoadImage" alt="" /></div>
+                <div class="success-content">
+                  <span class="success-check" aria-hidden="true">✓</span>
+                  <h3>會員帳號建立成功！</h3>
+                  <p class="success-copy">
+                    <span>驗證信已寄至您的 Email</span>
+                    <span>請完成信箱驗證後再登入會員中心。</span>
+                  </p>
+                </div>
+                <div class="success-side success-side--right" aria-hidden="true"><img :src="successPortImage" alt="" /></div>
               </div>
               <div class="step-actions flex-center">
-                <Button label="立即進入系統" class="kqc-primary-btn" @click="finishRegister" />
+                <Button label="我知道了" class="kqc-primary-btn" @click="finishRegister" />
               </div>
             </StepPanel>
           </StepPanels>
         </Stepper>
 
-        <div class="auth-footer">
-          <span>已有帳號？</span>
+        <div v-if="activeStep !== 3" class="auth-footer">
+          <span>已有會員帳號？</span>
           <button
             type="button"
             class="link-btn highlight"
@@ -213,8 +223,8 @@
       <!-- ================= 3. 忘記密碼 (Forgot Password - 含 Email/簡訊雙通道) ================= -->
       <div v-else-if="authStore.authMode === 'forgot'" class="auth-card-wrapper">
         <div class="auth-header">
-          <h2>重設您的密碼</h2>
-          <p>請選擇您希望接收驗證碼的方式</p>
+          <h2>重設密碼</h2>
+          <p>請選擇驗證方式以重設密碼。</p>
         </div>
 
         <div class="reset-type-selector">
@@ -259,7 +269,7 @@
 
           <Button
             type="submit"
-            :label="resetMethod === 'email' ? '發送重設郵件' : '發送簡訊驗證碼'"
+            :label="resetMethod === 'email' ? '寄送重設密碼信' : '寄送手機驗證碼'"
             :loading="isLoading"
             class="submit-btn kqc-primary-btn"
             fluid
@@ -295,10 +305,19 @@ import StepList from 'primevue/steplist'
 import Step from 'primevue/step'
 import StepPanels from 'primevue/steppanels'
 import StepPanel from 'primevue/steppanel'
-import ToggleButton from 'primevue/togglebutton'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Toast from 'primevue/toast'
+import industryCaCarImage from '@/assets/images/registration/industry-ca-car.png'
+import industryCbCarImage from '@/assets/images/registration/industry-cb-car.png'
+import industryTaxiImage from '@/assets/images/registration/industry-taxi.png'
+import industryLightTruckImage from '@/assets/images/registration/industry-light-truck.png'
+import industryMovingImage from '@/assets/images/registration/industry-moving.png'
+import industryFreightImage from '@/assets/images/registration/industry-freight.png'
+import industryContainerImage from '@/assets/images/registration/industry-container.png'
+import industryOtherImage from '@/assets/images/registration/industry-other.png'
+import successRoadImage from '@/assets/images/registration/registration-success-road.png'
+import successPortImage from '@/assets/images/registration/registration-success-port.png'
 
 const authStore = useAuthStore()
 const toast = useToast()
@@ -312,32 +331,24 @@ const resetMethod = ref<'email' | 'phone'>('email')
 const forgotEmail = ref<string>('')
 const forgotPhone = ref<string>('')
 
-// 表單狀態
 const loginForm = reactive({ email: '', password: '' })
 
 const registerForm = reactive({
-  name: '',
-  companyName: '',
-  email: '',
-  password: '',
-  interests: {
-    taxi: false,
-    truck: false,
-    bus: false,
-    license: false,
-    container: false
-  } as Record<string, boolean>
+  name: '', companyName: '', email: '', password: '',
+  interests: { CA: false, CB: false, TX: false, LT: false, MV: false, FT: false, CT: false, OTHER: false } as Record<string, boolean>
 })
 
 const interestOptions = [
-  { key: 'taxi', label: '計程車牌/車隊' },
-  { key: 'truck', label: '甲種/乙種大貨車' },
-  { key: 'bus', label: '遊覽車/客運特許' },
-  { key: 'license', label: '特許營業執照讓渡' },
-  { key: 'container', label: '貨櫃碼頭運輸' }
+  { key: 'CA', label: '甲種小客車', image: industryCaCarImage },
+  { key: 'CB', label: '乙種小客車', image: industryCbCarImage },
+  { key: 'TX', label: '計程車', image: industryTaxiImage },
+  { key: 'LT', label: '小貨車', image: industryLightTruckImage },
+  { key: 'MV', label: '搬家公司', image: industryMovingImage },
+  { key: 'FT', label: '汽車貨運', image: industryFreightImage },
+  { key: 'CT', label: '貨櫃貨運', image: industryContainerImage },
+  { key: 'OTHER', label: '其他產業', image: industryOtherImage }
 ]
 
-// 重置表單狀態
 const resetForms = () => {
   activeStep.value = 1
   loginForm.email = ''
@@ -348,24 +359,11 @@ const resetForms = () => {
   registerForm.companyName = ''
   registerForm.email = ''
   registerForm.password = ''
-  Object.keys(registerForm.interests).forEach((key) => {
-    registerForm.interests[key] = false
-  })
+  Object.keys(registerForm.interests).forEach((key) => { registerForm.interests[key] = false })
 }
 
-watch(
-  () => authStore.isAuthModalOpen,
-  (isOpen) => {
-    if (isOpen) resetForms()
-  }
-)
-
-watch(
-  () => authStore.authMode,
-  () => {
-    resetForms()
-  }
-)
+watch(() => authStore.isAuthModalOpen, (isOpen) => { if (isOpen) resetForms() })
+watch(() => authStore.authMode, () => { resetForms() })
 
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -381,9 +379,8 @@ const handleLogin = async () => {
 
   if (!email || !isValidEmail(email)) {
     toast.add({
-      severity: 'warn',
-      summary: '格式不正確',
-      detail: '請輸入有效的電子郵件格式（例：name@company.com）。',
+      summary: '登入資料格式錯誤',
+      detail: '請輸入有效的 Email，例如 name@company.com。',
       life: 3000
     })
     return
@@ -391,9 +388,8 @@ const handleLogin = async () => {
 
   if (!password || password.length < 6) {
     toast.add({
-      severity: 'warn',
-      summary: '密碼未填寫',
-      detail: '請輸入至少 6 位數的登入密碼。',
+      summary: '密碼格式錯誤',
+      detail: '密碼至少需要 6 個字元。',
       life: 3000
     })
     return
@@ -413,14 +409,15 @@ const handleLogin = async () => {
     toast.add({
       severity: 'success',
       summary: '登入成功',
-      detail: result.passwordChangeRequired ? '請先完成密碼變更。' : '歡迎回到三爵資訊。',
+      detail: result.passwordChangeRequired
+        ? '請立即變更您的密碼。'
+        : '歡迎回到三瑝資訊。',
       life: 3000
     })
   } catch (error: unknown) {
     toast.add({
       severity: 'error',
-      summary: '登入失敗',
-      detail: error instanceof Error ? error.message : '登入失敗，請稍後再試。',
+      detail: error instanceof Error ? error.message : '操作失敗，請稍後再試。',
       life: 3000
     })
   } finally {
@@ -439,9 +436,8 @@ const handleStep1Next = (activateCallback: (step: number) => void) => {
 
   if (!name || !company) {
     toast.add({
-      severity: 'warn',
-      summary: '基本資料未填寫',
-      detail: '請填寫聯絡人姓名與車行/公司名稱。',
+      summary: '基本資料格式錯誤',
+      detail: '請填寫姓名與公司名稱。',
       life: 3000
     })
     return
@@ -450,8 +446,7 @@ const handleStep1Next = (activateCallback: (step: number) => void) => {
   if (!email || !isValidEmail(email)) {
     toast.add({
       severity: 'warn',
-      summary: 'Email 格式錯誤',
-      detail: '請輸入格式正確的電子郵件。',
+      detail: '請輸入有效的 Email。',
       life: 3000
     })
     return
@@ -459,9 +454,8 @@ const handleStep1Next = (activateCallback: (step: number) => void) => {
 
   if (!password || password.length < 8) {
     toast.add({
-      severity: 'warn',
-      summary: '密碼強度不足',
-      detail: '密碼長度至少需要 8 位數。',
+      summary: '密碼格式錯誤',
+      detail: '密碼至少需要 8 個字元。',
       life: 3000
     })
     return
@@ -483,17 +477,10 @@ const handleRegister = async () => {
     })
     if (!result.success) throw new Error(result.message)
     activeStep.value = 3
-    toast.add({
-      severity: 'success',
-      summary: '帳號建立成功',
-      detail: result.message,
-      life: 3000
-    })
   } catch (error: unknown) {
     toast.add({
       severity: 'error',
-      summary: '註冊失敗',
-      detail: error instanceof Error ? error.message : '伺服器連線異常，請稍後再試。',
+      detail: error instanceof Error ? error.message : '操作失敗，請稍後再試。',
       life: 3000
     })
   } finally {
@@ -505,12 +492,7 @@ const handleRegister = async () => {
 // 4. 完成註冊後回到登入；Email 驗證前不建立登入狀態
 // ----------------------------------------------------
 const finishRegister = () => {
-  toast.add({
-    severity: 'info',
-    summary: '請完成 Email 驗證',
-    detail: '驗證完成後即可使用會員登入。',
-    life: 4000
-  })
+  authStore.closeAuthModal()
   authStore.authMode = 'login'
 }
 
@@ -522,8 +504,7 @@ const handleForgotPassword = async () => {
     if (!forgotEmail.value.trim() || !isValidEmail(forgotEmail.value.trim())) {
       toast.add({
         severity: 'warn',
-        summary: 'Email 格式錯誤',
-        detail: '請輸入有效電子郵件。',
+        detail: '請輸入有效的 Email。',
         life: 3000
       })
       return
@@ -531,9 +512,8 @@ const handleForgotPassword = async () => {
   } else {
     if (!forgotPhone.value.trim() || forgotPhone.value.length < 10) {
       toast.add({
-        severity: 'warn',
-        summary: '手機號碼不完整',
-        detail: '請輸入 10 位數台灣手機號碼（例：0912345678）。',
+        summary: '手機號碼格式錯誤',
+        detail: '請輸入至少 10 碼的手機號碼。',
         life: 3000
       })
       return
@@ -542,8 +522,7 @@ const handleForgotPassword = async () => {
 
   toast.add({
     severity: 'info',
-    summary: '功能尚未開放',
-    detail: '密碼重設流程將於後續階段接入，請聯絡 KQC 管理員。',
+    detail: '密碼重設功能目前僅支援 Email 驗證。',
     life: 4000
   })
 }
@@ -655,7 +634,12 @@ const handleForgotPassword = async () => {
   margin-top: 1.5rem;
   font-size: var(--public-type-body-small, 0.875rem);
   color: #64748b;
+
+  > span, .link-btn { margin: 0; line-height: 1.2; }
 }
+
+.auth-card-wrapper--register .auth-header { margin-bottom: .75rem; }
+.auth-card-wrapper--register .auth-footer { margin-top: .5rem; }
 
 .link-btn {
   background: none;
@@ -678,13 +662,13 @@ const handleForgotPassword = async () => {
 
 /* Stepper 客製化導覽標籤 */
 .register-stepper {
-  margin-bottom: 1rem;
+  margin-bottom: .5rem;
 
   .stepper-header-custom {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1rem;
+    margin-bottom: .5rem;
   }
 
   .step-node {
@@ -722,26 +706,43 @@ const handleForgotPassword = async () => {
   }
 
   .step-content {
-    padding: 0.5rem 0;
+    padding: .25rem 0;
   }
 
   /* 3 欄靠左對齊網格 */
   .interests-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-    padding: 0.5rem 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .5rem;
+    padding: .25rem 0;
 
-    .interest-chip {
-      width: 100%;
-      font-size: var(--public-type-body-small, 0.85rem);
-      justify-content: center;
+    .interest-card {
+      display: grid;
+      min-width: 0;
+      min-height: 6.5rem;
+      padding: 0.45rem;
+      gap: 0.25rem;
+      border: 1px solid #dbe4ea;
+      border-radius: 0.6rem;
+      color: #334155;
+      background: #fff;
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .2s ease, background-color .2s ease;
+      img { width: 100%; height: 2.9rem; object-fit: cover; border-radius: .35rem; }
+      .interest-card__code { color: #a0781d; font-size: .7rem; font-weight: 800; letter-spacing: .08em; }
+      strong { font-size: .85rem; line-height: 1.3; }
+      &:hover, &:focus-visible, &.selected { border-color: #247188; background: #eef8fa; }
+      &:focus-visible { outline: 3px solid rgb(36 113 136 / 28%); outline-offset: 2px; }
     }
   }
+  .step-content--basic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem 1rem; }
+  .step-content--basic + .step-actions { padding-top: .4rem; }
 
   .step-actions {
     display: flex;
-    padding-top: 1rem;
+    padding-top: .5rem;
 
     &.flex-end { justify-content: flex-end; }
     &.flex-between { justify-content: space-between; }
@@ -749,13 +750,59 @@ const handleForgotPassword = async () => {
   }
 
   .success-box {
-    text-align: center;
-    padding: 1.25rem 0;
+    position: relative;
+    display: block;
+    min-height: 12rem;
+    overflow: hidden;
+    padding: .25rem 1rem .5rem;
 
-    .success-icon {
-      font-size: 3.5rem;
-      color: #22c55e;
-      margin-bottom: 0.75rem;
+    &::before {
+      content: '';
+      position: absolute;
+      z-index: 1;
+      inset: 0 16%;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, #fff 0%, #fff 54%, rgb(255 255 255 / 88%) 72%, transparent 100%);
+    }
+
+    .success-side {
+      position: absolute;
+      z-index: 0;
+      bottom: 0;
+      width: 54%;
+      height: 9.5rem;
+      overflow: hidden;
+      opacity: .8;
+      pointer-events: none;
+    }
+    .success-side::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgb(255 255 255 / 30%) 0%, transparent 28%, transparent 72%, rgb(255 255 255 / 36%) 100%);
+    }
+    .success-side img { width: 100%; height: 100%; object-fit: cover; }
+    .success-side--left { left: -16%; mask-image: radial-gradient(ellipse at 26% 78%, transparent 0%, #000 20%, rgb(0 0 0 / 82%) 48%, transparent 92%); }
+    .success-side--left::after { background: linear-gradient(90deg, transparent 0%, transparent 48%, rgb(255 255 255 / 92%) 100%); }
+    .success-side--left img { object-position: 58% center; }
+    .success-side--right { right: -16%; mask-image: radial-gradient(ellipse at 74% 78%, transparent 0%, #000 20%, rgb(0 0 0 / 82%) 48%, transparent 92%); }
+    .success-side--right::after { background: linear-gradient(90deg, rgb(255 255 255 / 92%) 0%, transparent 52%, transparent 100%); }
+    .success-side--right img { object-position: 42% center; }
+    .success-content { position: relative; z-index: 2; max-width: 28rem; margin: 0 auto; text-align: center; }
+
+    .success-check {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 4rem;
+      height: 4rem;
+      margin-bottom: .45rem;
+      border-radius: 50%;
+      background: #22c55e;
+      color: #fff;
+      font-size: 2.35rem;
+      font-weight: 700;
+      line-height: 1;
     }
 
     h3 {
@@ -765,9 +812,14 @@ const handleForgotPassword = async () => {
     }
 
     p {
+      margin: 0;
+      max-width: 27rem;
+      margin-inline: auto;
       font-size: var(--public-type-body-small, 0.875rem);
       color: #64748b;
+      line-height: 1.55;
     }
+    .success-copy span { display: block; }
   }
 }
 
@@ -799,5 +851,19 @@ const handleForgotPassword = async () => {
       font-weight: 600;
     }
   }
+}
+
+:global(.kqc-auth-dialog--register) { width: min(92vw, 58rem) !important; }
+@media (max-width: 700px) {
+  .step-content--basic { grid-template-columns: 1fr; }
+  .interests-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .success-box { min-height: 11rem; padding-inline: .25rem; }
+  .success-side { width: 72%; height: 6rem; opacity: .45; }
+  .success-side--left { left: -20%; }
+  .success-side--right { right: -20%; }
+  .success-copy span { display: inline; }
+}
+@media (max-width: 420px) {
+  .interests-grid { grid-template-columns: 1fr; }
 }
 </style>
