@@ -46,7 +46,7 @@ const swiperModules = [Navigation, Pagination, A11y]
       :pagination="{ clickable: true }"
       :watch-overflow="true"
       :grab-cursor="true"
-      :breakpoints="{ 640: { slidesPerView: 2, spaceBetween: 18 }, 1100: { slidesPerView: 3, spaceBetween: 20 } }"
+      :breakpoints="{ 640: { slidesPerView: 2, spaceBetween: 18 }, 768: { slidesPerView: 3, spaceBetween: 20 } }"
     >
       <SwiperSlide v-for="promo in placeholderPromos" :key="promo.id" class="home-promo-slide">
         <component :is="promo.target ? 'RouterLink' : 'article'" :to="promo.target" class="home-promo-card">

@@ -287,6 +287,21 @@
   .home-promo-swiper .swiper-button-prev, .home-promo-swiper .swiper-button-next { display: none; }
 }
 
+@media (min-width: 768px) {
+  .home-promo-section { padding-block: 1.25rem .75rem; }
+  .home-promo-heading { margin-bottom: .75rem; }
+  .home-promo-card { min-height: 18rem; }
+  .home-promo-media { aspect-ratio: 16 / 8; }
+  .home-promo-copy { padding: .8rem; }
+  .home-promo-copy h3 { margin-block: .3rem; }
+  .home-promo-copy p { line-height: 1.45; }
+  .home-promo-copy em { padding-top: .5rem; }
+}
+
+@media (min-width: 960px) {
+  .home-promo-heading p { margin-right: clamp(4rem, 8vw, 8rem); }
+}
+
 // Homepage-only desktop calibration; Header, Dock and narrow viewports retain their scale.
 @media (min-width: 768px) {
   .kqc-home-wrapper {
