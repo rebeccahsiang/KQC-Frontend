@@ -7,6 +7,7 @@ import { useCaseStore } from '@/stores/useCaseStore'
 import { useAuthStore } from '@/stores/authStore' // 1. 匯入 Auth Store
 import { usePublicFaq } from '@/composables/usePublicFaq'
 import { getPublicMarquees } from '@/api/marquees'
+import brandLogo from '@/assets/images/brand/kqj-footer-logo-gold.png'
 
 // 型別宣告 (Types Definition)
 interface NavItem {
@@ -91,9 +92,13 @@ const handleSearch = (): void => {
       <div class="header-inner-a">
         <!-- 1. 左側 Logo 品牌區 -->
         <router-link to="/" class="brand-link" aria-label="回首頁">
-          <div class="brand-logo-badge">KQC</div>
+          <img
+            class="brand-logo-badge"
+            :src="brandLogo"
+            alt="KQJ 三瑝資訊"
+          />
           <div class="brand-info">
-            <h1 class="brand-title">三爵資訊</h1>
+            <h1 class="brand-title">三瑝資訊</h1>
             <p class="brand-subtitle">智慧運輸與資產交易平台</p>
           </div>
         </router-link>
@@ -136,8 +141,12 @@ const handleSearch = (): void => {
     <div class="header-section-b">
       <div class="header-inner-b">
         <router-link to="/" class="compact-brand-link" aria-label="回首頁">
-          <span class="compact-brand-mark">KQC</span>
-          <span>三爵資訊</span>
+          <img
+            class="compact-brand-mark"
+            :src="brandLogo"
+            alt="KQJ 三瑝資訊"
+          />
+          <span>三瑝資訊</span>
         </router-link>
         <nav class="compact-nav-links" aria-label="精簡主要導覽">
           <router-link v-for="item in navItems" :key="item.path" :to="item.path" active-class="is-active">{{ item.name }}</router-link>
@@ -303,14 +312,8 @@ const handleSearch = (): void => {
   .brand-logo-badge {
     width: 3.5rem;
     height: 3.5rem;
-    background-color: var(--accent-gold, #eab308);
-    color: #1e293b;
-    font-weight: 900;
-    font-size: 1.5rem;
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
+    object-fit: contain;
   }
 
   .brand-title {
@@ -457,7 +460,7 @@ const handleSearch = (): void => {
     text-decoration: none;
     white-space: nowrap;
   }
-  .compact-brand-mark { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 0.45rem; background: var(--accent-gold, var(--accent)); color: #1e293b; font-size: 0.72rem; }
+  .compact-brand-mark { display: block; width: 2rem; height: 2rem; object-fit: contain; }
   .compact-nav-links {
     display: flex;
     flex-shrink: 0;

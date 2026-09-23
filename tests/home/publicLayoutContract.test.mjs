@@ -76,4 +76,4 @@ test('account and capability-aware staff entry contracts remain in the shared he
   assert.match(header, /authStore\.logout\(\)/)
   assert.match(header, /v-if="authStore\.isAdminPortalUser"/)
   assert.match(header, /to="\/admin"/)
-})`n
+})
