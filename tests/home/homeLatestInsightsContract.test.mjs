@@ -33,7 +33,7 @@ test('Detail remains solely owned by the canonical public slug endpoint', () => 
 })
 
 test('article cards retain two-column authority with wide cover media and lightweight links', () => {
-  const boundary = styles.slice(styles.indexOf('.insights-2col-grid'), styles.indexOf('.reservation-form-block'))
+  const boundary = styles.slice(styles.indexOf('.insights-2col-grid'))
   assert.match(boundary, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/)
   assert.match(boundary, /aspect-ratio:\s*12 \/ 5/)
   assert.match(boundary, /object-fit:\s*cover/)

@@ -37,7 +37,7 @@ test('heading and semantic cards route to the existing Product Showcase anchor',
 })
 
 test('Home owns a compact two-column grid and a safe one-column mobile layout', () => {
-  const boundary = styles.slice(styles.indexOf('/* HOME-R1E'), styles.indexOf('.reservation-form-block'))
+  const boundary = styles.slice(styles.indexOf('.home-marketplace__grid'), styles.indexOf('.reservation-form-block', styles.indexOf('.home-marketplace__grid')))
   assert.match(boundary, /\.home-marketplace__grid \{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s)
   assert.match(boundary, /\.home-marketplace-card__media \{[^}]*aspect-ratio: 12 \/ 5/s)
   assert.match(boundary, /@media \(min-width: 769px\)[\s\S]*\.insights-2col-grid,[\s\S]*\.home-marketplace__grid \{[^}]*width: 86%;[^}]*margin-inline: auto/s)

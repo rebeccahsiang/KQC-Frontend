@@ -160,6 +160,13 @@ onBeforeUnmount(() => {
 .pulse-dialog__selector--metric button[aria-pressed="true"] { border-color: #3b6f9f; background: #3b6f9f; }
 
 @media (max-width: 640px) { .industry-weather-pulse { height: auto; min-height: 24rem; margin-top: 0; } .pulse-editorial-copy { padding: 1rem; } .industry-weather-pulse .pulse-editorial-copy h2 { white-space: normal; }.industry-weather-pulse .pulse-editorial-copy h2 > span { display: block; }.pulse-subtitle { white-space: normal; }.pulse-cta { position: static; margin-top: .8rem; } .pulse-overlay { padding: .6rem; } .pulse-dialog { max-height: calc(100dvh - 1.2rem); } .pulse-dialog__header, .pulse-dialog__body { padding-right: 1rem; padding-left: 1rem; } .pulse-dialog__controls { flex-direction: column; } .pulse-cta { min-height: 3rem; } }
+@media (min-width: 641px) and (max-width: 1024px) {
+  .pulse-editorial-copy { padding-inline: .75rem; }
+  .industry-weather-pulse .pulse-editorial-copy h2 { white-space: normal; }
+  .industry-weather-pulse .pulse-editorial-copy h2 { font-size: 19px; }
+  .industry-weather-pulse .pulse-editorial-copy h2 > span { display: block; }
+  .pulse-subtitle { font-size: .8rem; white-space: normal; }
+}
 @media (prefers-reduced-motion: reduce) { .pulse-cta { transition: none; } }
 .pulse-dialog__body { gap: .4rem; padding: .55rem 1rem; }
 .pulse-dialog__controls { padding: .4rem .65rem; border: 1px solid color-mix(in srgb, var(--border-grey) 70%, transparent); border-radius: .7rem; background: var(--bg-main); gap: .65rem; }

@@ -75,7 +75,7 @@ const serviceEntries: { id: ServicePanel; icon: string; label: string; descripti
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: minmax(0, 7fr) minmax(15rem, 3fr);
+  grid-template-columns: minmax(0, 7fr) minmax(15rem, 5fr);
   grid-template-areas: 'core entries';
   gap: 20px;
   align-items: start;
@@ -131,7 +131,7 @@ const serviceEntries: { id: ServicePanel; icon: string; label: string; descripti
 // Preserve both columns on narrow desktops without reducing typography.
 @media (min-width: 641px) and (max-width: 768px) {
   .home-service-guide {
-    grid-template-columns: minmax(0, 7fr) minmax(11rem, 3fr);
+    grid-template-columns: minmax(0, 7fr) minmax(11rem, 5fr);
     gap: 12px;
   }
   .home-service-guide > .kqc-card-block,

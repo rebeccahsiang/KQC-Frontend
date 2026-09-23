@@ -325,7 +325,7 @@
 }
 
 // Homepage-only desktop calibration; Header, Dock and narrow viewports retain their scale.
-@media (min-width: 768px) {
+@media (min-width: 641px) {
   .kqc-home-wrapper {
     --public-type-caption: 0.75rem;
     --public-type-metadata: 0.875rem;
@@ -474,6 +474,9 @@
   .home-personas__grid { gap: clamp(0.5rem, 1vw, 0.9rem); padding-inline: clamp(0.75rem, 3vw, 2rem); }
   .home-persona__visual { width: clamp(6rem, 8vw, 8rem); margin-bottom: 0.7rem; }
   .home-persona p { max-width: 11rem; font-size: .8rem; line-height: 1.45; }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .home-personas__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) { .home-persona__visual { transition: none; } .home-persona:hover .home-persona__visual { transform: none; } }
 
@@ -804,7 +807,7 @@
 .home-industry-weather {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(13rem, 0.58fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 5fr);
   gap: .5rem;
   align-items: center;
   margin-top: clamp(-0.75rem, -1vw, -0.25rem);
@@ -836,10 +839,7 @@
   .hero-banner-card { min-height: 36rem; padding: 2.5rem 2.5rem 1.5rem; }
   .hero-mesh { right: -15%; width: 82%; opacity: 0.72; }
   .hero-light-trails { left: 38%; opacity: 0.82; }
-  .hero-values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hero-value:nth-child(3) { border-left: 0; border-top: 1px solid rgb(148 163 184 / 17%); }
-  .hero-value:nth-child(4) { border-top: 1px solid rgb(148 163 184 / 17%); }
-  .home-industry-weather { grid-template-columns: minmax(12rem, 0.75fr) minmax(0, 1.25fr); gap: .5rem; }
+  .home-industry-weather { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: .5rem; }
 }
 
 @media (max-width: 768px) {
@@ -855,6 +855,9 @@
 }
 
 @media (max-width: 640px) {
+  .hero-values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-value:nth-child(3) { border-left: 0; border-top: 1px solid rgb(148 163 184 / 17%); }
+  .hero-value:nth-child(4) { border-top: 1px solid rgb(148 163 184 / 17%); }
   .home-industry-weather { grid-template-columns: 1fr; }
 }
 

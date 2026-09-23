@@ -37,13 +37,14 @@ test('persona presentation uses six semantic images without duplicated placehold
 
 test('desktop persona images are enlarged proportionally while responsive sizes stay bounded', () => {
   assert.match(personaStyles, /\.home-persona__visual\s*\{[^}]*width:\s*clamp\(8\.25rem, 10\.5vw, 10\.5rem\);[^}]*aspect-ratio:\s*1;/s)
-  assert.match(personaStyles, /@media \(max-width: 1024px\)[^{]*\{[\s\S]*?\.home-persona__visual\s*\{[^}]*width:\s*clamp\(5\.5rem, 10vw, 7rem\);/s)
+  assert.match(personaStyles, /@media \(max-width: 640px\)[^{]*\{[\s\S]*?\.home-persona__visual\s*\{[^}]*width:\s*clamp\(5\.5rem, 10vw, 7rem\);/s)
+  assert.match(personaStyles, /@media \(min-width: 641px\)[^{]*\{[\s\S]*?\.home-persona__visual\s*\{[^}]*width:\s*clamp\(6rem, 8vw, 8rem\);/s)
 })
 
 test('responsive authority is six columns, then three and two without giant height', () => {
   assert.match(styles, /\.home-personas__grid \{[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\);/s)
-  const tabletRules = styles.slice(styles.indexOf('@media (max-width: 1024px)', styles.indexOf('/* HOME-R1C')), styles.indexOf('@media (max-width: 768px)', styles.indexOf('/* HOME-R1C')))
-  const mobileRules = styles.slice(styles.indexOf('@media (max-width: 768px)', styles.indexOf('/* HOME-R1C')), styles.indexOf('@media (prefers-reduced-motion: reduce)', styles.indexOf('/* HOME-R1C')))
+  const tabletRules = styles.slice(styles.indexOf('@media (min-width: 641px) and (max-width: 1024px)', styles.indexOf('/* HOME-R1C')), styles.indexOf('@media (prefers-reduced-motion: reduce)', styles.indexOf('/* HOME-R1C')))
+  const mobileRules = styles.slice(styles.indexOf('@media (max-width: 640px)', styles.indexOf('/* HOME-R1C')), styles.indexOf('@media (min-width: 641px)', styles.indexOf('/* HOME-R1C')))
   assert.match(tabletRules, /\.home-personas__grid\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s)
   assert.match(mobileRules, /\.home-personas__grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s)
   assert.doesNotMatch(personaStyles, /min-height|height:\s*(?:[2-9]\d{2}px|\d+vh)/)

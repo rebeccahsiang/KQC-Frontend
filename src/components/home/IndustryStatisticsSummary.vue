@@ -148,7 +148,6 @@ onMounted(loadSummary)
 .category-card__change--negative { color: #256e86; }
 .category-card__change--positive { color: #28745b; }
 .category-card__change--neutral { color: var(--text-muted); }
-@media (max-width: 760px) { .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .category-card:last-child { grid-column: 1 / -1; } }
 @media (max-width: 640px) { .category-grid { grid-template-columns: 1fr; } .category-card:last-child { grid-column: auto; } .category-card__metrics strong { font-size: var(--public-type-card-title, .98rem); } }
 @media (prefers-reduced-motion: reduce) { .category-card { transition: none; } .category-card:hover { transform: none; } }
 </style>

@@ -30,7 +30,7 @@ test('desktop and laptop widths retain a wider main column beside the service ca
   for (const width of [1024, 1100, 1280, 1366, 1440, 1920]) {
     const layout = properties('.home-service-guide', width)
     assert.equal(layout.display, 'grid')
-    assert.equal(layout['grid-template-columns'], 'minmax(0, 7fr) minmax(15rem, 3fr)')
+    assert.equal(layout['grid-template-columns'], 'minmax(0, 7fr) minmax(15rem, 5fr)')
     assert.equal(properties('.home-service-guide > .kqc-card-block', width)['min-width'], '0')
     assert.equal(properties('.home-service-entry-column', width)['min-width'], '0')
   }
@@ -41,7 +41,7 @@ test('tablet preserves two columns and mobile stacks the main content before the
     assert.equal(properties('.home-service-guide', width)['grid-template-columns'], 'minmax(0, 1fr)')
   }
   for (const width of [641, 768]) {
-    assert.equal(properties('.home-service-guide', width)['grid-template-columns'], 'minmax(0, 7fr) minmax(11rem, 3fr)')
+    assert.equal(properties('.home-service-guide', width)['grid-template-columns'], 'minmax(0, 7fr) minmax(11rem, 5fr)')
   }
   assert.ok(guide.indexOf('class="kqc-card-block"') < guide.indexOf('<aside class="home-service-entry-column"'))
   for (const label of ['AI 助理', '快速服務', '真人諮詢']) assert.ok(guide.includes(label))
@@ -55,6 +55,7 @@ test('section RWD has one owner and narrow accordion content reflows without sma
   for (const selector of ['.home-service-guide .accordion-body-text', '.home-service-guide .accordion-service-content ul']) {
     assert.equal(properties(selector, 375)['grid-template-columns'], 'minmax(0, 1fr)')
     assert.equal(properties(selector, 640)['grid-template-columns'], 'minmax(0, 1fr)')
-    assert.equal(properties(selector, 641)['grid-template-columns'], undefined)
   }
+  assert.equal(properties('.home-service-guide .accordion-body-text', 641)['grid-template-columns'], '1fr')
+  assert.equal(properties('.home-service-guide .accordion-service-content ul', 641)['grid-template-columns'], undefined)
 })
