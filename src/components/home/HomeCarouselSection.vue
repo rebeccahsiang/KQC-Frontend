@@ -13,6 +13,8 @@ const previewImage = ref<HomepageCarouselImage | null>(null)
 let previousBodyOverflow = ''
 const visibleImages = computed(() => images.value.filter((image) => !failedImages.has(image.id)))
 const hasMultiple = computed(() => visibleImages.value.length > 1)
+const maxConfiguredSlidesPerView = Math.max(1.08, 1.55, 2.05)
+const canLoop = computed(() => visibleImages.value.length > maxConfiguredSlidesPerView)
 const modules = [EffectCoverflow, Navigation, Pagination, A11y, Autoplay, Keyboard]
 const coverflowEffect = { rotate: 4, stretch: 64, depth: 125, scale: 1, modifier: 1, slideShadows: false }
 const carouselBreakpoints = {
@@ -46,7 +48,7 @@ onBeforeUnmount(() => { requestEpoch += 1; motionQuery?.removeEventListener('cha
   <section v-if="loading || visibleImages.length" class="home-carousel-section" aria-label="首頁輪播圖片" :aria-busy="loading">
     <div v-if="loading" class="home-carousel-loading" role="status">正在載入輪播圖片…</div>
     <!-- D2G-B-R2 — Carousel Coverflow Presentation exposes neighboring images without duplicate slides. -->
-    <Swiper v-else class="home-carousel-swiper" :modules="modules" :effect="hasMultiple ? 'coverflow' : 'slide'" :centered-slides="hasMultiple" :slides-per-view="hasMultiple ? 1.08 : 1" :space-between="hasMultiple ? 12 : 0" :breakpoints="hasMultiple ? carouselBreakpoints : undefined" :coverflow-effect="coverflowEffect" :loop="hasMultiple" :navigation="hasMultiple" :pagination="hasMultiple ? { clickable: true } : false" :autoplay="hasMultiple && !reducedMotion ? { delay: 5000, disableOnInteraction: false, pauseOnMouseEnter: true } : false" :watch-overflow="true" :grab-cursor="hasMultiple" :keyboard="{ enabled: true }">
+    <Swiper v-else class="home-carousel-swiper" :modules="modules" :effect="hasMultiple ? 'coverflow' : 'slide'" :centered-slides="hasMultiple" :slides-per-view="hasMultiple ? 1.08 : 1" :space-between="hasMultiple ? 12 : 0" :breakpoints="hasMultiple ? carouselBreakpoints : undefined" :coverflow-effect="coverflowEffect" :loop="canLoop" :navigation="hasMultiple" :pagination="hasMultiple ? { clickable: true } : false" :autoplay="hasMultiple && !reducedMotion ? { delay: 5000, disableOnInteraction: false, pauseOnMouseEnter: true } : false" :watch-overflow="true" :grab-cursor="hasMultiple" :keyboard="{ enabled: true }">
       <SwiperSlide v-for="image in visibleImages" :key="image.id" class="home-carousel-slide"><button type="button" class="home-carousel-slide__action" :aria-label="`放大檢視${image.altText}`" @click.stop="openPreview(image)"><img :src="homepageCarouselImageUrl(image.path)" :alt="image.altText" @error="markUnavailable(image.id)"><span class="home-carousel-slide__zoom" aria-hidden="true">放大</span></button></SwiperSlide>
     </Swiper>
     <Teleport to="body"><div v-if="previewImage" class="home-carousel-lightbox" role="dialog" aria-modal="true" aria-label="輪播圖片預覽" @click.self="closePreview"><button type="button" class="home-carousel-lightbox__close" aria-label="關閉圖片預覽" @click="closePreview">×</button><img :src="homepageCarouselImageUrl(previewImage.path)" :alt="previewImage.altText"></div></Teleport>
