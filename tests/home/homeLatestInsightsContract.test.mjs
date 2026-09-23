@@ -23,7 +23,7 @@ test('semantic image previews route each read link through the existing named De
   assert.match(section, /<img v-if="article\.coverImage" :src="publicArticleCoverUrl\(article\.coverImage\)" :alt="`\$\{article\.title\}封面`" \/>/)
   assert.match(section, /v-else class="insight-article-card__fallback"/)
   assert.match(section, /:to="\{ name: 'InsightDetail', params: \{ slug: article\.slug \} \}" class="btn-read-full">閱讀全文 →/)
-  assert.match(section, /to="\/insights" class="link-gold-more">查看更多文章 ❯/)
+  assert.match(section, /to="\/insights" class="link-gold-more">查看更多文章 →/)
   assert.doesNotMatch(section, /📰|class="btn-read-full"[^>]*to="\/insights"|background-color:\s*#1e293b/)
 })
 

@@ -31,7 +31,7 @@ onMounted(async () => {
   <section class="kqc-card-block home-insights" aria-labelledby="home-insights-title">
     <div class="block-header-between home-insights__header">
       <h2 id="home-insights-title" class="block-section-title"><Icon icon="lucide:newspaper" aria-hidden="true" />最新產業洞察</h2>
-      <RouterLink to="/insights" class="link-gold-more">查看更多文章 ❯</RouterLink>
+      <RouterLink to="/insights" class="link-gold-more">查看更多文章 →</RouterLink>
     </div>
     <div class="insights-2col-grid">
       <article v-for="article in articles" :key="article.id" class="insight-article-card">
