@@ -183,10 +183,10 @@ onUnmounted(() => window.removeEventListener('keydown', handleEscape))
     </aside>
 
     <Transition name="service-panel">
-      <section v-if="props.activePanel" id="home-service-panel" class="home-service-panel" :aria-labelledby="`home-service-panel-${props.activePanel}-title`">
+      <section v-if="props.activePanel" id="home-service-panel" :class="['home-service-panel', `home-service-panel--${props.activePanel}`]" :aria-labelledby="`home-service-panel-${props.activePanel}-title`">
         <header class="home-service-panel__header">
-          <h2 :id="`home-service-panel-${props.activePanel}-title`">{{ panelTitle }}</h2>
-          <button type="button" class="home-service-panel__close" aria-label="關閉服務面板" @click="closePanel">×</button>
+          <div class="home-service-panel__title"><Icon icon="lucide:bot" aria-hidden="true" /><h2 :id="`home-service-panel-${props.activePanel}-title`">{{ panelTitle }}</h2></div>
+          <button type="button" class="home-service-panel__close" aria-label="關閉服務面板" @click="closePanel"><Icon icon="lucide:x" aria-hidden="true" /></button>
         </header>
         <div class="home-service-panel__body">
           <template v-if="props.activePanel === 'ai'">

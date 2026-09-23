@@ -52,13 +52,16 @@ const serviceEntries: { id: ServicePanel; icon: string; label: string; descripti
           :key="entry.id"
           type="button"
           class="home-service-entry-card"
-          :class="{ active: activePanel === entry.id }"
+          :class="[`home-service-entry-card--${entry.id}`, { active: activePanel === entry.id }]"
           :aria-expanded="activePanel === entry.id"
           aria-controls="home-service-panel"
           @click="emit('open-panel', entry.id)"
         >
-          <Icon :icon="entry.icon" class="home-service-entry-card__icon" aria-hidden="true" />
-          <strong>{{ entry.label }}</strong>
+          <span class="home-service-entry-card__heading">
+            <Icon :icon="entry.icon" class="home-service-entry-card__icon" aria-hidden="true" />
+            <strong>{{ entry.label }}</strong>
+            <Icon icon="lucide:chevron-right" class="home-service-entry-card__affordance" aria-hidden="true" />
+          </span>
           <span>{{ entry.description }}</span>
         </button>
       </div>
@@ -75,7 +78,7 @@ const serviceEntries: { id: ServicePanel; icon: string; label: string; descripti
   grid-template-columns: minmax(0, 7fr) minmax(15rem, 3fr);
   grid-template-areas: 'core entries';
   gap: 20px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .home-service-guide > .kqc-card-block,
@@ -84,15 +87,45 @@ const serviceEntries: { id: ServicePanel; icon: string; label: string; descripti
 }
 
 .home-service-guide > .kqc-card-block { grid-area: core; }
+.home-service-guide > .kqc-card-block { padding: 8px 12px; }
+.home-service-guide .block-section-title { margin-top: .15rem; margin-bottom: .4rem; }
 .home-service-entry-column {
   grid-area: entries;
   display: block;
+  align-self: start;
 }
 
 .accordion-category,
 .accordion-service-content {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.accordion-head-icon {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.accordion-head-icon :deep(svg),
+.accordion-head-icon :deep(i) {
+  display: block;
+  vertical-align: middle;
+}
+
+.accordion-head-icon :deep(svg) { width: 1.25rem; height: 1.25rem; }
+
+.head-title { display: inline-flex; align-items: center; line-height: 1.25; }
+
+.home-service-guide .accordion-body-text { grid-template-columns: 1fr; }
+.home-service-guide .accordion-category { flex-direction: row; align-items: center; gap: .4rem; }
+
+@media (min-width: 641px) {
+  .home-service-guide .accordion-category { display: none; }
 }
 
 // Preserve both columns on narrow desktops without reducing typography.
@@ -104,9 +137,9 @@ const serviceEntries: { id: ServicePanel; icon: string; label: string; descripti
   .home-service-guide > .kqc-card-block,
   .home-service-entry-card { padding: 12px; }
   .home-service-entry-grid { gap: 12px; }
-  .home-service-guide .accordion-head-bar { padding: 12px; gap: 8px; }
+  .home-service-guide .accordion-head-bar { padding: 10px 14px; gap: .75rem; }
   .home-service-guide .accordion-body-text { padding: 12px; gap: 12px; }
-  .home-service-guide .accordion-service-content ul { gap: 8px; }
+  .home-service-guide .accordion-service-content ul { gap: .35rem .6rem; }
 }
 
 // Only mobile stacks the outer columns and the accordion interior.
